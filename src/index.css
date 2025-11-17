@@ -1,0 +1,329 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+} */
+
+/* code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+.fc-theme-standard .fc-scrollgrid {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.fc .fc-button-primary {
+  background-color: #2d6cdf;
+  border: none;
+  transition: 0.2s;
+}
+
+.fc .fc-button-primary:hover {
+  background-color: #1e4fb4;
+}
+
+.fc .fc-highlight {
+  background-color: #fef3c7 !important; 
+}
+ */
+/* 🔸 Enlaces del menú */
+a {
+  /* color: white !important;  */      
+  text-decoration: none !important; 
+}
+
+a:hover {
+  /*  !important;  *//* Amarillo dorado al pasar el mouse */
+  text-decoration: none !important;
+  color: #facc15;
+}
+
+/* 🔸 Fondo del menú principal */
+nav {
+  background-color: #000 !important; /* Negro */
+}
+
+/* 🔸 Submenú */
+ .dropdown:hover .dropdown-menu {
+  display: block;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  background-color: #000; 
+  border-radius: 0.5rem;
+  padding: 0.5rem 0;
+  min-width: 10rem;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+  z-index: 1000;
+}
+
+.dropdown-menu a {
+  display: block;
+  padding: 0.5rem 1rem;
+  color: white; 
+  text-decoration: none;
+}
+
+ .dropdown-menu a:hover {
+  background-color: #333; 
+  color: #facc15;
+}  
+
+/* Encabezado de las columnas (día de la semana) */ 
+/*SIRVE PARA LAS COLUMAS EE*/
+.fc-col-header-cell {
+  background-color: #ffffff; /* fondo del encabezado */
+  color: #000;            /* color del texto */
+  font-family: 'Poppins', sans-serif; /* fuente */
+  font-size: 14px;           /* tamaño de letra */
+  font-weight: 600;          /* más grueso */
+  text-transform: uppercase; /* poner en mayúsculas */
+  letter-spacing: 0.5px;     /* separación entre letras */
+  border: 1px solid #222;    /* línea divisoria */
+}
+
+/* Texto dentro del encabezado (día + número) */
+.fc-col-header-cell-cushion {
+  padding: 8px 0;
+  display: block;
+}
+
+/* Cambiar color cuando pasas el mouse sobre el encabezado */
+.fc-col-header-cell:hover {
+  background-color: #000;
+  transition: background-color 0.3s ease;
+}
+
+
+
+/* === VISTA LISTA (listWeek, listDay) === */
+
+/* Contenedor general de la lista */
+.fc-list {
+  background-color: #000; /* fondo negro */
+  color: #1e1e1e; /* texto blanco */
+  border-radius: 10px;
+  border: 1px solid #333;
+}
+
+/* Encabezado de la lista (día y fecha) */
+ .fc-list-day {
+  background-color: #ffe082; 
+  color: #1e1e1e;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 6px 10px;
+  border-bottom: 1px solid #222;
+} 
+
+/* Cada evento en la lista */
+.fc-list-event {
+  border-left: 4px solid #ffe082; /* línea decorativa amarilla */
+  background-color: #1e1e1e;
+  transition: background-color 0.2s ease;
+}
+
+/* Cuando pasas el mouse sobre un evento */
+.fc-list-event:hover {
+  background-color: #2a2a2a;
+}
+
+/* Título del evento */
+.fc-list-event-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: #ffe082;
+}
+
+/* Hora del evento */
+ .fc-list-event-time {
+  font-size: 12px;
+  color: #aaa;
+} 
+
+/* Descripción del evento (si la usas) */
+.fc-list-event .fc-event-title {
+  white-space: normal;
+}
+
+/* Línea divisoria entre días */
+.fc-list-table tr:not(:last-child) {
+  border-bottom: 1px solid #333;
+}
+
+/* .fc-daygrid-day-number {
+  color: #333c87;
+  font-weight: bold;
+  font-size: 13px;
+} */
+
+/* === NÚMEROS DEL MES (Vista dayGridMonth) === */
+/* .fc-daygrid-day-number {
+  color: #333c87; 
+  font-weight: 600;
+  font-size: 14px;
+  background-color: rgba(51, 60, 135, 0.1); 
+  padding: 3px 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+} */
+
+/* .fc-daygrid-day-number:hover {
+  background-color: #333c87; 
+  color: #ffe082;
+  transform: scale(1.05);
+} */
+
+
+/* === BASE GENERAL === */
+.fc {
+  font-family: "Segoe UI", Roboto, sans-serif;
+  background-color: #f8f9fb;
+  color: #333;
+  font-size: 13px;
+}
+
+/* === ENCABEZADOS DE COLUMNA (Días de la semana) === */
+ .fc-col-header-cell-cushion {
+  color: #000080;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-size: 12px;
+  padding: 6px 0;
+} 
+
+/* === NÚMEROS DEL MES === */
+ .fc-daygrid-day-number {
+  color: #1e1e1e; 
+  font-weight: 500;
+  font-size: 13px;
+  background-color: transparent; 
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease; 
+} 
+
+.fc-daygrid-day-number:hover {
+  background-color: #e7f1ff;
+  color: #004aad;
+}
+
+/* === FONDO DE LOS DÍAS === */
+.fc-daygrid-day {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.fc-day-today {
+  background-color: #e7f1ff !important;
+  border: 1px solid #a4c8ff !important;
+}
+
+/* === EVENTOS (Mes, Semana, Día) === */
+.fc-event {
+  background-color: #4f83ff; /* azul Outlook */
+  border: none;
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 12px;
+  color: #fff; /* 🔹 Texto blanco para contraste */
+  transition: background-color 0.2s ease;
+}
+
+.fc-event:hover {
+  background-color: #1f5aff;
+}
+
+.fc-event-title {
+  white-space: normal;
+  word-wrap: break-word;
+  font-weight: 500;
+}
+
+/* === VISTA SEMANAL / DIARIA === */
+.fc-timegrid-slot {
+  height: 2em;
+  border-color: #e5e7eb;
+}
+
+.fc-timegrid-axis-cushion {
+  color: #666;
+  font-size: 11px;
+}
+
+/* === VISTA LISTA === */
+.fc-list {
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+/* Día del grupo en la lista */
+ .fc-list-day {
+  background-color: #000080;
+  color: #000080;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 13px;
+  padding: 6px 10px;
+} 
+
+/* Contenedor del evento en la lista */
+ .fc-list-event {
+  border-left: 4px solid #4fff6c;
+  background-color: #f9fafc;
+  transition: background-color 0.2s ease;
+} 
+
+.fc-list-event:hover {
+  background-color: #eef3ff;
+}
+
+/* 🔹 Texto del título en la lista */
+ .fc-list-event-title {
+  font-weight: 600;
+  color: #000080; 
+  font-size: 13px;
+} 
+
+/* 🔹 Hora en la lista */
+.fc-list-event-time {
+  font-size: 12px;
+  color: #555;
+}
+/* Forzar color de texto visible en vista de lista */
+ .fc-list-event-title,
+.fc-list-event-time {
+  color: #1e1e1e !important;
+} 
+combobox {
+    z-index: 1000;
+    position: relative;
+}
+
+.contenedor-padre {
+    overflow: visible !important;
+}

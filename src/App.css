@@ -1,0 +1,185 @@
+/* .App {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.empleado {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 100%;
+  align-items: center;
+}
+
+.empleado input {
+  width: 300%;
+  height: 30px;
+  font-size: 20px;
+  padding-left: 10px;
+  border-radius: 5px;
+  margin: 5px;
+}
+
+.empleado button {
+  width: 320%;
+  height: 50px;
+  margin-top: 5px;
+}
+
+
+/* ==== ESTILO GLOBAL ==== */
+/* body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background-color: #f5f6fa;
+  font-family: "Poppins", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #333;
+}
+
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}  */
+
+/* ==== BARRA AUXILIAR SUPERIOR ==== */
+/* .menu-auxiliar {
+  background-color: #0d6efd;
+  font-size: 0.9rem;
+  padding: 6px 20px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+} */
+
+/* ==== MENU PRINCIPAL ==== */
+/* .menu-principal {
+  background-color: white;
+  display: flex;
+  align-items: center;
+  padding: 12px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 500;
+}
+
+.menu-principal a {
+  text-decoration: none;
+  color: #0d6efd;
+  margin-right: 18px;
+  font-weight: 500;
+}
+
+ .menu-principal a:hover {
+  color: #0a58ca;
+}  */
+
+/* ==== LAYOUT PRINCIPAL ==== */
+/* .main-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+} */
+
+/* ==== MENU LATERAL ==== */
+/* .menu-lateral {
+  width: 240px;
+  background-color: #1e293b;
+  color: #f1f5f9;
+  padding: 20px;
+  border-right: 4px solid #0d6efd;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.menu-lateral h5 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+  color: #f8fafc;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 4px;
+}
+
+.menu-lateral ul {
+  list-style: none;
+  padding-left: 12px;
+  margin: 0;
+}
+
+.menu-lateral li {
+  margin: 6px 0;
+}
+
+.menu-lateral a {
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.menu-lateral a:hover {
+  color: #0d6efd;
+} */
+
+/* ==== CONTENIDO PRINCIPAL ==== */
+/* .contenido {
+  flex: 1;
+  padding: 30px;
+  background-color: #f8fafc;
+  overflow-y: auto;
+}
+
+.contenido h2 {
+  color: #0d6efd;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.contenido p {
+  color: #6b7280;
+  font-size: 0.95rem;
+  background-color: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* ==== SCROLL ==== */
+/* ::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #0d6efd;
+  border-radius: 10px;
+} */
+ 
+
+/* En tu archivo CSS global o módulo */
+.fc-timegrid-slots table {
+  min-height: 1200px !important; /* Altura mínima total */
+}
+
+.fc-timegrid-slot {
+  height: 60px !important; /* Altura específica para cada slot */
+}
+
+.fc-timegrid-slot-lane {
+  min-height: 60px !important;
+}
+
+.fc-timegrid-axis-frame {
+  min-height: 60px !important;
+}
+
+.fc-timegrid-event {
+  min-height: 55px !important;
+  margin-bottom: 2px !important;
+}
+
+/* Para el contenedor principal del calendario */
+.fc .fc-timegrid-body {
+  min-height: 800px !important;
+}
