@@ -5,6 +5,7 @@ export default function Login({ onLogin }) {
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
+  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
   // ✅ MEJORAR LA LIMPIEZA DE DATOS
   useEffect(() => {
@@ -37,7 +38,7 @@ export default function Login({ onLogin }) {
     setError("");
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
