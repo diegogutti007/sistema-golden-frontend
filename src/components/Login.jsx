@@ -7,11 +7,10 @@ export default function Login({ onLogin }) {
   const [cargando, setCargando] = useState(false);
   const [backendUrl, setBackendUrl] = useState("");
 
-  // ✅ DETECTAR URL AUTOMÁTICAMENTE - CORREGIDO
+  // ✅ DETECTAR URL AUTOMÁTICAMENTE - CORREGIDO PARA CREATE REACT APP
   useEffect(() => {
-    // Para Vite usa VITE_BACKEND_URL, para Create React App usa REACT_APP_API_URL
-    const url = import.meta.env.VITE_BACKEND_URL || 
-                process.env.REACT_APP_API_URL || 
+    // Para Create React App usa REACT_APP_API_URL
+    const url = process.env.REACT_APP_API_URL || 
                 "https://sistemagolden-backend-production.up.railway.app";
     
     setBackendUrl(url);
@@ -55,7 +54,7 @@ export default function Login({ onLogin }) {
         if (response.ok) {
           const data = await response.json();
           console.log(`✅ /health responde:`, data);
-          setError(`✅ Backend conectado en: ${backendUrl}`);
+          setError(`✅ Backend conectado correctamente`);
           return true;
         } else {
           setError(`❌ Backend responde con error: ${response.status}`);
