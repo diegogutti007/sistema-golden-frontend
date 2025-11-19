@@ -22,8 +22,7 @@ function App() {
 
   // ✅ DETECTAR URL DEL BACKEND AUTOMÁTICAMENTE
   useEffect(() => {
-    const url = process.env.REACT_APP_API_URL || 
-                "https://sistemagolden-backend-production.up.railway.app";
+    const url = "https://sistemagolden-backend-production.up.railway.app";
     setBackendUrl(url);
     console.log("🔗 Backend URL detectada:", url);
   }, []);
