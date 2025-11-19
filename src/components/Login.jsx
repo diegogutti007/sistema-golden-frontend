@@ -7,9 +7,7 @@ export default function Login({ onLogin }) {
   const [cargando, setCargando] = useState(false);
   const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
-  // ✅ MEJORAR LA LIMPIEZA DE DATOS
   useEffect(() => {
-    // Verificar si ya hay una sesión activa
     const token = localStorage.getItem("token");
     const usuarioData = localStorage.getItem("usuario");
     
@@ -17,16 +15,13 @@ export default function Login({ onLogin }) {
       try {
         const user = JSON.parse(usuarioData);
         console.log("✅ Sesión existente encontrada:", user.usuario);
-        // Si hay sesión activa, redirigir al dashboard
         onLogin(user);
       } catch (error) {
         console.error("❌ Error parsing user data:", error);
-        // Limpiar datos corruptos
         localStorage.removeItem("token");
         localStorage.removeItem("usuario");
       }
     } else {
-      // Limpiar cualquier dato residual
       localStorage.removeItem("token");
       localStorage.removeItem("usuario");
     }
@@ -37,7 +32,16 @@ export default function Login({ onLogin }) {
     setCargando(true);
     setError("");
 
+    // ✅ VALIDACIÓN MEJORADA
+    if (!usuario.trim() || !contrasena.trim()) {
+      setError("Usuario y contraseña son requeridos");
+      setCargando(false);
+      return;
+    }
+
     try {
+      console.log("🔗 Intentando conectar a:", `${API_URL}/api/auth/login`);
+      
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
@@ -45,40 +49,85 @@ export default function Login({ onLogin }) {
         },
         body: JSON.stringify({
           usuario: usuario.trim(),
-          contrasena: contrasena
+          contrasena: contrasena.trim()
         }),
       });
 
-      // ✅ MEJOR MANEJO DE ERRORES DE CONEXIÓN
-      if (!response) {
-        throw new Error('No se pudo conectar con el servidor');
-      }
+      console.log("📡 Respuesta del servidor - Status:", response.status);
 
-      const data = await response.json();
-
+      // ✅ MEJOR MANEJO DE ERRORES DE RED
       if (!response.ok) {
-        throw new Error(data.error || 'Error en el login');
+        // Intentar obtener el mensaje de error
+        let errorMessage = `Error ${response.status}: ${response.statusText}`;
+        
+        try {
+          const errorData = await response.text();
+          if (errorData) {
+            const parsedError = JSON.parse(errorData);
+            errorMessage = parsedError.error || parsedError.message || errorData;
+          }
+        } catch (parseError) {
+          console.log("No se pudo parsear el error como JSON");
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      if (data.success) {
+      // ✅ PARSEAR LA RESPUESTA EXITOSA
+      const data = await response.json();
+      console.log("✅ Respuesta del login:", data);
+
+      if (data.success && data.token) {
         // Guardar token y datos del usuario
         localStorage.setItem("token", data.token);
         localStorage.setItem("usuario", JSON.stringify(data.user));
         
-        console.log("✅ Login exitoso, usuario:", data.user.usuario);
+        console.log("✅ Login exitoso, usuario:", data.user?.usuario);
         
-        // ✅ FORZAR ACTUALIZACIÓN COMPLETA
+        // Redirigir al dashboard
         setTimeout(() => {
           onLogin(data.user);
         }, 100);
         
       } else {
-        throw new Error(data.error || 'Error en el login');
+        throw new Error(data.error || 'Credenciales incorrectas');
       }
 
     } catch (error) {
-      console.error('Error en login:', error);
-      setError(error.message || "Error al iniciar sesión");
+      console.error('❌ Error completo en login:', error);
+      
+      // ✅ MENSAJES DE ERROR MÁS ESPECÍFICOS
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        setError("No se puede conectar al servidor. Verifica tu conexión o contacta al administrador.");
+      } else if (error.message.includes('401')) {
+        setError("Usuario o contraseña incorrectos");
+      } else if (error.message.includes('500')) {
+        setError("Error interno del servidor. Intenta más tarde.");
+      } else if (error.message.includes('Token de acceso requerido')) {
+        setError("Error de configuración del servidor. Contacta al administrador.");
+      } else {
+        setError(error.message || "Error al iniciar sesión. Verifica tus credenciales.");
+      }
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // ✅ FUNCIÓN PARA PROBAR LA CONEXIÓN AL BACKEND
+  const probarConexionBackend = async () => {
+    try {
+      setCargando(true);
+      const response = await fetch(`${API_URL}/health`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log("✅ Backend conectado:", data);
+        setError("✅ Backend funcionando correctamente");
+      } else {
+        setError("❌ Backend no responde correctamente");
+      }
+    } catch (error) {
+      console.error("❌ Error conectando al backend:", error);
+      setError("❌ No se puede conectar al backend. Verifica la URL.");
     } finally {
       setCargando(false);
     }
@@ -103,6 +152,15 @@ export default function Login({ onLogin }) {
           <p className="text-gray-300 text-xs">
             Sistema de Gestión
           </p>
+          
+          {/* ✅ BOTÓN DE PRUEBA DE CONEXIÓN */}
+          <button 
+            type="button"
+            onClick={probarConexionBackend}
+            className="mt-2 text-xs text-yellow-400 hover:text-yellow-300 underline"
+          >
+            Probar conexión al servidor
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -146,8 +204,14 @@ export default function Login({ onLogin }) {
 
           {/* Mensaje de Error */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-              <div className="text-red-400 text-xs font-medium text-center">
+            <div className={`rounded-lg p-3 ${
+              error.includes('✅') 
+                ? 'bg-green-500/10 border border-green-500/20' 
+                : 'bg-red-500/10 border border-red-500/20'
+            }`}>
+              <div className={`text-xs font-medium text-center ${
+                error.includes('✅') ? 'text-green-400' : 'text-red-400'
+              }`}>
                 {error}
               </div>
             </div>
@@ -169,6 +233,12 @@ export default function Login({ onLogin }) {
             )}
           </button>
         </form>
+
+        {/* Información de Debug */}
+        <div className="mt-4 p-2 bg-gray-900/50 rounded text-xs">
+          <div className="text-gray-400">URL Backend:</div>
+          <div className="text-yellow-400 truncate">{API_URL}</div>
+        </div>
 
         {/* Footer */}
         <div className="mt-6 text-center">
