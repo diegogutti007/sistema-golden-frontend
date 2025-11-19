@@ -5,7 +5,14 @@ export default function Login({ onLogin }) {
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
-  const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
+  const [backendUrl, setBackendUrl] = useState("");
+
+  // ✅ DETECTAR URL AUTOMÁTICAMENTE
+  useEffect(() => {
+    const url = process.env.REACT_APP_API_URL || "http://localhost:5000";
+    setBackendUrl(url);
+    console.log("🔗 URL del backend detectada:", url);
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -14,25 +21,72 @@ export default function Login({ onLogin }) {
     if (token && usuarioData) {
       try {
         const user = JSON.parse(usuarioData);
-        console.log("✅ Sesión existente encontrada:", user.usuario);
         onLogin(user);
       } catch (error) {
-        console.error("❌ Error parsing user data:", error);
         localStorage.removeItem("token");
         localStorage.removeItem("usuario");
       }
-    } else {
-      localStorage.removeItem("token");
-      localStorage.removeItem("usuario");
     }
   }, [onLogin]);
 
+  // ✅ FUNCIÓN MEJORADA PARA PROBAR CONEXIÓN
+  const probarConexionBackend = async () => {
+    try {
+      setCargando(true);
+      setError("");
+      
+      console.log("🔍 Probando conexión a:", backendUrl);
+      
+      // Probar diferentes endpoints
+      const endpoints = ['/health', '/', '/api/auth/test'];
+      
+      for (let endpoint of endpoints) {
+        try {
+          const response = await fetch(`${backendUrl}${endpoint}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          console.log(`📡 Respuesta de ${endpoint}:`, response.status);
+          
+          if (response.ok) {
+            const data = await response.text();
+            console.log(`✅ ${endpoint} responde:`, data.substring(0, 100));
+            setError(`✅ Backend conectado en: ${backendUrl}`);
+            return true;
+          }
+        } catch (err) {
+          console.log(`❌ ${endpoint} falló:`, err.message);
+        }
+      }
+      
+      setError("❌ No se pudo conectar a ningún endpoint del backend");
+      return false;
+      
+    } catch (error) {
+      console.error("❌ Error en prueba de conexión:", error);
+      setError(`❌ Error: ${error.message}`);
+      return false;
+    } finally {
+      setCargando(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // ✅ PRIMERO PROBAR CONEXIÓN
+    const conexionExitosa = await probarConexionBackend();
+    if (!conexionExitosa) {
+      setError("❌ No se puede conectar al backend. Verifica la URL.");
+      return;
+    }
+
     setCargando(true);
     setError("");
 
-    // ✅ VALIDACIÓN MEJORADA
     if (!usuario.trim() || !contrasena.trim()) {
       setError("Usuario y contraseña son requeridos");
       setCargando(false);
@@ -40,9 +94,9 @@ export default function Login({ onLogin }) {
     }
 
     try {
-      console.log("🔗 Intentando conectar a:", `${API_URL}/api/auth/login`);
+      console.log("🔐 Intentando login en:", `${backendUrl}/api/auth/login`);
       
-      const response = await fetch(`${API_URL}/api/auth/login`, {
+      const response = await fetch(`${backendUrl}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -53,83 +107,39 @@ export default function Login({ onLogin }) {
         }),
       });
 
-      console.log("📡 Respuesta del servidor - Status:", response.status);
+      console.log("📡 Status respuesta:", response.status);
 
-      // ✅ MEJOR MANEJO DE ERRORES DE RED
       if (!response.ok) {
-        // Intentar obtener el mensaje de error
-        let errorMessage = `Error ${response.status}: ${response.statusText}`;
-        
-        try {
-          const errorData = await response.text();
-          if (errorData) {
-            const parsedError = JSON.parse(errorData);
-            errorMessage = parsedError.error || parsedError.message || errorData;
-          }
-        } catch (parseError) {
-          console.log("No se pudo parsear el error como JSON");
-        }
-        
-        throw new Error(errorMessage);
+        const errorText = await response.text();
+        console.error("❌ Error del servidor:", errorText);
+        throw new Error(`Error ${response.status}: ${errorText}`);
       }
 
-      // ✅ PARSEAR LA RESPUESTA EXITOSA
       const data = await response.json();
-      console.log("✅ Respuesta del login:", data);
+      console.log("✅ Respuesta login:", data);
 
       if (data.success && data.token) {
-        // Guardar token y datos del usuario
         localStorage.setItem("token", data.token);
         localStorage.setItem("usuario", JSON.stringify(data.user));
-        
-        console.log("✅ Login exitoso, usuario:", data.user?.usuario);
-        
-        // Redirigir al dashboard
-        setTimeout(() => {
-          onLogin(data.user);
-        }, 100);
-        
+        onLogin(data.user);
       } else {
         throw new Error(data.error || 'Credenciales incorrectas');
       }
 
     } catch (error) {
-      console.error('❌ Error completo en login:', error);
-      
-      // ✅ MENSAJES DE ERROR MÁS ESPECÍFICOS
-      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-        setError("No se puede conectar al servidor. Verifica tu conexión o contacta al administrador.");
-      } else if (error.message.includes('401')) {
-        setError("Usuario o contraseña incorrectos");
-      } else if (error.message.includes('500')) {
-        setError("Error interno del servidor. Intenta más tarde.");
-      } else if (error.message.includes('Token de acceso requerido')) {
-        setError("Error de configuración del servidor. Contacta al administrador.");
-      } else {
-        setError(error.message || "Error al iniciar sesión. Verifica tus credenciales.");
-      }
+      console.error('❌ Error en login:', error);
+      setError(error.message || "Error al iniciar sesión");
     } finally {
       setCargando(false);
     }
   };
 
-  // ✅ FUNCIÓN PARA PROBAR LA CONEXIÓN AL BACKEND
-  const probarConexionBackend = async () => {
-    try {
-      setCargando(true);
-      const response = await fetch(`${API_URL}/health`);
-      if (response.ok) {
-        const data = await response.json();
-        console.log("✅ Backend conectado:", data);
-        setError("✅ Backend funcionando correctamente");
-      } else {
-        setError("❌ Backend no responde correctamente");
-      }
-    } catch (error) {
-      console.error("❌ Error conectando al backend:", error);
-      setError("❌ No se puede conectar al backend. Verifica la URL.");
-    } finally {
-      setCargando(false);
+  // ✅ ACTUALIZAR URL MANUALMENTE
+  const actualizarURL = () => {
+    const nuevaUrl = prompt("Ingresa la URL de tu backend en Railway:", backendUrl);
+    if (nuevaUrl) {
+      setBackendUrl(nuevaUrl);
+      console.log("🔄 URL actualizada:", nuevaUrl);
     }
   };
 
@@ -146,63 +156,57 @@ export default function Login({ onLogin }) {
             </div>
           </div>
           
-          <h2 className="text-xl font-bold text-white mb-1">
-            GOLDEN NAILS
-          </h2>
-          <p className="text-gray-300 text-xs">
-            Sistema de Gestión
-          </p>
+          <h2 className="text-xl font-bold text-white mb-1">GOLDEN NAILS</h2>
+          <p className="text-gray-300 text-xs">Sistema de Gestión</p>
           
-          {/* ✅ BOTÓN DE PRUEBA DE CONEXIÓN */}
-          <button 
-            type="button"
-            onClick={probarConexionBackend}
-            className="mt-2 text-xs text-yellow-400 hover:text-yellow-300 underline"
-          >
-            Probar conexión al servidor
-          </button>
+          {/* Botones de conexión */}
+          <div className="mt-3 space-y-2">
+            <button 
+              type="button"
+              onClick={probarConexionBackend}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-2 rounded-lg transition-all"
+              disabled={cargando}
+            >
+              Probar Conexión
+            </button>
+            <button 
+              type="button"
+              onClick={actualizarURL}
+              className="w-full bg-gray-600 hover:bg-gray-700 text-white text-xs py-2 rounded-lg transition-all"
+            >
+              Cambiar URL
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Campo Usuario */}
+          {/* Campos del formulario */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Usuario
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-3 text-white placeholder-gray-400 focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all duration-200 text-sm"
-                value={usuario}
-                onChange={(e) => setUsuario(e.target.value)}
-                placeholder="Ingrese su usuario"
-                required
-                disabled={cargando}
-                autoComplete="username"
-              />
-            </div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Usuario</label>
+            <input
+              type="text"
+              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-3 text-white placeholder-gray-400 focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all duration-200 text-sm"
+              value={usuario}
+              onChange={(e) => setUsuario(e.target.value)}
+              placeholder="Ingrese su usuario"
+              required
+              disabled={cargando}
+            />
           </div>
 
-          {/* Campo Contraseña */}
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-300 mb-1">
-              Contraseña
-            </label>
-            <div className="relative">
-              <input
-                type="password"
-                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-3 text-white placeholder-gray-400 focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all duration-200 text-sm"
-                value={contrasena}
-                onChange={(e) => setContrasena(e.target.value)}
-                placeholder="Ingrese su contraseña"
-                required
-                disabled={cargando}
-                autoComplete="current-password"
-              />
-            </div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Contraseña</label>
+            <input
+              type="password"
+              className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-3 text-white placeholder-gray-400 focus:ring-1 focus:ring-yellow-500 focus:border-yellow-500 focus:outline-none transition-all duration-200 text-sm"
+              value={contrasena}
+              onChange={(e) => setContrasena(e.target.value)}
+              placeholder="Ingrese su contraseña"
+              required
+              disabled={cargando}
+            />
           </div>
 
-          {/* Mensaje de Error */}
           {error && (
             <div className={`rounded-lg p-3 ${
               error.includes('✅') 
@@ -217,7 +221,6 @@ export default function Login({ onLogin }) {
             </div>
           )}
 
-          {/* Botón de Login */}
           <button
             type="submit"
             disabled={cargando}
@@ -236,15 +239,15 @@ export default function Login({ onLogin }) {
 
         {/* Información de Debug */}
         <div className="mt-4 p-2 bg-gray-900/50 rounded text-xs">
-          <div className="text-gray-400">URL Backend:</div>
-          <div className="text-yellow-400 truncate">{API_URL}</div>
+          <div className="text-gray-400">URL Backend Actual:</div>
+          <div className="text-yellow-400 truncate">{backendUrl}</div>
+          <div className="text-gray-500 text-xs mt-1">
+            Si no funciona, haz click en "Cambiar URL" y pega la URL de Railway
+          </div>
         </div>
 
-        {/* Footer */}
         <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">
-            Sistema seguro • Golden Nails
-          </p>
+          <p className="text-xs text-gray-500">Sistema seguro • Golden Nails</p>
         </div>
       </div>
     </div>
