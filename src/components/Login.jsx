@@ -7,9 +7,13 @@ export default function Login({ onLogin }) {
   const [cargando, setCargando] = useState(false);
   const [backendUrl, setBackendUrl] = useState("");
 
-  // ✅ DETECTAR URL AUTOMÁTICAMENTE
+  // ✅ DETECTAR URL AUTOMÁTICAMENTE - CORREGIDO
   useEffect(() => {
-    const url = process.env.REACT_APP_API_URL || "http://localhost:5000";
+    // Para Vite usa VITE_BACKEND_URL, para Create React App usa REACT_APP_API_URL
+    const url = import.meta.env.VITE_BACKEND_URL || 
+                process.env.REACT_APP_API_URL || 
+                "https://sistemagolden-backend-production.up.railway.app";
+    
     setBackendUrl(url);
     console.log("🔗 URL del backend detectada:", url);
   }, []);
@@ -37,33 +41,31 @@ export default function Login({ onLogin }) {
       
       console.log("🔍 Probando conexión a:", backendUrl);
       
-      // Probar diferentes endpoints
-      const endpoints = ['/health', '/', '/api/auth/test'];
-      
-      for (let endpoint of endpoints) {
-        try {
-          const response = await fetch(`${backendUrl}${endpoint}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-          
-          console.log(`📡 Respuesta de ${endpoint}:`, response.status);
-          
-          if (response.ok) {
-            const data = await response.text();
-            console.log(`✅ ${endpoint} responde:`, data.substring(0, 100));
-            setError(`✅ Backend conectado en: ${backendUrl}`);
-            return true;
-          }
-        } catch (err) {
-          console.log(`❌ ${endpoint} falló:`, err.message);
+      // Solo probar el endpoint /health
+      try {
+        const response = await fetch(`${backendUrl}/health`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        console.log(`📡 Respuesta de /health:`, response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`✅ /health responde:`, data);
+          setError(`✅ Backend conectado en: ${backendUrl}`);
+          return true;
+        } else {
+          setError(`❌ Backend responde con error: ${response.status}`);
+          return false;
         }
+      } catch (err) {
+        console.log(`❌ /health falló:`, err.message);
+        setError("❌ No se pudo conectar al backend. Verifica la URL.");
+        return false;
       }
-      
-      setError("❌ No se pudo conectar a ningún endpoint del backend");
-      return false;
       
     } catch (error) {
       console.error("❌ Error en prueba de conexión:", error);
@@ -77,21 +79,13 @@ export default function Login({ onLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // ✅ PRIMERO PROBAR CONEXIÓN
-    const conexionExitosa = await probarConexionBackend();
-    if (!conexionExitosa) {
-      setError("❌ No se puede conectar al backend. Verifica la URL.");
+    if (!usuario.trim() || !contrasena.trim()) {
+      setError("Usuario y contraseña son requeridos");
       return;
     }
 
     setCargando(true);
     setError("");
-
-    if (!usuario.trim() || !contrasena.trim()) {
-      setError("Usuario y contraseña son requeridos");
-      setCargando(false);
-      return;
-    }
 
     try {
       console.log("🔐 Intentando login en:", `${backendUrl}/api/auth/login`);
@@ -110,9 +104,13 @@ export default function Login({ onLogin }) {
       console.log("📡 Status respuesta:", response.status);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Error del servidor:", errorText);
-        throw new Error(`Error ${response.status}: ${errorText}`);
+        // Si es error 405, probablemente la ruta no existe
+        if (response.status === 405) {
+          throw new Error(`Error 405: Método no permitido. Verifica que la ruta /api/auth/login exista en el backend.`);
+        }
+        
+        const errorData = await response.json().catch(() => ({ error: 'Error del servidor' }));
+        throw new Error(errorData.error || `Error ${response.status}`);
       }
 
       const data = await response.json();
@@ -138,8 +136,11 @@ export default function Login({ onLogin }) {
   const actualizarURL = () => {
     const nuevaUrl = prompt("Ingresa la URL de tu backend en Railway:", backendUrl);
     if (nuevaUrl) {
-      setBackendUrl(nuevaUrl);
-      console.log("🔄 URL actualizada:", nuevaUrl);
+      // Asegurarse de que la URL no tenga slash al final
+      const urlLimpia = nuevaUrl.replace(/\/$/, '');
+      setBackendUrl(urlLimpia);
+      console.log("🔄 URL actualizada:", urlLimpia);
+      setError(""); // Limpiar error al cambiar URL
     }
   };
 
@@ -242,7 +243,9 @@ export default function Login({ onLogin }) {
           <div className="text-gray-400">URL Backend Actual:</div>
           <div className="text-yellow-400 truncate">{backendUrl}</div>
           <div className="text-gray-500 text-xs mt-1">
-            Si no funciona, haz click en "Cambiar URL" y pega la URL de Railway
+            Si no funciona, haz click en "Cambiar URL" y pega: 
+            <br />
+            <code className="bg-black p-1 rounded">https://sistemagolden-backend-production.up.railway.app</code>
           </div>
         </div>
 
