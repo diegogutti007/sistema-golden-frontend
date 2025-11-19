@@ -10,8 +10,8 @@ export default function Login({ onLogin }) {
   // ✅ DETECTAR URL AUTOMÁTICAMENTE - CORREGIDO PARA CREATE REACT APP
   useEffect(() => {
     // Para Create React App usa REACT_APP_API_URL
-    const url = process.env.REACT_APP_API_URL || 
-                "https://sistemagolden-backend-production.up.railway.app";
+    const url = "https://sistemagolden-backend-production.up.railway.app";//process.env.REACT_APP_API_URL || 
+                
     
     setBackendUrl(url);
     console.log("🔗 URL del backend detectada:", url);
