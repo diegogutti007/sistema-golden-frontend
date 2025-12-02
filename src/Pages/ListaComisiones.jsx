@@ -21,8 +21,20 @@ export default function ListaComisiones() {
   const [cargando, setCargando] = useState(false);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
   const [busqueda, setBusqueda] = useState("");
+  const [backendUrl, setBackendUrl] = useState("");
 
   // Establecer fechas por defecto (mes actual)
+
+  useEffect(() => {
+    // Para Create React App usa REACT_APP_API_URL
+    const url = "https://sistemagolden-backend-production.up.railway.app";//process.env.REACT_APP_API_URL || 
+                
+    
+    setBackendUrl(url);
+    console.log("🔗 URL del backend detectada:", url);
+  }, []);
+
+
   useEffect(() => {
     const hoy = new Date();
     const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
@@ -37,7 +49,7 @@ export default function ListaComisiones() {
     setCargando(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/comisiones?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+        `${backendUrl}/api/comisiones?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
       );
       const data = await res.json();
       
