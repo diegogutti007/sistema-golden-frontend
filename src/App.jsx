@@ -18,42 +18,54 @@ import HistorialCitas from "./Pages/HistorialCitas";
 function App() {
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(true);
+  const [backendUrl, setBackendUrl] = useState("");
 
-// En tu App.jsx - modifica el useEffect para verificar el token
-useEffect(() => {
-  const verificarAutenticacion = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const usuarioGuardado = localStorage.getItem("usuario");
-      
-      if (token && usuarioGuardado) {
-        // Verificar si el token es válido
-        const response = await fetch('http://localhost:5000/api/auth/verify', {
-          headers: {
-            'Authorization': `Bearer ${token}`
+  // Establecer fechas por defecto (mes actual)
+
+  useEffect(() => {
+    // Para Create React App usa REACT_APP_API_URL
+    const url = "https://sistemagolden-backend-production.up.railway.app";//process.env.REACT_APP_API_URL || 
+
+
+    setBackendUrl(url);
+    console.log("🔗 URL del backend detectada:", url);
+  }, []);
+
+  // En tu App.jsx - modifica el useEffect para verificar el token
+  useEffect(() => {
+    const verificarAutenticacion = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const usuarioGuardado = localStorage.getItem("usuario");
+
+        if (token && usuarioGuardado) {
+          // Verificar si el token es válido
+          const response = await fetch(`${backendUrl}/api/auth/verify`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setUsuario(data.user);
+          } else {
+            // Token inválido, limpiar localStorage
+            localStorage.removeItem("token");
+            localStorage.removeItem("usuario");
           }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setUsuario(data.user);
-        } else {
-          // Token inválido, limpiar localStorage
-          localStorage.removeItem("token");
-          localStorage.removeItem("usuario");
         }
+      } catch (error) {
+        console.error("Error al verificar autenticación:", error);
+        localStorage.removeItem("token");
+        localStorage.removeItem("usuario");
+      } finally {
+        setCargando(false);
       }
-    } catch (error) {
-      console.error("Error al verificar autenticación:", error);
-      localStorage.removeItem("token");
-      localStorage.removeItem("usuario");
-    } finally {
-      setCargando(false);
-    }
-  };
+    };
 
-  verificarAutenticacion();
-}, []);
+    verificarAutenticacion();
+  }, []);
 
   const handleLogin = (userData) => {
     try {
@@ -64,27 +76,27 @@ useEffect(() => {
     }
   };
 
-// Modifica handleLogout para llamar al backend
-const handleLogout = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    
-    if (token) {
-      await fetch('http://localhost:5000/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+  // Modifica handleLogout para llamar al backend
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      if (token) {
+        await fetch(`${backendUrl}/api/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error en logout:", error);
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("usuario");
+      setUsuario(null);
     }
-  } catch (error) {
-    console.error("Error en logout:", error);
-  } finally {
-    localStorage.removeItem("token");
-    localStorage.removeItem("usuario");
-    setUsuario(null);
-  }
-};
+  };
 
   if (cargando) {
     return (
@@ -124,12 +136,12 @@ const handleLogout = async () => {
               <Route path="/ComisionDetalles" element={<ListaComisiones />} />
               <Route path="/Asistencias" element={<div className="p-6">Página de Asistencias - En desarrollo</div>} />
               <Route path="/citas" element={<AgendaCitas />} />
-              <Route path="/citas/Historial" element={<HistorialCitas />}  />
+              <Route path="/citas/Historial" element={<HistorialCitas />} />
               <Route path="/gastos" element={<FormularioGasto />} />
               <Route path="/gastos/GestionGastos" element={<ListaGastos />} />
               <Route path="/Ventas" element={<VentaFormulario />} />
               <Route path="/Ventas/GestionVentas" element={<VentaLista />} />
-              <Route path="/perfil" element={<PerfilUsuario />}  />
+              <Route path="/perfil" element={<PerfilUsuario />} />
 
               <Route path="/configuracion" element={<div className="p-6">Configuración - En desarrollo</div>} />
               <Route path="*" element={<div className="p-6 text-center">Página no encontrada</div>} />
