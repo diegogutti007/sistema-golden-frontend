@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from "react";
 import ModalModificarEmpleado from "../Modales/ModalModificarEmpleado";
-import { 
-  FaEdit, 
-  FaTrash, 
-  FaSearch, 
+import {
+  FaEdit,
+  FaTrash,
+  FaSearch,
   FaEye,
   FaUsers,
   FaMoneyBillWave,
   FaCalendarAlt,
-  FaIdCard 
+  FaIdCard
 } from "react-icons/fa";
-import { 
-  Users, 
-  Search, 
-  Edit, 
-  Trash2, 
-  Eye, 
-  DollarSign, 
+import {
+  Users,
+  Search,
+  Edit,
+  Trash2,
+  Eye,
+  DollarSign,
   Calendar,
   User,
   FileText,
@@ -40,6 +40,16 @@ function ListaEmpleado() {
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
   const [empleadoDetalle, setEmpleadoDetalle] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [backendUrl, setBackendUrl] = useState("");
+
+  useEffect(() => {
+    // Para Create React App usa REACT_APP_API_URL
+    const url = "https://sistemagolden-backend-production.up.railway.app";//process.env.REACT_APP_API_URL || 
+
+
+    setBackendUrl(url);
+    console.log("🔗 URL del backend detectada:", url);
+  }, []);
 
   useEffect(() => {
     cargarEmpleados();
@@ -47,7 +57,7 @@ function ListaEmpleado() {
 
   const cargarEmpleados = () => {
     setLoading(true);
-    fetch("http://localhost:5000/api/listaempleado")
+    fetch(`${backendUrl}/api/listaempleado`)
       .then((res) => res.json())
       .then((data) => setEmpleados(Array.isArray(data) ? data : []))
       .catch((err) => console.error("❌ Error al obtener empleados:", err))
@@ -56,7 +66,7 @@ function ListaEmpleado() {
 
   const eliminarEmpleado = (id) => {
     if (window.confirm("¿Seguro que deseas eliminar este empleado?")) {
-      fetch(`http://localhost:5000/api/empleado/${id}`, {
+      fetch(`${backendUrl}/api/empleado/${id}`, {
         method: "DELETE",
       })
         .then((res) => res.json())
@@ -133,7 +143,7 @@ function ListaEmpleado() {
               <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-200" />
             </div>
           </div>
-          
+
           <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-4 text-white shadow-lg">
             <div className="flex items-center justify-between">
               <div>
@@ -143,7 +153,7 @@ function ListaEmpleado() {
               <User className="w-6 h-6 sm:w-8 sm:h-8 text-green-200" />
             </div>
           </div>
-          
+
           <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg">
             <div className="flex items-center justify-between">
               <div>
@@ -543,15 +553,13 @@ function ListaEmpleado() {
                   </div>
 
                   {/* Estado del Empleado */}
-                  <div className={`rounded-2xl p-4 border shadow-sm ${
-                    empleadoDetalle.fecha_renuncia ? 
-                    "bg-gradient-to-r from-red-50 to-red-100 border-red-200" :
-                    "bg-gradient-to-r from-green-50 to-green-100 border-green-200"
-                  }`}>
+                  <div className={`rounded-2xl p-4 border shadow-sm ${empleadoDetalle.fecha_renuncia ?
+                      "bg-gradient-to-r from-red-50 to-red-100 border-red-200" :
+                      "bg-gradient-to-r from-green-50 to-green-100 border-green-200"
+                    }`}>
                     <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        empleadoDetalle.fecha_renuncia ? "bg-red-500" : "bg-green-500"
-                      }`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${empleadoDetalle.fecha_renuncia ? "bg-red-500" : "bg-green-500"
+                        }`}>
                         {empleadoDetalle.fecha_renuncia ? (
                           <LogOut className="w-5 h-5 text-white" />
                         ) : (
@@ -563,8 +571,8 @@ function ListaEmpleado() {
                           {empleadoDetalle.fecha_renuncia ? "Empleado Inactivo" : "Empleado Activo"}
                         </h4>
                         <p className="text-xs text-gray-600">
-                          {empleadoDetalle.fecha_renuncia ? 
-                            `Renunció el ${empleadoDetalle.fecha_renuncia?.slice(0, 10)}` : 
+                          {empleadoDetalle.fecha_renuncia ?
+                            `Renunció el ${empleadoDetalle.fecha_renuncia?.slice(0, 10)}` :
                             "Actualmente trabajando en la empresa"
                           }
                         </p>
