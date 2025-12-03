@@ -39,6 +39,7 @@ export default function ListaGastos() {
       setGastos(data);
     } catch (error) {
       console.error("Error cargando gastos:", error);
+      console.log('cada   ', `${backendUrl}/api/gastos`);
     } finally {
       setLoading(false);
     }
