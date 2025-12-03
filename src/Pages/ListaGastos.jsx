@@ -23,14 +23,14 @@ export default function ListaGastos() {
   const [backendUrl, setBackendUrl] = useState("");
 
   useEffect(() => {
-    setBackendUrl(BACKEND_URL);
+    setBackendUrl();
   }, []);
 
 
   // ✅ Cargar lista de gastos
   const cargarGastos = async () => {
     setLoading(true);
-    console.log('perro   ', BACKEND_URL);
+    console.log('perro   ', JSON.stringify(BACKEND_URL));
     console.log('gato   ', backendUrl);
     try {
       const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos`);
