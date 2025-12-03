@@ -32,7 +32,7 @@ export default function ListaGastos() {
     setLoading(true);
     console.log('cada   ', `${backendUrl}/api/gastos`);
     try {
-      const res = await fetch(`${backendUrl}/api/gastos`);
+      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos`);
       const data = await res.json();
       setGastos(data);
     } catch (error) {
