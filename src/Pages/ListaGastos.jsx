@@ -30,7 +30,7 @@ export default function ListaGastos() {
   // ✅ Cargar lista de gastos
   const cargarGastos = async () => {
     setLoading(true);
-    console.log('cada   ', `${backendUrl}/api/gastos`);
+    console.log('perro   ', BACKEND_URL);
     try {
       const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos`);
       const data = await res.json();
