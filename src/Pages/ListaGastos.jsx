@@ -32,6 +32,7 @@ export default function ListaGastos() {
   // ✅ Cargar lista de gastos
   const cargarGastos = async () => {
     setLoading(true);
+    console.log('cada   ', `${backendUrl}/api/gastos`);
     try {
       const res = await fetch(`${backendUrl}/api/gastos`);
       const data = await res.json();
