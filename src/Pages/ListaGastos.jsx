@@ -26,11 +26,6 @@ export default function ListaGastos() {
     setBackendUrl(BACKEND_URL);
   }, []);
 
-  useEffect(() => {
-    if (backendUrl) {
-      cargarGastos();
-    }
-  }, [backendUrl]);
 
   // ✅ Cargar lista de gastos
   const cargarGastos = async () => {
@@ -47,6 +42,13 @@ export default function ListaGastos() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (backendUrl) {
+      cargarGastos();
+    }
+  }, [backendUrl]);
+
 
   /*   useEffect(() => {
       const url = BACKEND_URL;
