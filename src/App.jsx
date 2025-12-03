@@ -18,18 +18,6 @@ import HistorialCitas from "./Pages/HistorialCitas";
 function App() {
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(true);
-  const [backendUrl, setBackendUrl] = useState("");
-
-  // Establecer fechas por defecto (mes actual)
-
-  useEffect(() => {
-    // Para Create React App usa REACT_APP_API_URL
-    const url = "https://sistemagolden-backend-production.up.railway.app";//process.env.REACT_APP_API_URL || 
-
-
-    setBackendUrl(url);
-    console.log("🔗 URL del backend detectada:", url);
-  }, []);
 
   // En tu App.jsx - modifica el useEffect para verificar el token
   useEffect(() => {

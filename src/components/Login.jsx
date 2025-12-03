@@ -5,17 +5,6 @@ export default function Login({ onLogin }) {
   const [contrasena, setContrasena] = useState("");
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
-  const [backendUrl, setBackendUrl] = useState("");
-
-  // ✅ DETECTAR URL AUTOMÁTICAMENTE - CORREGIDO PARA CREATE REACT APP
-  useEffect(() => {
-    // Para Create React App usa REACT_APP_API_URL
-    const url = "https://sistemagolden-backend-production.up.railway.app";//process.env.REACT_APP_API_URL || 
-                
-    
-    setBackendUrl(url);
-    console.log("🔗 URL del backend detectada:", url);
-  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -160,7 +149,7 @@ export default function Login({ onLogin }) {
           <p className="text-gray-300 text-xs">Sistema de Gestión</p>
           
           {/* Botones de conexión */}
-          <div className="mt-3 space-y-2">
+{/*           <div className="mt-3 space-y-2">
             <button 
               type="button"
               onClick={probarConexionBackend}
@@ -176,7 +165,7 @@ export default function Login({ onLogin }) {
             >
               Cambiar URL
             </button>
-          </div>
+          </div> */}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -238,7 +227,7 @@ export default function Login({ onLogin }) {
         </form>
 
         {/* Información de Debug */}
-        <div className="mt-4 p-2 bg-gray-900/50 rounded text-xs">
+{/*         <div className="mt-4 p-2 bg-gray-900/50 rounded text-xs">
           <div className="text-gray-400">URL Backend Actual:</div>
           <div className="text-yellow-400 truncate">{backendUrl}</div>
           <div className="text-gray-500 text-xs mt-1">
@@ -246,7 +235,7 @@ export default function Login({ onLogin }) {
             <br />
             <code className="bg-black p-1 rounded">https://sistemagolden-backend-production.up.railway.app</code>
           </div>
-        </div>
+        </div> */}
 
         <div className="mt-6 text-center">
           <p className="text-xs text-gray-500">Sistema seguro • Golden Nails</p>
