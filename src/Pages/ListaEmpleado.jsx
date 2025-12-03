@@ -64,9 +64,15 @@ function ListaEmpleado() {
   }; */
 
   const cargarEmpleados = () => {
-  setLoading(true);
+  // ✅ Verificar que la URL esté configurada
+  if (!backendUrl || backendUrl.includes("localhost")) {
+    console.error("❌ URL del backend no configurada o es localhost");
+    setError("Por favor, configura la URL del backend correctamente");
+    setLoading(false);
+    return;
+  }
   
-  // Limpiar estado anterior
+  setLoading(true);
   setError("");
   
   console.log("📡 Solicitando empleados desde:", `${backendUrl}/api/listaempleado`);
@@ -75,69 +81,40 @@ function ListaEmpleado() {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
-      // Si necesitas autenticación, añade aquí:
-      // 'Authorization': `Bearer ${localStorage.getItem('token')}`
     },
+    // ✅ Añadir timeout para evitar esperas infinitas
+    signal: AbortSignal.timeout(10000) // 10 segundos timeout
   })
     .then((res) => {
       console.log("📊 Status respuesta:", res.status);
-      console.log("📊 URL completa:", res.url);
       
-      // Si hay error HTTP, lanzar excepción
       if (!res.ok) {
-        return res.text().then(text => {
-          // Intentar parsear como JSON si hay error
-          try {
-            const errorData = JSON.parse(text);
-            throw new Error(errorData.error || `Error ${res.status}: ${res.statusText}`);
-          } catch {
-            // Si no es JSON, usar el texto plano
-            throw new Error(`Error ${res.status}: ${text || res.statusText}`);
-          }
-        });
+        throw new Error(`Error ${res.status}: ${res.statusText}`);
       }
-      
-      // Si está OK, parsear como JSON
       return res.json();
     })
     .then((data) => {
-      console.log("✅ Datos recibidos del backend:", data);
-      
-      // Manejar diferentes formatos de respuesta
-      let empleadosArray = [];
-      
-      if (Array.isArray(data)) {
-        empleadosArray = data;
-      } else if (data && typeof data === 'object') {
-        // Buscar arrays dentro del objeto
-        if (Array.isArray(data.empleados)) {
-          empleadosArray = data.empleados;
-        } else if (Array.isArray(data.users)) {
-          empleadosArray = data.users;
-        } else if (Array.isArray(data.data)) {
-          empleadosArray = data.data;
-        } else if (data.success && Array.isArray(data.data)) {
-          empleadosArray = data.data;
-        } else {
-          // Buscar cualquier propiedad que sea array
-          const arrayProps = Object.values(data).filter(val => Array.isArray(val));
-          if (arrayProps.length > 0) {
-            empleadosArray = arrayProps[0];
-          }
-        }
-      }
-      
-      console.log("📊 Empleados procesados:", empleadosArray.length, "registros");
-      setEmpleados(empleadosArray);
+      console.log("✅ Datos recibidos:", data);
+      setEmpleados(Array.isArray(data) ? data : []);
     })
     .catch((err) => {
       console.error("❌ Error al obtener empleados:", err);
-      setError(`Error al cargar empleados: ${err.message}`);
-      setEmpleados([]); // Asegurar array vacío en error
+      
+      // Mensajes de error más descriptivos
+      let mensajeError = "";
+      if (err.name === 'AbortError') {
+        mensajeError = "Tiempo de espera agotado. El backend no responde.";
+      } else if (err.message.includes('Failed to fetch')) {
+        mensajeError = `No se pudo conectar al backend en: ${backendUrl}`;
+      } else {
+        mensajeError = `Error: ${err.message}`;
+      }
+      
+      setError(mensajeError);
+      setEmpleados([]);
     })
     .finally(() => {
       setLoading(false);
-      console.log("✅ Carga de empleados finalizada");
     });
 };
 
