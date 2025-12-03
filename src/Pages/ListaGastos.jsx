@@ -12,7 +12,7 @@ import {
   Tag
 } from "lucide-react";
 import FormularioGasto from "./FormularioGasto";
-import { BACKEND_URL } from "../config"; // Ajusta la ruta según tu estructura
+import { BACKEND_URL } from "../config/config"; // Ajusta la ruta según tu estructura
 
 export default function ListaGastos() {
   const [gastos, setGastos] = useState([]);
