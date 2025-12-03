@@ -12,6 +12,7 @@ import {
   Tag
 } from "lucide-react";
 import FormularioGasto from "./FormularioGasto";
+import { BACKEND_URL } from "../config"; // Ajusta la ruta según tu estructura
 
 export default function ListaGastos() {
   const [gastos, setGastos] = useState([]);
@@ -21,13 +22,12 @@ export default function ListaGastos() {
   const [showForm, setShowForm] = useState(false);
   const [backendUrl, setBackendUrl] = useState("");
 
-  useEffect(() => {
-    // Para Create React App usa REACT_APP_API_URL
-    const url = "https://sistemagolden-backend-production.up.railway.app";//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
-    //"https://sistemagolden-backend-production.up.railway.app"
+/*   useEffect(() => {
+    // Usar la URL de configuración
+    const url = BACKEND_URL;
+    console.log("🔗 URL del backend (desde config):", url);
     setBackendUrl(url);
-    console.log("🔗 URL del backend detectada:", url);
-  }, []);
+  }, []); */
 
   // ✅ Cargar lista de gastos
   const cargarGastos = async () => {
@@ -44,6 +44,9 @@ export default function ListaGastos() {
   };
 
   useEffect(() => {
+    const url = BACKEND_URL;
+    console.log("🔗 URL del backend (desde config):", url);
+    setBackendUrl(url);
     cargarGastos();
   }, []);
 
