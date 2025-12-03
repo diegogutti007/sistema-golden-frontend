@@ -54,69 +54,14 @@ function ListaEmpleado() {
     cargarEmpleados();
   }, []);
 
-/*   const cargarEmpleados = () => {
+  const cargarEmpleados = () => {
     setLoading(true);
     fetch(`${backendUrl}/api/listaempleado`)
       .then((res) => res.json())
       .then((data) => setEmpleados(Array.isArray(data) ? data : []))
       .catch((err) => console.error("❌ Error al obtener empleados:", err))
       .finally(() => setLoading(false));
-  }; */
-
-  const cargarEmpleados = () => {
-  // ✅ Verificar que la URL esté configurada
-  if (!backendUrl || backendUrl.includes("localhost")) {
-    console.error("❌ URL del backend no configurada o es localhost");
-    setError("Por favor, configura la URL del backend correctamente");
-    setLoading(false);
-    return;
-  }
-  
-  setLoading(true);
-  setError("");
-  
-  console.log("📡 Solicitando empleados desde:", `${backendUrl}/api/listaempleado`);
-  
-  fetch(`${backendUrl}/api/listaempleado`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    // ✅ Añadir timeout para evitar esperas infinitas
-    signal: AbortSignal.timeout(10000) // 10 segundos timeout
-  })
-    .then((res) => {
-      console.log("📊 Status respuesta:", res.status);
-      
-      if (!res.ok) {
-        throw new Error(`Error ${res.status}: ${res.statusText}`);
-      }
-      return res.json();
-    })
-    .then((data) => {
-      console.log("✅ Datos recibidos:", data);
-      setEmpleados(Array.isArray(data) ? data : []);
-    })
-    .catch((err) => {
-      console.error("❌ Error al obtener empleados:", err);
-      
-      // Mensajes de error más descriptivos
-      let mensajeError = "";
-      if (err.name === 'AbortError') {
-        mensajeError = "Tiempo de espera agotado. El backend no responde.";
-      } else if (err.message.includes('Failed to fetch')) {
-        mensajeError = `No se pudo conectar al backend en: ${backendUrl}`;
-      } else {
-        mensajeError = `Error: ${err.message}`;
-      }
-      
-      setError(mensajeError);
-      setEmpleados([]);
-    })
-    .finally(() => {
-      setLoading(false);
-    });
-};
+  };
 
   const eliminarEmpleado = (id) => {
     if (window.confirm("¿Seguro que deseas eliminar este empleado?")) {
