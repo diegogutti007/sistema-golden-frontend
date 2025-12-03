@@ -54,14 +54,92 @@ function ListaEmpleado() {
     cargarEmpleados();
   }, []);
 
-  const cargarEmpleados = () => {
+/*   const cargarEmpleados = () => {
     setLoading(true);
     fetch(`${backendUrl}/api/listaempleado`)
       .then((res) => res.json())
       .then((data) => setEmpleados(Array.isArray(data) ? data : []))
       .catch((err) => console.error("❌ Error al obtener empleados:", err))
       .finally(() => setLoading(false));
-  };
+  }; */
+
+  const cargarEmpleados = () => {
+  setLoading(true);
+  
+  // Limpiar estado anterior
+  setError("");
+  
+  console.log("📡 Solicitando empleados desde:", `${backendUrl}/api/listaempleado`);
+  
+  fetch(`${backendUrl}/api/listaempleado`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      // Si necesitas autenticación, añade aquí:
+      // 'Authorization': `Bearer ${localStorage.getItem('token')}`
+    },
+  })
+    .then((res) => {
+      console.log("📊 Status respuesta:", res.status);
+      console.log("📊 URL completa:", res.url);
+      
+      // Si hay error HTTP, lanzar excepción
+      if (!res.ok) {
+        return res.text().then(text => {
+          // Intentar parsear como JSON si hay error
+          try {
+            const errorData = JSON.parse(text);
+            throw new Error(errorData.error || `Error ${res.status}: ${res.statusText}`);
+          } catch {
+            // Si no es JSON, usar el texto plano
+            throw new Error(`Error ${res.status}: ${text || res.statusText}`);
+          }
+        });
+      }
+      
+      // Si está OK, parsear como JSON
+      return res.json();
+    })
+    .then((data) => {
+      console.log("✅ Datos recibidos del backend:", data);
+      
+      // Manejar diferentes formatos de respuesta
+      let empleadosArray = [];
+      
+      if (Array.isArray(data)) {
+        empleadosArray = data;
+      } else if (data && typeof data === 'object') {
+        // Buscar arrays dentro del objeto
+        if (Array.isArray(data.empleados)) {
+          empleadosArray = data.empleados;
+        } else if (Array.isArray(data.users)) {
+          empleadosArray = data.users;
+        } else if (Array.isArray(data.data)) {
+          empleadosArray = data.data;
+        } else if (data.success && Array.isArray(data.data)) {
+          empleadosArray = data.data;
+        } else {
+          // Buscar cualquier propiedad que sea array
+          const arrayProps = Object.values(data).filter(val => Array.isArray(val));
+          if (arrayProps.length > 0) {
+            empleadosArray = arrayProps[0];
+          }
+        }
+      }
+      
+      console.log("📊 Empleados procesados:", empleadosArray.length, "registros");
+      setEmpleados(empleadosArray);
+    })
+    .catch((err) => {
+      console.error("❌ Error al obtener empleados:", err);
+      setError(`Error al cargar empleados: ${err.message}`);
+      setEmpleados([]); // Asegurar array vacío en error
+    })
+    .finally(() => {
+      setLoading(false);
+      console.log("✅ Carga de empleados finalizada");
+    });
+};
 
   const eliminarEmpleado = (id) => {
     if (window.confirm("¿Seguro que deseas eliminar este empleado?")) {
