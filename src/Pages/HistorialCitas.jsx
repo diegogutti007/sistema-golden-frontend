@@ -75,7 +75,7 @@ export default function HistorialCitas() {
   const cargarCitas = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${backendUrl}/api/citas`);
+      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/citas`);
       const data = await res.json();
 
       // Convertir a formato de historial
@@ -104,7 +104,7 @@ export default function HistorialCitas() {
 
   const cargarClientes = useCallback(async () => {
     try {
-      const res = await fetch(`${backendUrl}/api/clientes`);
+      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/clientes`);
       const data = await res.json();
       setClientes(data);
     } catch (error) {
@@ -114,7 +114,7 @@ export default function HistorialCitas() {
 
   const cargarEmpleados = useCallback(async () => {
     try {
-      const res = await fetch(`${backendUrl}/api/listaempleado`);
+      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/listaempleado`);
       const data = await res.json();
       setEmpleados(data);
     } catch (error) {
@@ -311,7 +311,7 @@ export default function HistorialCitas() {
     }
 
     try {
-      const respuesta = await fetch(`${backendUrl}/api/citas/${cita.id}`, {
+      const respuesta = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/citas/${cita.id}`, {
         method: "DELETE"
       });
 
@@ -337,8 +337,8 @@ export default function HistorialCitas() {
 
       const metodo = form.CitaID ? "PUT" : "POST";
       const url = form.CitaID
-        ? `${backendUrl}/api/citas/${form.CitaID}`
-        : `${backendUrl}/api/citas`;
+        ? `https://sistemagolden-backend-production.up.railway.app/api/citas/${form.CitaID}`
+        : `https://sistemagolden-backend-production.up.railway.app/api/citas`;
 
       const cuerpoCita = {
         ...form,
@@ -375,7 +375,7 @@ export default function HistorialCitas() {
 
     if (window.confirm("¿Estás seguro de que quieres eliminar esta cita?")) {
       try {
-        await fetch(`${backendUrl}/api/citas/${form.CitaID}`, {
+        await fetch(`https://sistemagolden-backend-production.up.railway.app/api/citas/${form.CitaID}`, {
           method: "DELETE"
         });
         setModalCita(false);

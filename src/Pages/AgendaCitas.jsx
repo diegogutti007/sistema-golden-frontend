@@ -90,7 +90,7 @@ export default function AgendaCitas() {
   const cargarCitas = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`${backendUrl}/api/citas`);
+      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/citas`);
       const data = await res.json();
       console.log("🧾 Datos crudos desde API:", data);
       const eventosConvertidos = data.map((cita) => {
@@ -128,7 +128,7 @@ export default function AgendaCitas() {
 
   const cargarClientes = async () => {
     try {
-      const res = await fetch(`${backendUrl}/api/clientes`);
+      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/clientes`);
       const data = await res.json();
       setClientes(data);
     } catch (error) {
@@ -138,7 +138,7 @@ export default function AgendaCitas() {
 
   const cargarEmpleados = async () => {
     try {
-      const res = await fetch(`${backendUrl}/api/listaempleado`);
+      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/listaempleado`);
       const data = await res.json();
       setEmpleados(data);
     } catch (error) {
@@ -236,8 +236,8 @@ export default function AgendaCitas() {
 
       const metodo = form.CitaID ? "PUT" : "POST";
       const url = form.CitaID
-        ? `${backendUrl}/api/citas/${form.CitaID}`
-        : `${backendUrl}/api/citas`;
+        ? `https://sistemagolden-backend-production.up.railway.app/api/citas/${form.CitaID}`
+        : `https://sistemagolden-backend-production.up.railway.app/api/citas`;
 
       const cuerpoCita = {
         ...form,

@@ -21,19 +21,6 @@ export default function ListaComisiones() {
   const [cargando, setCargando] = useState(false);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
   const [busqueda, setBusqueda] = useState("");
-  const [backendUrl, setBackendUrl] = useState("");
-
-  // Establecer fechas por defecto (mes actual)
-
-  useEffect(() => {
-    // Para Create React App usa REACT_APP_API_URL
-    const url = "https://sistemagolden-backend-production.up.railway.app";//process.env.REACT_APP_API_URL || 
-                
-    
-    setBackendUrl(url);
-    console.log("🔗 URL del backend detectada:", url);
-  }, []);
-
 
   useEffect(() => {
     const hoy = new Date();
@@ -49,7 +36,7 @@ export default function ListaComisiones() {
     setCargando(true);
     try {
       const res = await fetch(
-        `${backendUrl}/api/comisiones?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+        `https://sistemagolden-backend-production.up.railway.app/api/comisiones?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
       );
       const data = await res.json();
       

@@ -44,10 +44,10 @@ export default function FormularioGasto() {
       try {
         setLoading(true);
         const [cat, per, tp, emp] = await Promise.all([
-          fetch(`${backendUrl}/api/categorias`).then(r => r.json()),
-          fetch(`${backendUrl}/api/periodos`).then(r => r.json()),
-          fetch(`${backendUrl}/api/tipo_pago`).then(r => r.json()),
-          fetch(`${backendUrl}/api/listaempleado`).then(r => r.json())
+          fetch(`https://sistemagolden-backend-production.up.railway.app/api/categorias`).then(r => r.json()),
+          fetch(`https://sistemagolden-backend-production.up.railway.app/api/periodos`).then(r => r.json()),
+          fetch(`https://sistemagolden-backend-production.up.railway.app/api/tipo_pago`).then(r => r.json()),
+          fetch(`https://sistemagolden-backend-production.up.railway.app/api/listaempleado`).then(r => r.json())
         ]);
 
         setCategorias(cat);
@@ -96,7 +96,7 @@ export default function FormularioGasto() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${backendUrl}/api/gastos`, {
+      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

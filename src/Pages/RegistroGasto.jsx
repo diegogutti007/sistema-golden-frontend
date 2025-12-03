@@ -25,15 +25,6 @@ const RegistroGasto = () => {
   const [tiposPago, setTiposPago] = useState([]);
   const [pagos, setPagos] = useState([{ tipo_pago_id: "", monto: "" }]);
   const [loading, setLoading] = useState(false);
-  const [backendUrl, setBackendUrl] = useState("");
-
-  useEffect(() => {
-    // Para Create React App usa REACT_APP_API_URL
-    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
-    //"https://sistemagolden-backend-production.up.railway.app"
-    setBackendUrl(url);
-    console.log("🔗 URL del backend detectada:", url);
-  }, []);
 
   // 🔹 Cargar datos de selects
   useEffect(() => {
@@ -41,9 +32,9 @@ const RegistroGasto = () => {
       try {
         setLoading(true);
         const [catRes, perRes, tipRes] = await Promise.all([
-          fetch(`${backendUrl}/api/categorias`),
-          fetch(`${backendUrl}/api/periodos`),
-          fetch(`${backendUrl}/api/tipo_pagos`),
+          fetch(`https://sistemagolden-backend-production.up.railway.app/api/categorias`),
+          fetch(`https://sistemagolden-backend-production.up.railway.app/api/periodos`),
+          fetch(`https://sistemagolden-backend-production.up.railway.app/api/tipo_pagos`),
         ]);
 
         setCategorias(await catRes.json());
@@ -95,7 +86,7 @@ const RegistroGasto = () => {
     console.log("📤 Enviando:", data);
 
     try {
-      const res = await fetch(`${backendUrl}/api/gastos`, {
+      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

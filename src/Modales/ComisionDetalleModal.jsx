@@ -21,7 +21,7 @@ export default function ComisionDetalleModal({ empleado, onClose, fechaInicio, f
       setCargando(true);
       try {
         const res = await fetch(
-          `http://localhost:5000/api/comisiones/${empleado.empId}?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+          `https://sistemagolden-backend-production.up.railway.app/api/comisiones/${empleado.empId}?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
         );
         const data = await res.json();
         setDetalle(data);

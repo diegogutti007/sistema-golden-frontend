@@ -73,9 +73,9 @@ export default function ModalVenta({
                 setCargando(true);
                 
                 const [articulosRes, pagosRes, empleadosRes] = await Promise.all([
-                    fetch("http://localhost:5000/api/articulos"),
-                    fetch("http://localhost:5000/api/tipo_pago"),
-                    fetch("http://localhost:5000/api/listaempleado"),
+                    fetch("https://sistemagolden-backend-production.up.railway.app/api/articulos"),
+                    fetch("https://sistemagolden-backend-production.up.railway.app/api/tipo_pago"),
+                    fetch("https://sistemagolden-backend-production.up.railway.app/api/listaempleado"),
                 ]);
 
                 const [articulosData, tiposPagoData, empleadosData] = await Promise.all([
@@ -208,7 +208,7 @@ export default function ModalVenta({
         try {
             setCargando(true);
             
-            const res = await fetch("http://localhost:5000/api/ventas", {
+            const res = await fetch("https://sistemagolden-backend-production.up.railway.app/api/ventas", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(ventaData),
@@ -218,7 +218,7 @@ export default function ModalVenta({
                 alert("✅ Venta registrada correctamente");
 
                 if (form.CitaID) {
-                    await fetch(`http://localhost:5000/api/citas/${form.CitaID}/estado`, {
+                    await fetch(`https://sistemagolden-backend-production.up.railway.app/api/citas/${form.CitaID}/estado`, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ Estado: "Completada" }),

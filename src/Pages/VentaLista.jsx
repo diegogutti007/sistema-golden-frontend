@@ -38,22 +38,6 @@ export default function VentaLista() {
   const [primeraCarga, setPrimeraCarga] = useState(true); // ← NUEVO ESTADO
 
   const LIMITE = 8;
-  const [backendUrl, setBackendUrl] = useState("");
-
-
-  // Usar variables de entorno correctamente:
-  useEffect(() => {
-    // Para producción en Railway, usar la variable de entorno que Railway inyecta
-    const url = process.env.REACT_APP_API_URL ||
-      window.location.origin.replace(/:\d+$/, ":5000") ||
-      "http://localhost:5000";
-
-    console.log("🔗 URL del backend:", url);
-    setBackendUrl(url);
-  }, []);
-
-
-
 
   // Función para cargar las ventas con paginación
   const cargarVentas = async (forzarCarga = false) => {
@@ -106,7 +90,7 @@ export default function VentaLista() {
       if (fechaInicio) params.append('fechaInicio', fechaInicio);
       if (fechaFin) params.append('fechaFin', fechaFin);
 
-      const url = `${backendUrl}/api/estadisticas/ventas?${params.toString()}`;
+      const url = `https://sistemagolden-backend-production.up.railway.app/api/estadisticas/ventas?${params.toString()}`;
 
       console.log('📊 Solicitando estadísticas desde:', url);
 
@@ -142,7 +126,7 @@ export default function VentaLista() {
       if (fechaFin) params.append('fechaFin', fechaFin);
 
       const res = await fetch(
-        `${backendUrl}/api/venta/todas?${params.toString()}`
+        `https://sistemagolden-backend-production.up.railway.app/api/venta/todas?${params.toString()}`
       );
 
       if (res.ok) {

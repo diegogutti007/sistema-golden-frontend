@@ -55,11 +55,11 @@ export default function VentaFormulario() {
       try {
         setLoading(true);
         const [clientesRes, articulosRes, pagosRes, citasRes, empleadosRes] = await Promise.all([
-          fetch(`${backendUrl}/api/clientes`),
-          fetch(`${backendUrl}/api/articulos`),
-          fetch(`${backendUrl}/api/tipo_pago`),
-          fetch(`${backendUrl}/api/citascombo`),
-          fetch(`${backendUrl}/api/listaempleado`),
+          fetch(`https://sistemagolden-backend-production.up.railway.app/api/clientes`),
+          fetch(`https://sistemagolden-backend-production.up.railway.app/api/articulos`),
+          fetch(`https://sistemagolden-backend-production.up.railway.app/api/tipo_pago`),
+          fetch(`https://sistemagolden-backend-production.up.railway.app/api/citascombo`),
+          fetch(`https://sistemagolden-backend-production.up.railway.app/api/listaempleado`),
         ]);
 
         const [clientesData, articulosData, tiposPagoData, citasData, empleadosData] =
@@ -102,7 +102,7 @@ export default function VentaFormulario() {
   // 🔹 Función para recargar clientes después de crear uno nuevo
   const recargarClientes = async () => {
     try {
-      const clientesRes = await fetch(`${backendUrl}/api/clientes`);
+      const clientesRes = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/clientes`);
       const clientesData = await clientesRes.json();
       const clientesOpciones = clientesData.map((c) => ({
         value: c.ClienteID,
@@ -242,7 +242,7 @@ export default function VentaFormulario() {
     };
 
     try {
-      const res = await fetch(`${backendUrl}/api/ventas`, {
+      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/ventas`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(ventaData),

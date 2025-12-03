@@ -42,7 +42,7 @@ export default function Login({ onLogin }) {
       
       // Solo probar el endpoint /health
       try {
-        const response = await fetch(`${backendUrl}/health`, {
+        const response = await fetch(`https://sistemagolden-backend-production.up.railway.app/health`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -87,9 +87,9 @@ export default function Login({ onLogin }) {
     setError("");
 
     try {
-      console.log("🔐 Intentando login en:", `${backendUrl}/api/auth/login`);
+      console.log("🔐 Intentando login en:", `https://sistemagolden-backend-production.up.railway.app/api/auth/login`);
       
-      const response = await fetch(`${backendUrl}/api/auth/login`, {
+      const response = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

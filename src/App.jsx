@@ -40,7 +40,7 @@ function App() {
 
         if (token && usuarioGuardado) {
           // Verificar si el token es válido
-          const response = await fetch(`${backendUrl}/api/auth/verify`, {
+          const response = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/auth/verify`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -82,7 +82,7 @@ function App() {
       const token = localStorage.getItem("token");
 
       if (token) {
-        await fetch(`${backendUrl}/api/auth/logout`, {
+        await fetch(`https://sistemagolden-backend-production.up.railway.app/api/auth/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`

@@ -90,7 +90,7 @@ export default function PerfilUsuario() {
     try {
       setCargando(true);
       // Aquí iría la llamada a la API para actualizar el perfil
-      const response = await fetch(`${backendUrl}/api/auth/perfil`, {
+      const response = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/auth/perfil`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +131,7 @@ export default function PerfilUsuario() {
 
     try {
       setCargando(true);
-      const response = await fetch(`${backendUrl}/api/auth/cambiar-password`, {
+      const response = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/auth/cambiar-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

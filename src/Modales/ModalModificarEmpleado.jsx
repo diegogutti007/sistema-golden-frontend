@@ -20,13 +20,13 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
   useEffect(() => {
     if (isOpen && empleado) {
       // Cargar tipos de empleado
-      fetch("http://localhost:5000/api/tipo-empleado")
+      fetch("https://sistemagolden-backend-production.up.railway.app/api/tipo-empleado")
         .then((res) => res.json())
         .then((data) => setTipos(data))
         .catch((err) => console.error("❌ Error al obtener tipos:", err));
 
       // Cargar cargos de empleado
-      fetch("http://localhost:5000/api/cargo-empleado")
+      fetch("https://sistemagolden-backend-production.up.railway.app/api/cargo-empleado")
         .then((res) => res.json())
         .then((data) => setCargos(data))
         .catch((err) => console.error("❌ Error al obtener cargos:", err)); 
@@ -76,7 +76,7 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
     };
 
     try {
-      const response = await fetch(`http://localhost:5000/api/empleado/${empleado.EmpId}`, {
+      const response = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/empleado/${empleado.EmpId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(empleadoActualizado),

@@ -1,5 +1,5 @@
 // src/utils/api.js
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'https://sistemagolden-backend-production.up.railway.app';
 
 export const fetchWithAuth = async (url, options = {}) => {
   const token = localStorage.getItem('token');

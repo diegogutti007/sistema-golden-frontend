@@ -12,7 +12,7 @@ export default function ModalVentaDetalle({ ventaId, onClose }) {
     const fetchVenta = async () => {
       setCargando(true);
       try {
-        const res = await fetch(`http://localhost:5000/api/venta/${ventaId}`);
+        const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/venta/${ventaId}`);
         const data = await res.json();
         setVenta(data.venta);
         setDetalles(data.detalles || []);

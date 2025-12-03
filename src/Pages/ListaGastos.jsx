@@ -12,7 +12,7 @@ import {
   Tag
 } from "lucide-react";
 import FormularioGasto from "./FormularioGasto";
-import { BACKEND_URL } from "../config/config"; // Ajusta la ruta según tu estructura
+//import { BACKEND_URL } from "../config/config"; // Ajusta la ruta según tu estructura
 
 export default function ListaGastos() {
   const [gastos, setGastos] = useState([]);
@@ -20,50 +20,38 @@ export default function ListaGastos() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGasto, setSelectedGasto] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [backendUrl, setBackendUrl] = useState("");
+/*   const [backendUrl, setBackendUrl] = useState("");
 
   useEffect(() => {
     setBackendUrl(BACKEND_URL);
-  }, []);
+  }, []); */
 
 
   // ✅ Cargar lista de gastos
   const cargarGastos = async () => {
     setLoading(true);
-    console.log('perro   ', JSON.stringify(BACKEND_URL));
-    console.log('gato   ', backendUrl);
     try {
       const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos`);
       const data = await res.json();
       setGastos(data);
     } catch (error) {
       console.error("Error cargando gastos:", error);
-      console.log('cada   ', `${backendUrl}/api/gastos`);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (backendUrl) {
-      cargarGastos();
-    }
-  }, [backendUrl]);
 
-
-  /*   useEffect(() => {
-      const url = BACKEND_URL;
-      console.log("🔗 URL del backend (desde config):", url);
-      setBackendUrl(url);
+     useEffect(() => {
       cargarGastos();
-    }, []); */
+    }, []); 
 
 
   // ✅ Eliminar gasto
   const eliminarGasto = async (id) => {
     if (!window.confirm("¿Seguro que deseas eliminar este gasto?")) return;
     try {
-      const res = await fetch(`${backendUrl}/api/gastos/${id}`, {
+      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos/${id}`, {
         method: "DELETE",
       });
       if (res.ok) {

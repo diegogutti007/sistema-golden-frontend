@@ -40,15 +40,6 @@ function ListaEmpleado() {
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState(null);
   const [empleadoDetalle, setEmpleadoDetalle] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [backendUrl, setBackendUrl] = useState("");
-
-  useEffect(() => {
-    // Para Create React App usa REACT_APP_API_URL
-    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
-    //"https://sistemagolden-backend-production.up.railway.app"
-    setBackendUrl(url);
-    console.log("🔗 URL del backend detectada:", url);
-  }, []);
 
   useEffect(() => {
     cargarEmpleados();
@@ -65,20 +56,16 @@ function ListaEmpleado() {
 
   const cargarEmpleados = () => {
     setLoading(true);
-    fetch(`${backendUrl}/api/listaempleado`)
+    fetch(`https://sistemagolden-backend-production.up.railway.app/api/listaempleado`)
       .then((res) => res.json())
       .then((data) => setEmpleados(Array.isArray(data) ? data : []))
       .catch((err) => console.error("❌ Error al obtener empleados:", err))
       .finally(() => setLoading(false));
   };
 
-
-
-
-
   const eliminarEmpleado = (id) => {
     if (window.confirm("¿Seguro que deseas eliminar este empleado?")) {
-      fetch(`${backendUrl}/api/empleado/${id}`, {
+      fetch(`https://sistemagolden-backend-production.up.railway.app/api/empleado/${id}`, {
         method: "DELETE",
       })
         .then((res) => res.json())

@@ -26,14 +26,14 @@ function FormEmpleado() {
   }, []);
 
   useEffect(() => {
-    fetch(`${backendUrl}/api/tipo-empleado`)
+    fetch(`https://sistemagolden-backend-production.up.railway.app/api/tipo-empleado`)
       .then((res) => res.json())
       .then((data) => setTipos(Array.isArray(data) ? data : []))
       .catch((err) => console.error("❌ Error al obtener tipos:", err));
   }, []);
 
   useEffect(() => {
-    fetch(`${backendUrl}/api/cargo-empleado`)
+    fetch(`https://sistemagolden-backend-production.up.railway.app/api/cargo-empleado`)
       .then((res) => res.json())
       .then((data) => setCargos(Array.isArray(data) ? data : []))
       .catch((err) => console.error("❌ Error al obtener cargos:", err));
@@ -59,7 +59,7 @@ function FormEmpleado() {
     };
 
     try {
-      const response = await fetch(`${backendUrl}/api/empleado`, {
+      const response = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/empleado`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(empleado),

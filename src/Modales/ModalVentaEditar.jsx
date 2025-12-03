@@ -53,11 +53,11 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
 
                 // Cargar datos maestros y la venta principal
                 const [clientesRes, articulosRes, pagosRes, empleadosRes, ventaRes] = await Promise.all([
-                    fetch("http://localhost:5000/api/clientes"),
-                    fetch("http://localhost:5000/api/articulos"),
-                    fetch("http://localhost:5000/api/tipo_pago"),
-                    fetch("http://localhost:5000/api/listaempleado"),
-                    fetch(`http://localhost:5000/api/venta/${ventaId}`)
+                    fetch("https://sistemagolden-backend-production.up.railway.app/api/clientes"),
+                    fetch("https://sistemagolden-backend-production.up.railway.app/api/articulos"),
+                    fetch("https://sistemagolden-backend-production.up.railway.app/api/tipo_pago"),
+                    fetch("https://sistemagolden-backend-production.up.railway.app/api/listaempleado"),
+                    fetch(`https://sistemagolden-backend-production.up.railway.app/api/venta/${ventaId}`)
                 ]);
 
                 // Verificar si la respuesta de la venta es OK
@@ -217,7 +217,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
         console.log('📤 Enviando datos al servidor:', data);
 
         try {
-            const res = await fetch(`http://localhost:5000/api/venta/${ventaId}`, {
+            const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/venta/${ventaId}`, {
                 method: "PUT",
                 headers: { 
                     "Content-Type": "application/json" 

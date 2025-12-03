@@ -70,7 +70,7 @@ export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
     setIsLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/clientes", {
+      const res = await fetch("https://sistemagolden-backend-production.up.railway.app/api/clientes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
