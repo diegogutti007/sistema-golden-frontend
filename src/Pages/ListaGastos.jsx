@@ -22,12 +22,15 @@ export default function ListaGastos() {
   const [showForm, setShowForm] = useState(false);
   const [backendUrl, setBackendUrl] = useState("");
 
-/*   useEffect(() => {
-    // Usar la URL de configuración
-    const url = BACKEND_URL;
-    console.log("🔗 URL del backend (desde config):", url);
-    setBackendUrl(url);
-  }, []); */
+  useEffect(() => {
+    setBackendUrl(BACKEND_URL);
+  }, []);
+
+  useEffect(() => {
+    if (backendUrl) {
+      cargarGastos();
+    }
+  }, [backendUrl]);
 
   // ✅ Cargar lista de gastos
   const cargarGastos = async () => {
@@ -45,12 +48,13 @@ export default function ListaGastos() {
     }
   };
 
-  useEffect(() => {
-    const url = BACKEND_URL;
-    console.log("🔗 URL del backend (desde config):", url);
-    setBackendUrl(url);
-    cargarGastos();
-  }, []);
+  /*   useEffect(() => {
+      const url = BACKEND_URL;
+      console.log("🔗 URL del backend (desde config):", url);
+      setBackendUrl(url);
+      cargarGastos();
+    }, []); */
+
 
   // ✅ Eliminar gasto
   const eliminarGasto = async (id) => {
