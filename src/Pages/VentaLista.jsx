@@ -40,13 +40,20 @@ export default function VentaLista() {
   const LIMITE = 8;
   const [backendUrl, setBackendUrl] = useState("");
 
+
+  // Usar variables de entorno correctamente:
   useEffect(() => {
-    // Para Create React App usa REACT_APP_API_URL
-    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
-    //"https://sistemagolden-backend-production.up.railway.app"
+    // Para producción en Railway, usar la variable de entorno que Railway inyecta
+    const url = process.env.REACT_APP_API_URL ||
+      window.location.origin.replace(/:\d+$/, ":5000") ||
+      "http://localhost:5000";
+
+    console.log("🔗 URL del backend:", url);
     setBackendUrl(url);
-    console.log("🔗 URL del backend detectada:", url);
   }, []);
+
+
+
 
   // Función para cargar las ventas con paginación
   const cargarVentas = async (forzarCarga = false) => {
@@ -411,8 +418,8 @@ export default function VentaLista() {
             <button
               onClick={() => setMostrarFiltros(!mostrarFiltros)}
               className={`flex items-center space-x-2 px-4 py-2 sm:py-3 rounded-xl border transition-all duration-200 ${mostrarFiltros || tieneFiltros()
-                  ? "bg-yellow-50 border-yellow-500 text-yellow-700"
-                  : "bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100"
+                ? "bg-yellow-50 border-yellow-500 text-yellow-700"
+                : "bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100"
                 }`}
             >
               <Filter className="w-4 h-4" />
