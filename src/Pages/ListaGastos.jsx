@@ -23,7 +23,7 @@ export default function ListaGastos() {
   const [backendUrl, setBackendUrl] = useState("");
 
   useEffect(() => {
-    setBackendUrl();
+    setBackendUrl(BACKEND_URL);
   }, []);
 
 
