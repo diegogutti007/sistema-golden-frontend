@@ -54,6 +54,15 @@ function ListaEmpleado() {
     cargarEmpleados();
   }, []);
 
+/*   const cargarEmpleados = () => {
+    setLoading(true);
+    fetch(`${backendUrl}/api/listaempleado`)
+/*       .then((res) => res.json())
+      .then((data) => setEmpleados(Array.isArray(data) ? data : []))
+      .catch((err) => console.error("❌ Error al obtener empleados:", err))
+      .finally(() => setLoading(false)); 
+  }; */
+
   const cargarEmpleados = () => {
     setLoading(true);
     fetch(`${backendUrl}/api/listaempleado`)
@@ -62,6 +71,10 @@ function ListaEmpleado() {
       .catch((err) => console.error("❌ Error al obtener empleados:", err))
       .finally(() => setLoading(false));
   };
+
+
+
+
 
   const eliminarEmpleado = (id) => {
     if (window.confirm("¿Seguro que deseas eliminar este empleado?")) {
