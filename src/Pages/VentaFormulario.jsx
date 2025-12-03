@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { 
-  ShoppingCart, 
-  User, 
-  Calendar, 
-  FileText, 
+import {
+  ShoppingCart,
+  User,
+  Calendar,
+  FileText,
   Plus,
   X,
   DollarSign,
@@ -39,6 +39,15 @@ export default function VentaFormulario() {
     FechaVenta: obtenerFechaLocal(),
     Observaciones: "",
   });
+  const [backendUrl, setBackendUrl] = useState("");
+
+  useEffect(() => {
+    // Para Create React App usa REACT_APP_API_URL
+    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
+    //"https://sistemagolden-backend-production.up.railway.app"
+    setBackendUrl(url);
+    console.log("🔗 URL del backend detectada:", url);
+  }, []);
 
   // 🔹 Cargar datos iniciales
   useEffect(() => {
@@ -46,11 +55,11 @@ export default function VentaFormulario() {
       try {
         setLoading(true);
         const [clientesRes, articulosRes, pagosRes, citasRes, empleadosRes] = await Promise.all([
-          fetch("http://localhost:5000/api/clientes"),
-          fetch("http://localhost:5000/api/articulos"),
-          fetch("http://localhost:5000/api/tipo_pago"),
-          fetch("http://localhost:5000/api/citascombo"),
-          fetch("http://localhost:5000/api/listaempleado"),
+          fetch(`${backendUrl}/api/clientes`),
+          fetch(`${backendUrl}/api/articulos`),
+          fetch(`${backendUrl}/api/tipo_pago`),
+          fetch(`${backendUrl}/api/citascombo`),
+          fetch(`${backendUrl}/api/listaempleado`),
         ]);
 
         const [clientesData, articulosData, tiposPagoData, citasData, empleadosData] =
@@ -93,7 +102,7 @@ export default function VentaFormulario() {
   // 🔹 Función para recargar clientes después de crear uno nuevo
   const recargarClientes = async () => {
     try {
-      const clientesRes = await fetch("http://localhost:5000/api/clientes");
+      const clientesRes = await fetch(`${backendUrl}/api/clientes`);
       const clientesData = await clientesRes.json();
       const clientesOpciones = clientesData.map((c) => ({
         value: c.ClienteID,
@@ -112,7 +121,7 @@ export default function VentaFormulario() {
         cita => cita.ClienteID === form.ClienteID
       );
       setCitasFiltradas(citasDelCliente);
-      
+
       if (form.CitaID && !citasDelCliente.some(c => c.value === form.CitaID)) {
         setForm(prev => ({ ...prev, CitaID: "" }));
       }
@@ -233,12 +242,12 @@ export default function VentaFormulario() {
     };
 
     try {
-      const res = await fetch("http://localhost:5000/api/ventas", {
+      const res = await fetch(`${backendUrl}/api/ventas`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(ventaData),
       });
-      
+
       if (res.ok) {
         alert("✅ Venta registrada correctamente");
         setDetalles([]);
@@ -301,7 +310,7 @@ export default function VentaFormulario() {
               <FileText className="w-4 h-4 text-yellow-500" />
               <span>Información de la Venta</span>
             </h3>
-            
+
             <div className="space-y-3">
               {/* Cliente con botón de nuevo cliente */}
               <div>
@@ -331,7 +340,7 @@ export default function VentaFormulario() {
                   </button>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className={labelClass}>
@@ -360,8 +369,8 @@ export default function VentaFormulario() {
                     onSeleccionar={handleCitaChange}
                     valorActual={citaSeleccionado}
                     placeholder={
-                      form.ClienteID 
-                        ? "Seleccionar cita..." 
+                      form.ClienteID
+                        ? "Seleccionar cita..."
                         : "Selecciona cliente primero"
                     }
                     isDisabled={!form.ClienteID}
@@ -588,34 +597,31 @@ export default function VentaFormulario() {
                   </div>
                   <p className="text-sm font-bold text-gray-800">S/ {totalArticulos.toFixed(2)}</p>
                 </div>
-                
-                <div className={`bg-white rounded-lg p-2 border ${
-                  Math.abs(totalArticulos - totalPagos) < 0.01 
-                    ? 'border-green-200' 
+
+                <div className={`bg-white rounded-lg p-2 border ${Math.abs(totalArticulos - totalPagos) < 0.01
+                    ? 'border-green-200'
                     : 'border-red-200'
-                }`}>
+                  }`}>
                   <div className="flex items-center space-x-1 mb-1">
                     <CreditCard className="w-3 h-3 text-green-500" />
                     <p className="text-xs text-gray-600 font-medium">Total Pagos</p>
                   </div>
-                  <p className={`text-sm font-bold ${
-                    Math.abs(totalArticulos - totalPagos) < 0.01 
-                      ? 'text-green-600' 
+                  <p className={`text-sm font-bold ${Math.abs(totalArticulos - totalPagos) < 0.01
+                      ? 'text-green-600'
                       : 'text-red-600'
-                  }`}>
+                    }`}>
                     S/ {totalPagos.toFixed(2)}
                   </p>
                 </div>
               </div>
-              
+
               <button
                 type="submit"
                 disabled={!ventaValida || loading}
-                className={`w-full py-2.5 rounded-lg font-semibold text-white transition-all duration-200 flex items-center justify-center space-x-2 text-sm ${
-                  ventaValida && !loading
+                className={`w-full py-2.5 rounded-lg font-semibold text-white transition-all duration-200 flex items-center justify-center space-x-2 text-sm ${ventaValida && !loading
                     ? "bg-gradient-to-r from-yellow-500 to-yellow-600 hover:shadow transform hover:scale-105"
                     : "bg-gray-400 cursor-not-allowed"
-                }`}
+                  }`}
               >
                 {loading ? (
                   <>

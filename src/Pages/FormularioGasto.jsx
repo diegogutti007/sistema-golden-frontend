@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { 
-  DollarSign, 
-  FileText, 
+import {
+  DollarSign,
+  FileText,
   Tag,
   Clock,
   User,
@@ -28,6 +28,15 @@ export default function FormularioGasto() {
     EmpId: "",
     pagos: [],
   });
+  const [backendUrl, setBackendUrl] = useState("");
+
+  useEffect(() => {
+    // Para Create React App usa REACT_APP_API_URL
+    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
+    //"https://sistemagolden-backend-production.up.railway.app"
+    setBackendUrl(url);
+    console.log("🔗 URL del backend detectada:", url);
+  }, []);
 
   // ✅ Cargar datos desde el backend
   useEffect(() => {
@@ -35,10 +44,10 @@ export default function FormularioGasto() {
       try {
         setLoading(true);
         const [cat, per, tp, emp] = await Promise.all([
-          fetch("http://localhost:5000/api/categorias").then(r => r.json()),
-          fetch("http://localhost:5000/api/periodos").then(r => r.json()),
-          fetch("http://localhost:5000/api/tipo_pago").then(r => r.json()),
-          fetch("http://localhost:5000/api/listaempleado").then(r => r.json())
+          fetch(`${backendUrl}/api/categorias`).then(r => r.json()),
+          fetch(`${backendUrl}/api/periodos`).then(r => r.json()),
+          fetch(`${backendUrl}/api/tipo_pago`).then(r => r.json()),
+          fetch(`${backendUrl}/api/listaempleado`).then(r => r.json())
         ]);
 
         setCategorias(cat);
@@ -85,9 +94,9 @@ export default function FormularioGasto() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
-      const res = await fetch("http://localhost:5000/api/gastos", {
+      const res = await fetch(`${backendUrl}/api/gastos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -97,7 +106,7 @@ export default function FormularioGasto() {
 
       const data = await res.json();
       alert("✅ Gasto registrado correctamente");
-      
+
       // Limpiar formulario después del éxito
       setFormData({
         descripcion: "",
@@ -109,7 +118,7 @@ export default function FormularioGasto() {
         EmpId: "",
         pagos: [],
       });
-      
+
     } catch (error) {
       console.error("❌ Error:", error);
       alert("Fallo al registrar el gasto");
@@ -152,7 +161,7 @@ export default function FormularioGasto() {
               <FileText className="w-4 h-4 text-yellow-500" />
               <span>Información del Gasto</span>
             </h3>
-            
+
             <div className="space-y-3">
               {/* Descripción */}
               <div>
@@ -366,34 +375,31 @@ export default function FormularioGasto() {
                     $ {formData.monto.toFixed(2)}
                   </p>
                 </div>
-                
-                <div className={`bg-white rounded-lg p-2 border ${
-                  Math.abs(formData.monto - formData.pagos.reduce((sum, p) => sum + Number(p.monto || 0), 0)) < 0.01 
-                    ? 'border-green-200' 
+
+                <div className={`bg-white rounded-lg p-2 border ${Math.abs(formData.monto - formData.pagos.reduce((sum, p) => sum + Number(p.monto || 0), 0)) < 0.01
+                    ? 'border-green-200'
                     : 'border-red-200'
-                }`}>
+                  }`}>
                   <div className="flex items-center space-x-1 mb-1">
                     <DollarSign className="w-3 h-3 text-green-500" />
                     <p className="text-xs text-gray-600 font-medium">Total Pagos</p>
                   </div>
-                  <p className={`text-sm font-bold ${
-                    Math.abs(formData.monto - formData.pagos.reduce((sum, p) => sum + Number(p.monto || 0), 0)) < 0.01 
-                      ? 'text-green-600' 
+                  <p className={`text-sm font-bold ${Math.abs(formData.monto - formData.pagos.reduce((sum, p) => sum + Number(p.monto || 0), 0)) < 0.01
+                      ? 'text-green-600'
                       : 'text-red-600'
-                  }`}>
+                    }`}>
                     $ {formData.pagos.reduce((sum, p) => sum + Number(p.monto || 0), 0).toFixed(2)}
                   </p>
                 </div>
               </div>
-              
+
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full py-2.5 rounded-lg font-semibold text-white transition-all duration-200 flex items-center justify-center space-x-2 text-sm ${
-                  !loading
+                className={`w-full py-2.5 rounded-lg font-semibold text-white transition-all duration-200 flex items-center justify-center space-x-2 text-sm ${!loading
                     ? "bg-gradient-to-r from-yellow-500 to-yellow-600 hover:shadow transform hover:scale-105"
                     : "bg-gray-400 cursor-not-allowed"
-                }`}
+                  }`}
               >
                 {loading ? (
                   <>

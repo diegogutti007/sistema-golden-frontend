@@ -31,6 +31,16 @@ export default function PerfilUsuario() {
     nuevoPassword: '',
     confirmarPassword: ''
   });
+  const [backendUrl, setBackendUrl] = useState("");
+
+  useEffect(() => {
+    // Para Create React App usa REACT_APP_API_URL
+    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
+    //"https://sistemagolden-backend-production.up.railway.app"
+    setBackendUrl(url);
+    console.log("🔗 URL del backend detectada:", url);
+  }, []);
+
 
   // Cargar datos del usuario al montar el componente
   useEffect(() => {
@@ -80,7 +90,7 @@ export default function PerfilUsuario() {
     try {
       setCargando(true);
       // Aquí iría la llamada a la API para actualizar el perfil
-      const response = await fetch('http://localhost:5000/api/auth/perfil', {
+      const response = await fetch(`${backendUrl}/api/auth/perfil`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +131,7 @@ export default function PerfilUsuario() {
 
     try {
       setCargando(true);
-      const response = await fetch('http://localhost:5000/api/auth/cambiar-password', {
+      const response = await fetch(`${backendUrl}/api/auth/cambiar-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { 
-  DollarSign, 
-  FileText, 
+import {
+  DollarSign,
+  FileText,
   Calendar,
   Tag,
   Clock,
@@ -25,6 +25,15 @@ const RegistroGasto = () => {
   const [tiposPago, setTiposPago] = useState([]);
   const [pagos, setPagos] = useState([{ tipo_pago_id: "", monto: "" }]);
   const [loading, setLoading] = useState(false);
+  const [backendUrl, setBackendUrl] = useState("");
+
+  useEffect(() => {
+    // Para Create React App usa REACT_APP_API_URL
+    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
+    //"https://sistemagolden-backend-production.up.railway.app"
+    setBackendUrl(url);
+    console.log("🔗 URL del backend detectada:", url);
+  }, []);
 
   // 🔹 Cargar datos de selects
   useEffect(() => {
@@ -32,9 +41,9 @@ const RegistroGasto = () => {
       try {
         setLoading(true);
         const [catRes, perRes, tipRes] = await Promise.all([
-          fetch("http://localhost:5000/api/categorias"),
-          fetch("http://localhost:5000/api/periodos"),
-          fetch("http://localhost:5000/api/tipo_pagos"),
+          fetch(`${backendUrl}/api/categorias`),
+          fetch(`${backendUrl}/api/periodos`),
+          fetch(`${backendUrl}/api/tipo_pagos`),
         ]);
 
         setCategorias(await catRes.json());
@@ -86,7 +95,7 @@ const RegistroGasto = () => {
     console.log("📤 Enviando:", data);
 
     try {
-      const res = await fetch("http://localhost:5000/api/gastos", {
+      const res = await fetch(`${backendUrl}/api/gastos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -94,7 +103,7 @@ const RegistroGasto = () => {
 
       const result = await res.json();
       alert(result.message || "Gasto registrado correctamente ✅");
-      
+
       // Limpiar formulario después del éxito
       if (res.ok) {
         setDescripcion("");
@@ -147,7 +156,7 @@ const RegistroGasto = () => {
               <FileText className="w-4 h-4 text-yellow-500" />
               <span>Información del Gasto</span>
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Descripción */}
               <div className="md:col-span-2">
@@ -166,7 +175,7 @@ const RegistroGasto = () => {
                   required
                 />
               </div>
-              
+
               {/* Monto */}
               <div>
                 <label className={labelClass}>
@@ -285,7 +294,7 @@ const RegistroGasto = () => {
                   <div className="col-span-3 text-right">Monto</div>
                   <div className="col-span-1"></div>
                 </div>
-                
+
                 {/* Pagos */}
                 {pagos.map((pago, index) => (
                   <div key={index} className="grid grid-cols-12 gap-2 items-center p-2 bg-white rounded-lg border border-gray-200">
@@ -373,25 +382,23 @@ const RegistroGasto = () => {
                   <DollarSign className="w-4 h-4 text-green-500" />
                   <div>
                     <p className="text-xs text-gray-600">Total en Pagos</p>
-                    <p className={`text-base font-semibold ${
-                      Math.abs(parseFloat(monto || 0) - pagos.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0)) < 0.01 
-                        ? 'text-green-600' 
+                    <p className={`text-base font-semibold ${Math.abs(parseFloat(monto || 0) - pagos.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0)) < 0.01
+                        ? 'text-green-600'
                         : 'text-red-600'
-                    }`}>
+                      }`}>
                       $ {pagos.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0).toFixed(2)}
                     </p>
                   </div>
                 </div>
               </div>
-              
+
               <button
                 type="submit"
                 disabled={loading}
-                className={`px-6 py-2.5 rounded-lg font-semibold text-white transition-all duration-200 flex items-center space-x-2 text-sm ${
-                  !loading
+                className={`px-6 py-2.5 rounded-lg font-semibold text-white transition-all duration-200 flex items-center space-x-2 text-sm ${!loading
                     ? "bg-gradient-to-r from-yellow-500 to-yellow-600 hover:shadow transform hover:scale-105"
                     : "bg-gray-400 cursor-not-allowed"
-                }`}
+                  }`}
               >
                 {loading ? (
                   <>

@@ -38,6 +38,15 @@ export default function VentaLista() {
   const [primeraCarga, setPrimeraCarga] = useState(true); // ← NUEVO ESTADO
 
   const LIMITE = 8;
+  const [backendUrl, setBackendUrl] = useState("");
+
+  useEffect(() => {
+    // Para Create React App usa REACT_APP_API_URL
+    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
+    //"https://sistemagolden-backend-production.up.railway.app"
+    setBackendUrl(url);
+    console.log("🔗 URL del backend detectada:", url);
+  }, []);
 
   // Función para cargar las ventas con paginación
   const cargarVentas = async (forzarCarga = false) => {
@@ -58,12 +67,12 @@ export default function VentaLista() {
       if (fechaFin) params.append('fechaFin', fechaFin);
 
       const res = await fetch(
-        `http://localhost:5000/api/venta?${params.toString()}`
+        `${backendUrl}/api/venta?${params.toString()}`
       );
       const data = await res.json();
       setVentas(data.ventas || []);
       setTotalPaginas(data.totalPaginas || 1);
-      
+
       // Marcar que ya no es la primera carga
       if (primeraCarga) {
         setPrimeraCarga(false);
@@ -90,25 +99,25 @@ export default function VentaLista() {
       if (fechaInicio) params.append('fechaInicio', fechaInicio);
       if (fechaFin) params.append('fechaFin', fechaFin);
 
-      const url = `http://localhost:5000/api/estadisticas/ventas?${params.toString()}`;
-      
+      const url = `${backendUrl}/api/estadisticas/ventas?${params.toString()}`;
+
       console.log('📊 Solicitando estadísticas desde:', url);
-      
+
       const response = await fetch(url);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log('📊 Estadísticas cargadas:', data);
       setEstadisticas(data);
-      
+
       // Marcar que ya no es la primera carga
       if (primeraCarga) {
         setPrimeraCarga(false);
       }
-      
+
     } catch (error) {
       console.warn('⚠️ Endpoint de estadísticas no disponible, usando cálculo local:', error.message);
       calcularEstadisticasLocales();
@@ -126,15 +135,15 @@ export default function VentaLista() {
       if (fechaFin) params.append('fechaFin', fechaFin);
 
       const res = await fetch(
-        `http://localhost:5000/api/venta/todas?${params.toString()}`
+        `${backendUrl}/api/venta/todas?${params.toString()}`
       );
-      
+
       if (res.ok) {
         const todasLasVentas = await res.json();
         const total = todasLasVentas.reduce((sum, v) => sum + (parseFloat(v.Total) || 0), 0);
         const pagadas = todasLasVentas.filter(v => v.Estado === "Pagada").length;
         const anuladas = todasLasVentas.filter(v => v.Estado === "Anulada").length;
-        
+
         setEstadisticas({
           totalVentas: total,
           ventasPagadas: pagadas,
@@ -147,70 +156,70 @@ export default function VentaLista() {
   };
 
 
-const aplicarFiltros = () => {
-  console.log('🎯 APLICANDO FILTROS:', {
-    busqueda: busqueda || '(vacío)',
-    fechaInicio: fechaInicio || '(no definida)',
-    fechaFin: fechaFin || '(no definida)'
-  });
-
-  // Validar fechas
-  if (fechaInicio && fechaFin) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    if (inicio > fin) {
-      alert('❌ La fecha de inicio no puede ser mayor que la fecha fin');
-      return;
-    }
-  }
-
-  setPagina(1);
-  setPrimeraCarga(false);
-  
-  // Forzar recarga de ambos
-  cargarVentas(true);
-  cargarEstadisticas(true);
-};
-
-// Función para verificar filtros activos
-const tieneFiltros = () => {
-  const hayFiltros = !!(busqueda || fechaInicio || fechaFin);
-  console.log('🔍 Verificando filtros:', {
-    busqueda,
-    fechaInicio,
-    fechaFin,
-    hayFiltros
-  });
-  return hayFiltros;
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*   // Función para verificar si hay filtros activos
-  const tieneFiltros = () => {
-    return fechaInicio || fechaFin || busqueda;
-  };
-
-  // Función para aplicar filtros (se ejecuta manualmente)
   const aplicarFiltros = () => {
-    console.log('🔍 Aplicando filtros...');
-    setPagina(1); // Resetear a primera página
-    setPrimeraCarga(false); // Ya no es primera carga
+    console.log('🎯 APLICANDO FILTROS:', {
+      busqueda: busqueda || '(vacío)',
+      fechaInicio: fechaInicio || '(no definida)',
+      fechaFin: fechaFin || '(no definida)'
+    });
+
+    // Validar fechas
+    if (fechaInicio && fechaFin) {
+      const inicio = new Date(fechaInicio);
+      const fin = new Date(fechaFin);
+      if (inicio > fin) {
+        alert('❌ La fecha de inicio no puede ser mayor que la fecha fin');
+        return;
+      }
+    }
+
+    setPagina(1);
+    setPrimeraCarga(false);
+
+    // Forzar recarga de ambos
     cargarVentas(true);
     cargarEstadisticas(true);
-  }; */
+  };
+
+  // Función para verificar filtros activos
+  const tieneFiltros = () => {
+    const hayFiltros = !!(busqueda || fechaInicio || fechaFin);
+    console.log('🔍 Verificando filtros:', {
+      busqueda,
+      fechaInicio,
+      fechaFin,
+      hayFiltros
+    });
+    return hayFiltros;
+  };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  /*   // Función para verificar si hay filtros activos
+    const tieneFiltros = () => {
+      return fechaInicio || fechaFin || busqueda;
+    };
+  
+    // Función para aplicar filtros (se ejecuta manualmente)
+    const aplicarFiltros = () => {
+      console.log('🔍 Aplicando filtros...');
+      setPagina(1); // Resetear a primera página
+      setPrimeraCarga(false); // Ya no es primera carga
+      cargarVentas(true);
+      cargarEstadisticas(true);
+    }; */
 
   // Función para limpiar filtros
   const limpiarFiltros = () => {
@@ -239,7 +248,7 @@ const tieneFiltros = () => {
     if (!window.confirm("¿Seguro que deseas eliminar esta venta?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/venta/${ventaID}`, {
+      const res = await fetch(`${backendUrl}/api/venta/${ventaID}`, {
         method: "DELETE",
       });
       if (res.ok) {
@@ -397,15 +406,14 @@ const tieneFiltros = () => {
                 className="block w-full pl-10 pr-3 py-2 sm:py-3 border border-gray-300 rounded-xl bg-gray-50 focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition-all duration-200 text-sm sm:text-base"
               />
             </div>
-            
+
             {/* Botón para mostrar/ocultar filtros */}
             <button
               onClick={() => setMostrarFiltros(!mostrarFiltros)}
-              className={`flex items-center space-x-2 px-4 py-2 sm:py-3 rounded-xl border transition-all duration-200 ${
-                mostrarFiltros || tieneFiltros()
+              className={`flex items-center space-x-2 px-4 py-2 sm:py-3 rounded-xl border transition-all duration-200 ${mostrarFiltros || tieneFiltros()
                   ? "bg-yellow-50 border-yellow-500 text-yellow-700"
                   : "bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100"
-              }`}
+                }`}
             >
               <Filter className="w-4 h-4" />
               <span className="text-sm sm:text-base">Filtros</span>
@@ -448,7 +456,7 @@ const tieneFiltros = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition-all duration-200"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Fecha Fin

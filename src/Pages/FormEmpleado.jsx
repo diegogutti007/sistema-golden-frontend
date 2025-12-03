@@ -15,16 +15,25 @@ function FormEmpleado() {
   const [direccion, setDireccion] = useState("");
   const [sueldo, setSueldo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [backendUrl, setBackendUrl] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/tipo-empleado")
+    // Para Create React App usa REACT_APP_API_URL
+    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
+    //"https://sistemagolden-backend-production.up.railway.app"
+    setBackendUrl(url);
+    console.log("🔗 URL del backend detectada:", url);
+  }, []);
+
+  useEffect(() => {
+    fetch(`${backendUrl}/api/tipo-empleado`)
       .then((res) => res.json())
       .then((data) => setTipos(Array.isArray(data) ? data : []))
       .catch((err) => console.error("❌ Error al obtener tipos:", err));
   }, []);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/cargo-empleado")
+    fetch(`${backendUrl}/api/cargo-empleado`)
       .then((res) => res.json())
       .then((data) => setCargos(Array.isArray(data) ? data : []))
       .catch((err) => console.error("❌ Error al obtener cargos:", err));
@@ -50,7 +59,7 @@ function FormEmpleado() {
     };
 
     try {
-      const response = await fetch("http://localhost:5000/api/empleado", {
+      const response = await fetch(`${backendUrl}/api/empleado`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(empleado),
@@ -58,7 +67,7 @@ function FormEmpleado() {
       console.log(empleado);
       const data = await response.json();
       alert(data.mensaje);
-      
+
       // Limpiar formulario
       setNombres("");
       setApellidos("");

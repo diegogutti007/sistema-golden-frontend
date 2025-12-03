@@ -46,6 +46,15 @@ export default function AgendaCitas() {
     { estado: "Completada", color: "#16a34a", icono: "✅" },
     { estado: "Cancelada", color: "#dc2626", icono: "❌" }
   ];
+  const [backendUrl, setBackendUrl] = useState("");
+
+  useEffect(() => {
+    // Para Create React App usa REACT_APP_API_URL
+    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
+    //"https://sistemagolden-backend-production.up.railway.app"
+    setBackendUrl(url);
+    console.log("🔗 URL del backend detectada:", url);
+  }, []);
 
   // Detectar si es móvil
   useEffect(() => {
@@ -81,7 +90,7 @@ export default function AgendaCitas() {
   const cargarCitas = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/citas");
+      const res = await fetch(`${backendUrl}/api/citas`);
       const data = await res.json();
       console.log("🧾 Datos crudos desde API:", data);
       const eventosConvertidos = data.map((cita) => {
@@ -119,7 +128,7 @@ export default function AgendaCitas() {
 
   const cargarClientes = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/clientes");
+      const res = await fetch(`${backendUrl}/api/clientes`);
       const data = await res.json();
       setClientes(data);
     } catch (error) {
@@ -129,7 +138,7 @@ export default function AgendaCitas() {
 
   const cargarEmpleados = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/listaempleado");
+      const res = await fetch(`${backendUrl}/api/listaempleado`);
       const data = await res.json();
       setEmpleados(data);
     } catch (error) {
@@ -143,49 +152,49 @@ export default function AgendaCitas() {
     cargarEmpleados();
   }, []);
 
-const manejarClickCelda = (clickInfo) => {
-  console.log("🟢 Click en celda:", clickInfo);
+  const manejarClickCelda = (clickInfo) => {
+    console.log("🟢 Click en celda:", clickInfo);
 
-  // Obtener la fecha local correctamente (sin problemas de zona horaria)
-  const fechaClick = new Date(clickInfo.date);
-  
-  // Crear fecha de inicio (usando métodos locales)
-  const fechaInicio = new Date(fechaClick);
-  
-  // Crear fecha de fin (1 hora después)
-  const fechaFin = new Date(fechaClick);
-  fechaFin.setHours(fechaFin.getHours() + 1);
+    // Obtener la fecha local correctamente (sin problemas de zona horaria)
+    const fechaClick = new Date(clickInfo.date);
 
-  // Formatear a ISO string sin problemas de zona horaria
-  const formatoISO = (fecha) => {
-    const year = fecha.getFullYear();
-    const month = String(fecha.getMonth() + 1).padStart(2, '0');
-    const day = String(fecha.getDate()).padStart(2, '0');
-    const hours = String(fecha.getHours()).padStart(2, '0');
-    const minutes = String(fecha.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    // Crear fecha de inicio (usando métodos locales)
+    const fechaInicio = new Date(fechaClick);
+
+    // Crear fecha de fin (1 hora después)
+    const fechaFin = new Date(fechaClick);
+    fechaFin.setHours(fechaFin.getHours() + 1);
+
+    // Formatear a ISO string sin problemas de zona horaria
+    const formatoISO = (fecha) => {
+      const year = fecha.getFullYear();
+      const month = String(fecha.getMonth() + 1).padStart(2, '0');
+      const day = String(fecha.getDate()).padStart(2, '0');
+      const hours = String(fecha.getHours()).padStart(2, '0');
+      const minutes = String(fecha.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
+    setForm({
+      CitaID: null,
+      ClienteID: "",
+      EmpId: "",
+      Titulo: "",
+      Descripcion: "",
+      clienteNombre: "",
+      FechaInicio: formatoISO(fechaInicio),
+      FechaFin: formatoISO(fechaFin),
+      Estado: "Programada",
+      EstadoOriginal: "Programada"
+    });
+
+    console.log("📝 Formulario configurado para nueva cita");
+    console.log("⏰ Hora inicio:", formatoISO(fechaInicio));
+    console.log("⏰ Hora fin:", formatoISO(fechaFin));
+
+    setModalKey(prev => prev + 1);
+    setModalCita(true);
   };
-
-  setForm({
-    CitaID: null,
-    ClienteID: "",
-    EmpId: "",
-    Titulo: "",
-    Descripcion: "",
-    clienteNombre: "",
-    FechaInicio: formatoISO(fechaInicio),
-    FechaFin: formatoISO(fechaFin),
-    Estado: "Programada",
-    EstadoOriginal: "Programada"
-  });
-
-  console.log("📝 Formulario configurado para nueva cita");
-  console.log("⏰ Hora inicio:", formatoISO(fechaInicio));
-  console.log("⏰ Hora fin:", formatoISO(fechaFin));
-  
-  setModalKey(prev => prev + 1);
-  setModalCita(true);
-};
 
   const manejarClickEvento = (clickInfo) => {
     console.log("🟡 Click en evento:", clickInfo);
@@ -227,8 +236,8 @@ const manejarClickCelda = (clickInfo) => {
 
       const metodo = form.CitaID ? "PUT" : "POST";
       const url = form.CitaID
-        ? `http://localhost:5000/api/citas/${form.CitaID}`
-        : "http://localhost:5000/api/citas";
+        ? `${backendUrl}/api/citas/${form.CitaID}`
+        : `${backendUrl}/api/citas`;
 
       const cuerpoCita = {
         ...form,
@@ -269,7 +278,7 @@ const manejarClickCelda = (clickInfo) => {
     if (!form.CitaID) return;
     if (window.confirm("¿Estás seguro de que quieres eliminar esta cita?")) {
       try {
-        await fetch(`http://localhost:5000/api/citas/${form.CitaID}`, {
+        await fetch(`${backendUrl}/api/citas/${form.CitaID}`, {
           method: "DELETE"
         });
         setModalCita(false);
@@ -311,7 +320,7 @@ const manejarClickCelda = (clickInfo) => {
           <div className="flex flex-wrap gap-4 sm:gap-6 justify-center">
             {leyendaEstados.map((item) => (
               <div key={item.estado} className="flex items-center gap-2">
-                <div 
+                <div
                   className="w-3 h-3 rounded-full border border-gray-300"
                   style={{ backgroundColor: item.color }}
                 ></div>
@@ -319,9 +328,9 @@ const manejarClickCelda = (clickInfo) => {
                   <span className="text-[10px]">{item.icono}</span>
                   <span className="hidden sm:inline">{item.estado}</span>
                   <span className="sm:hidden">
-                    {item.estado === "Programada" ? "Prog." : 
-                     item.estado === "En progreso" ? "Progreso" : 
-                     item.estado === "Completada" ? "Comp." : "Canc."}
+                    {item.estado === "Programada" ? "Prog." :
+                      item.estado === "En progreso" ? "Progreso" :
+                        item.estado === "Completada" ? "Comp." : "Canc."}
                   </span>
                 </span>
               </div>

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { 
-  FaCalendarAlt, 
-  FaSearch, 
-  FaFilter, 
-  FaEdit, 
-  FaTrash, 
+import {
+  FaCalendarAlt,
+  FaSearch,
+  FaFilter,
+  FaEdit,
+  FaTrash,
   FaEye,
   FaSyncAlt,
   FaTimes,
@@ -30,7 +30,16 @@ export default function HistorialCitas() {
   const [modalCita, setModalCita] = useState(false);
   const [modalCliente, setModalCliente] = useState(false);
   const [modalKey, setModalKey] = useState(0);
-  
+  const [backendUrl, setBackendUrl] = useState("");
+
+  useEffect(() => {
+    // Para Create React App usa REACT_APP_API_URL
+    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
+    //"https://sistemagolden-backend-production.up.railway.app"
+    setBackendUrl(url);
+    console.log("🔗 URL del backend detectada:", url);
+  }, []);
+
   // Estados para filtros
   const [filtros, setFiltros] = useState({
     fechaInicio: "",
@@ -57,7 +66,7 @@ export default function HistorialCitas() {
   // Función auxiliar para formatear fechas para inputs datetime-local
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
-    
+
     const date = new Date(dateString);
     return date.toISOString().slice(0, 16); // Formato: YYYY-MM-DDTHH:mm
   };
@@ -66,9 +75,9 @@ export default function HistorialCitas() {
   const cargarCitas = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/citas");
+      const res = await fetch(`${backendUrl}/api/citas`);
       const data = await res.json();
-      
+
       // Convertir a formato de historial
       const citasFormateadas = data.map(cita => ({
         id: cita.id,
@@ -95,7 +104,7 @@ export default function HistorialCitas() {
 
   const cargarClientes = useCallback(async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/clientes");
+      const res = await fetch(`${backendUrl}/api/clientes`);
       const data = await res.json();
       setClientes(data);
     } catch (error) {
@@ -105,7 +114,7 @@ export default function HistorialCitas() {
 
   const cargarEmpleados = useCallback(async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/listaempleado");
+      const res = await fetch(`${backendUrl}/api/listaempleado`);
       const data = await res.json();
       setEmpleados(data);
     } catch (error) {
@@ -115,12 +124,12 @@ export default function HistorialCitas() {
 
   const calcularDuracion = (inicio, fin) => {
     if (!inicio || !fin) return "0 min";
-    
+
     const start = new Date(inicio);
     const end = new Date(fin);
     const diffMs = end - start;
     const diffMins = Math.round(diffMs / (1000 * 60));
-    
+
     if (diffMins < 60) {
       return `${diffMins} min`;
     } else {
@@ -135,7 +144,7 @@ export default function HistorialCitas() {
 
     // Filtro por fechas
     if (filtros.fechaInicio) {
-      resultado = resultado.filter(cita => 
+      resultado = resultado.filter(cita =>
         new Date(cita.fechaInicio) >= new Date(filtros.fechaInicio)
       );
     }
@@ -144,29 +153,29 @@ export default function HistorialCitas() {
       // Ajustar la fecha fin para incluir todo el día
       const fechaFin = new Date(filtros.fechaFin);
       fechaFin.setHours(23, 59, 59, 999);
-      
-      resultado = resultado.filter(cita => 
+
+      resultado = resultado.filter(cita =>
         new Date(cita.fechaInicio) <= fechaFin
       );
     }
 
     // Filtro por estado
     if (filtros.estado) {
-      resultado = resultado.filter(cita => 
+      resultado = resultado.filter(cita =>
         cita.estado === filtros.estado
       );
     }
 
     // Filtro por cliente
     if (filtros.cliente) {
-      resultado = resultado.filter(cita => 
+      resultado = resultado.filter(cita =>
         cita.clienteID === filtros.cliente
       );
     }
 
     // Filtro por empleado
     if (filtros.empleado) {
-      resultado = resultado.filter(cita => 
+      resultado = resultado.filter(cita =>
         cita.empleadoID === filtros.empleado
       );
     }
@@ -210,7 +219,7 @@ export default function HistorialCitas() {
 
   const formatearFecha = (fechaISO) => {
     if (!fechaISO) return "No especificada";
-    
+
     const fecha = new Date(fechaISO);
     return fecha.toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -223,7 +232,7 @@ export default function HistorialCitas() {
 
   const formatearFechaCorta = (fechaISO) => {
     if (!fechaISO) return "N/E";
-    
+
     const fecha = new Date(fechaISO);
     return fecha.toLocaleDateString('es-ES', {
       month: 'short',
@@ -255,7 +264,7 @@ export default function HistorialCitas() {
 
   const handleEditarCita = (cita) => {
     console.log("📝 Editando cita:", cita); // Para debug
-    
+
     // Mapeo correcto de propiedades
     const formData = {
       CitaID: cita.id,
@@ -271,7 +280,7 @@ export default function HistorialCitas() {
     };
 
     console.log("📋 Form data:", formData); // Para debug
-    
+
     setForm(formData);
     setModalKey(prev => prev + 1);
     setModalCita(true);
@@ -302,7 +311,7 @@ export default function HistorialCitas() {
     }
 
     try {
-      const respuesta = await fetch(`http://localhost:5000/api/citas/${cita.id}`, {
+      const respuesta = await fetch(`${backendUrl}/api/citas/${cita.id}`, {
         method: "DELETE"
       });
 
@@ -328,8 +337,8 @@ export default function HistorialCitas() {
 
       const metodo = form.CitaID ? "PUT" : "POST";
       const url = form.CitaID
-        ? `http://localhost:5000/api/citas/${form.CitaID}`
-        : "http://localhost:5000/api/citas";
+        ? `${backendUrl}/api/citas/${form.CitaID}`
+        : `${backendUrl}/api/citas`;
 
       const cuerpoCita = {
         ...form,
@@ -363,10 +372,10 @@ export default function HistorialCitas() {
 
   const handleEliminarCitaModal = async () => {
     if (!form.CitaID) return;
-    
+
     if (window.confirm("¿Estás seguro de que quieres eliminar esta cita?")) {
       try {
-        await fetch(`http://localhost:5000/api/citas/${form.CitaID}`, {
+        await fetch(`${backendUrl}/api/citas/${form.CitaID}`, {
           method: "DELETE"
         });
         setModalCita(false);
@@ -574,8 +583,8 @@ export default function HistorialCitas() {
             <FaCalendarAlt className="text-gray-400 text-3xl sm:text-4xl mx-auto mb-3 sm:mb-4" />
             <h3 className="text-base sm:text-lg font-semibold text-gray-600 mb-2">No se encontraron citas</h3>
             <p className="text-gray-500 text-sm sm:text-base max-w-sm mx-auto">
-              {citas.length === 0 
-                ? "No hay citas registradas en el sistema." 
+              {citas.length === 0
+                ? "No hay citas registradas en el sistema."
                 : "No hay citas que coincidan con los filtros aplicados."}
             </p>
           </div>
@@ -601,9 +610,9 @@ export default function HistorialCitas() {
                       </div>
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ml-2 flex-shrink-0 ${getEstadoStyles(cita.estado)}`}>
                         <EstadoIcon className="mr-1 text-xs" />
-                        {cita.estado === 'Programada' ? 'Prog.' : 
-                         cita.estado === 'En progreso' ? 'Progreso' : 
-                         cita.estado === 'Completada' ? 'Comp.' : 'Canc.'}
+                        {cita.estado === 'Programada' ? 'Prog.' :
+                          cita.estado === 'En progreso' ? 'Progreso' :
+                            cita.estado === 'Completada' ? 'Comp.' : 'Canc.'}
                       </span>
                     </div>
 

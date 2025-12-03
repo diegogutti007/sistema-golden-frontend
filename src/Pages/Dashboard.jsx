@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
-import { 
-  Star, 
-  Users, 
-  Calendar, 
-  DollarSign, 
+import {
+  Star,
+  Users,
+  Calendar,
+  DollarSign,
   ShoppingCart,
   TrendingDown,
   BarChart3,
@@ -75,6 +75,15 @@ export default function Dashboard() {
       color: "bg-red-500 text-white hover:bg-red-600"
     }
   ];
+  const [backendUrl, setBackendUrl] = useState("");
+
+  useEffect(() => {
+    // Para Create React App usa REACT_APP_API_URL
+    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
+    //"https://sistemagolden-backend-production.up.railway.app"
+    setBackendUrl(url);
+    console.log("🔗 URL del backend detectada:", url);
+  }, []);
 
 
   return (
@@ -105,13 +114,13 @@ export default function Dashboard() {
                 GOLDEN NAILS
               </span>
             </h1>
-            
+
             <p className="text-2xl text-gray-700 mb-6 max-w-3xl mx-auto leading-relaxed font-light">
-              Descubre <span className="text-yellow-600 font-semibold">tu mejor versión</span> 
+              Descubre <span className="text-yellow-600 font-semibold">tu mejor versión</span>
             </p>
-            
+
             <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Transformamos tus uñas en obras de arte. Experiencia premium, resultados excepcionales 
+              Transformamos tus uñas en obras de arte. Experiencia premium, resultados excepcionales
               y un servicio que redefine el lujo en cuidado de manos y pies.
             </p>
 
