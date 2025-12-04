@@ -46,15 +46,6 @@ export default function AgendaCitas() {
     { estado: "Completada", color: "#16a34a", icono: "✅" },
     { estado: "Cancelada", color: "#dc2626", icono: "❌" }
   ];
-  const [backendUrl, setBackendUrl] = useState("");
-
-  useEffect(() => {
-    // Para Create React App usa REACT_APP_API_URL
-    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
-    //"https://sistemagolden-backend-production.up.railway.app"
-    setBackendUrl(url);
-    console.log("🔗 URL del backend detectada:", url);
-  }, []);
 
   // Detectar si es móvil
   useEffect(() => {
@@ -278,7 +269,7 @@ export default function AgendaCitas() {
     if (!form.CitaID) return;
     if (window.confirm("¿Estás seguro de que quieres eliminar esta cita?")) {
       try {
-        await fetch(`${backendUrl}/api/citas/${form.CitaID}`, {
+        await fetch(`https://sistemagolden-backend-production.up.railway.app/api/citas/${form.CitaID}`, {
           method: "DELETE"
         });
         setModalCita(false);
