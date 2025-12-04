@@ -1,4 +1,4 @@
-// src/utils/api.js
+/* // src/utils/api.js
 const API_BASE_URL = 'https://sistemagolden-backend-production.up.railway.app';
 
 export const fetchWithAuth = async (url, options = {}) => {
@@ -54,4 +54,62 @@ export const fetchArrayWithAuth = async (url) => {
     console.error(`Error fetching array from ${url}:`, error);
     return [];
   }
-};
+}; */
+
+// src/utils/api.js
+class ApiClient {
+  constructor() {
+    this.baseUrl = this.getBaseUrl();
+  }
+  
+  getBaseUrl() {
+    // 1. Variable de entorno (la más confiable)
+    if (process.env.REACT_APP_API_URL) {
+      return process.env.REACT_APP_API_URL;
+    }
+    
+    // 2. Runtime detection (solo en navegador)
+    if (typeof window !== 'undefined') {
+      const { hostname, protocol } = window.location;
+      
+      // Local development
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://localhost:5000';
+      }
+      
+      // Production - asegurar HTTPS
+      return 'https://sistemagolden-backend-production.up.railway.app';
+    }
+    
+    // 3. Default fallback (always HTTPS for production)
+    return 'https://sistemagolden-backend-production.up.railway.app';
+  }
+  
+  url(endpoint) {
+    const base = this.baseUrl.endsWith('/') ? this.baseUrl : this.baseUrl + '/';
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+    return base + cleanEndpoint;
+  }
+  
+  async fetch(endpoint, options = {}) {
+    const url = this.url(endpoint);
+    console.log('📡 Fetching:', url);
+    
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return response.json();
+  }
+}
+
+export const apiClient = new ApiClient();
+export const BACKEND_URL = apiClient.baseUrl;

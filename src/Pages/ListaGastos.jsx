@@ -18,7 +18,7 @@ import {
   ChevronUp
 } from "lucide-react";
 import FormularioGasto from "./FormularioGasto";
-import { BACKEND_URL } from "../config/config";
+import { apiClient } from "../util/api";
 
 export default function ListaGastos() {
   const [gastos, setGastos] = useState([]);
@@ -27,7 +27,7 @@ export default function ListaGastos() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGasto, setSelectedGasto] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  
+
   // ✅ Estados para filtros
   const [filtros, setFiltros] = useState({
     busqueda: "",
@@ -38,7 +38,7 @@ export default function ListaGastos() {
     montoMax: "",
     usuario: ""
   });
-  
+
   const [categorias, setCategorias] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
@@ -46,7 +46,7 @@ export default function ListaGastos() {
 
   // ✅ Cargar datos iniciales (categorías y usuarios)
   useEffect(() => {
-    console.log("la tuya ",BACKEND_URL.toString());
+    console.log("la tuya ", BACKEND_URL.toString());
     cargarCategorias();
     cargarUsuarios();
   }, []);
@@ -54,8 +54,9 @@ export default function ListaGastos() {
   // ✅ Cargar categorías desde la API
   const cargarCategorias = async () => {
     try {
-      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos/categorias`);
-      const data = await res.json();
+      //const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos/categorias`);
+      //const data = await res.json();
+      const data = await apiClient.fetch('/api/gastos');
       setCategorias(data);
     } catch (error) {
       console.error("Error cargando categorías:", error);
@@ -78,8 +79,9 @@ export default function ListaGastos() {
     if (!datosCargados) {
       setLoading(true);
       try {
-        const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos`);
-        const data = await res.json();
+        //const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos`);
+        //const data = await res.json();
+        const data = await apiClient.fetch('/api/gastos');
         setGastos(data);
         setGastosFiltrados(data);
         setDatosCargados(true);
@@ -114,14 +116,14 @@ export default function ListaGastos() {
 
     // Filtrar por categoría
     if (filtros.categoria) {
-      resultado = resultado.filter(gasto => 
+      resultado = resultado.filter(gasto =>
         gasto.Nombre === filtros.categoria
       );
     }
 
     // Filtrar por usuario
     if (filtros.usuario) {
-      resultado = resultado.filter(gasto => 
+      resultado = resultado.filter(gasto =>
         gasto.usuario === filtros.usuario
       );
     }
@@ -129,27 +131,27 @@ export default function ListaGastos() {
     // Filtrar por rango de fechas
     if (filtros.fechaDesde) {
       const fechaDesde = new Date(filtros.fechaDesde);
-      resultado = resultado.filter(gasto => 
+      resultado = resultado.filter(gasto =>
         new Date(gasto.fecha_gasto) >= fechaDesde
       );
     }
 
     if (filtros.fechaHasta) {
       const fechaHasta = new Date(filtros.fechaHasta);
-      resultado = resultado.filter(gasto => 
+      resultado = resultado.filter(gasto =>
         new Date(gasto.fecha_gasto) <= fechaHasta
       );
     }
 
     // Filtrar por rango de montos
     if (filtros.montoMin) {
-      resultado = resultado.filter(gasto => 
+      resultado = resultado.filter(gasto =>
         Number(gasto.monto) >= Number(filtros.montoMin)
       );
     }
 
     if (filtros.montoMax) {
-      resultado = resultado.filter(gasto => 
+      resultado = resultado.filter(gasto =>
         Number(gasto.monto) <= Number(filtros.montoMax)
       );
     }
@@ -256,7 +258,7 @@ export default function ListaGastos() {
   const stats = {
     total: gastosFiltrados.length,
     montoTotal: gastosFiltrados.reduce((sum, gasto) => sum + Number(gasto.monto || 0), 0),
-    promedio: gastosFiltrados.length > 0 ? 
+    promedio: gastosFiltrados.length > 0 ?
       gastosFiltrados.reduce((sum, gasto) => sum + Number(gasto.monto || 0), 0) / gastosFiltrados.length : 0
   };
 
@@ -294,7 +296,7 @@ export default function ListaGastos() {
                 {mostrarFiltros ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
             )}
-            
+
             <button
               onClick={() => openFormulario()}
               className="w-full sm:w-auto bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 font-semibold flex items-center justify-center space-x-2 text-sm sm:text-base"
@@ -317,7 +319,7 @@ export default function ListaGastos() {
                   <input
                     type="text"
                     value={filtros.busqueda}
-                    onChange={(e) => setFiltros({...filtros, busqueda: e.target.value})}
+                    onChange={(e) => setFiltros({ ...filtros, busqueda: e.target.value })}
                     placeholder="Buscar por descripción, ID..."
                     className="pl-10 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   />
@@ -329,7 +331,7 @@ export default function ListaGastos() {
                 <label className="block text-xs font-medium text-gray-700 mb-1">Categoría</label>
                 <select
                   value={filtros.categoria}
-                  onChange={(e) => setFiltros({...filtros, categoria: e.target.value})}
+                  onChange={(e) => setFiltros({ ...filtros, categoria: e.target.value })}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                 >
                   <option value="">Todas las categorías</option>
@@ -346,7 +348,7 @@ export default function ListaGastos() {
                 <label className="block text-xs font-medium text-gray-700 mb-1">Usuario</label>
                 <select
                   value={filtros.usuario}
-                  onChange={(e) => setFiltros({...filtros, usuario: e.target.value})}
+                  onChange={(e) => setFiltros({ ...filtros, usuario: e.target.value })}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                 >
                   <option value="">Todos los usuarios</option>
@@ -366,7 +368,7 @@ export default function ListaGastos() {
                   <input
                     type="number"
                     value={filtros.montoMin}
-                    onChange={(e) => setFiltros({...filtros, montoMin: e.target.value})}
+                    onChange={(e) => setFiltros({ ...filtros, montoMin: e.target.value })}
                     placeholder="Monto mínimo"
                     className="pl-10 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                     min="0"
@@ -383,7 +385,7 @@ export default function ListaGastos() {
                   <input
                     type="number"
                     value={filtros.montoMax}
-                    onChange={(e) => setFiltros({...filtros, montoMax: e.target.value})}
+                    onChange={(e) => setFiltros({ ...filtros, montoMax: e.target.value })}
                     placeholder="Monto máximo"
                     className="pl-10 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                     min="0"
@@ -400,7 +402,7 @@ export default function ListaGastos() {
                   <input
                     type="date"
                     value={filtros.fechaDesde}
-                    onChange={(e) => setFiltros({...filtros, fechaDesde: e.target.value})}
+                    onChange={(e) => setFiltros({ ...filtros, fechaDesde: e.target.value })}
                     className="pl-10 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   />
                 </div>
@@ -414,7 +416,7 @@ export default function ListaGastos() {
                   <input
                     type="date"
                     value={filtros.fechaHasta}
-                    onChange={(e) => setFiltros({...filtros, fechaHasta: e.target.value})}
+                    onChange={(e) => setFiltros({ ...filtros, fechaHasta: e.target.value })}
                     className="pl-10 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
                   />
                 </div>
