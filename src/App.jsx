@@ -14,6 +14,7 @@ import ListaEmpleado from "./Pages/ListaEmpleado";
 import Dashboard from "./Pages/Dashboard";
 import PerfilUsuario from "./Pages/PerfilUsuario";
 import HistorialCitas from "./Pages/HistorialCitas";
+import { BACKEND_URL } from './config';
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -28,7 +29,7 @@ function App() {
 
         if (token && usuarioGuardado) {
           // Verificar si el token es válido
-          const response = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/auth/verify`, {
+          const response = await fetch(`${BACKEND_URL}/api/auth/verify`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -70,7 +71,7 @@ function App() {
       const token = localStorage.getItem("token");
 
       if (token) {
-        await fetch(`https://sistemagolden-backend-production.up.railway.app/api/auth/logout`, {
+        await fetch(`${BACKEND_URL}/api/auth/logout`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`

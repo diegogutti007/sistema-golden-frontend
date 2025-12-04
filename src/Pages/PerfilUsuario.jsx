@@ -13,6 +13,7 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
+import { BACKEND_URL } from '../config';
 
 export default function PerfilUsuario() {
   const [usuario, setUsuario] = useState(null);
@@ -80,7 +81,7 @@ export default function PerfilUsuario() {
     try {
       setCargando(true);
       // Aquí iría la llamada a la API para actualizar el perfil
-      const response = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/auth/perfil`, {
+      const response = await fetch(`${BACKEND_URL}/api/auth/perfil`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +122,7 @@ export default function PerfilUsuario() {
 
     try {
       setCargando(true);
-      const response = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/auth/cambiar-password`, {
+      const response = await fetch(`${BACKEND_URL}/api/auth/cambiar-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

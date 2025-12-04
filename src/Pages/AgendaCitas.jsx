@@ -12,7 +12,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import ModalCita from "../Modales/ModalCita";
 import ModalVenta from "../Modales/ModalVenta";
 import ModalCliente from "../Modales/ModalCliente";
-import { apiClient } from "../util/api";
+import { BACKEND_URL } from '../config';
 
 Modal.setAppElement("#root");
 
@@ -82,9 +82,8 @@ export default function AgendaCitas() {
   const cargarCitas = async () => {
     setIsLoading(true);
     try {
-/*       const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/citas`);
-      const data = await res.json(); */
-      const data = await apiClient.fetch('/api/citas');
+      const res = await fetch(`${BACKEND_URL}/api/citas`);
+      const data = await res.json(); 
       console.log("🧾 Datos crudos desde API:", data);
       const eventosConvertidos = data.map((cita) => {
         let backgroundColor = "#00aae4";
@@ -121,9 +120,8 @@ export default function AgendaCitas() {
 
   const cargarClientes = async () => {
     try {
-/*       const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/clientes`);
-      const data = await res.json(); */
-      const data = await apiClient.fetch('/api/clientes');
+      const res = await fetch(`${BACKEND_URL}/api/clientes`);
+      const data = await res.json(); 
       setClientes(data);
     } catch (error) {
       console.error("❌ Error al cargar clientes:", error);
@@ -132,9 +130,8 @@ export default function AgendaCitas() {
 
   const cargarEmpleados = async () => {
     try {
-/*       const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/listaempleado`);
-      const data = await res.json(); */
-      const data = await apiClient.fetch('/api/listaempleado');
+      const res = await fetch(`${BACKEND_URL}/api/listaempleado`);
+      const data = await res.json(); 
       setEmpleados(data);
     } catch (error) {
       console.error("❌ Error al cargar empleados:", error);
@@ -231,8 +228,8 @@ export default function AgendaCitas() {
 
       const metodo = form.CitaID ? "PUT" : "POST";
       const url = form.CitaID
-        ? `https://sistemagolden-backend-production.up.railway.app/api/citas/${form.CitaID}`
-        : `https://sistemagolden-backend-production.up.railway.app/api/citas`;
+        ? `${BACKEND_URL}/api/citas/${form.CitaID}`
+        : `${BACKEND_URL}/api/citas`;
 
       const cuerpoCita = {
         ...form,
@@ -273,7 +270,7 @@ export default function AgendaCitas() {
     if (!form.CitaID) return;
     if (window.confirm("¿Estás seguro de que quieres eliminar esta cita?")) {
       try {
-        await fetch(`https://sistemagolden-backend-production.up.railway.app/api/citas/${form.CitaID}`, {
+        await fetch(`${BACKEND_URL}/api/citas/${form.CitaID}`, {
           method: "DELETE"
         });
         setModalCita(false);

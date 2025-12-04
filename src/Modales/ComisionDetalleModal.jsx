@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { apiClient } from '../util/api';
+import { BACKEND_URL } from '../config';
+
 import {
   X,
   Calendar,
@@ -21,11 +22,10 @@ export default function ComisionDetalleModal({ empleado, onClose, fechaInicio, f
     const cargarDetalle = async () => {
       setCargando(true);
       try {
-/*         const res = await fetch(
-          `https://sistemagolden-backend-production.up.railway.app/api/comisiones/${empleado.empId}?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+        const res = await fetch(
+          `${BACKEND_URL}/api/comisiones/${empleado.empId}?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
         );
-        const data = await res.json(); */
-        const data = await apiClient.fetch(`api/comisiones/${empleado.empId}?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`);
+        const data = await res.json(); 
         setDetalle(data);
       } catch (err) {
         console.error("Error al cargar detalle:", err);

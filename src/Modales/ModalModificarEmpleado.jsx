@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { User, UserPlus, Calendar, MapPin, DollarSign, IdCard, X, Save, LogOut, Briefcase } from "lucide-react";
+import { BACKEND_URL } from '../config';
 
 function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
   const [tipos, setTipos] = useState([]);
@@ -20,13 +21,13 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
   useEffect(() => {
     if (isOpen && empleado) {
       // Cargar tipos de empleado
-      fetch("https://sistemagolden-backend-production.up.railway.app/api/tipo-empleado")
+      fetch(`${BACKEND_URL}/api/tipo-empleado`)
         .then((res) => res.json())
         .then((data) => setTipos(data))
         .catch((err) => console.error("❌ Error al obtener tipos:", err));
 
       // Cargar cargos de empleado
-      fetch("https://sistemagolden-backend-production.up.railway.app/api/cargo-empleado")
+      fetch(`${BACKEND_URL}/api/cargo-empleado`)
         .then((res) => res.json())
         .then((data) => setCargos(data))
         .catch((err) => console.error("❌ Error al obtener cargos:", err)); 
@@ -76,7 +77,7 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
     };
 
     try {
-      const response = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/empleado/${empleado.EmpId}`, {
+      const response = await fetch(`${BACKEND_URL}/api/empleado/${empleado.EmpId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(empleadoActualizado),

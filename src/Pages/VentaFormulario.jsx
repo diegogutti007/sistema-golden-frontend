@@ -14,6 +14,7 @@ import {
 import ComboBusqueda from "../util/ComboBusqueda";
 import ComboMin from "../util/ComboMin";
 import ModalCliente from "../Modales/ModalCliente";
+import { BACKEND_URL } from '../config';
 
 export default function VentaFormulario() {
   const [clientes, setClientes] = useState([]);
@@ -46,11 +47,11 @@ export default function VentaFormulario() {
       try {
         setLoading(true);
         const [clientesRes, articulosRes, pagosRes, citasRes, empleadosRes] = await Promise.all([
-          fetch(`https://sistemagolden-backend-production.up.railway.app/api/clientes`),
-          fetch(`https://sistemagolden-backend-production.up.railway.app/api/articulos`),
-          fetch(`https://sistemagolden-backend-production.up.railway.app/api/tipo_pago`),
-          fetch(`https://sistemagolden-backend-production.up.railway.app/api/citascombo`),
-          fetch(`https://sistemagolden-backend-production.up.railway.app/api/listaempleado`),
+          fetch(`${BACKEND_URL}/api/clientes`),
+          fetch(`${BACKEND_URL}/api/articulos`),
+          fetch(`${BACKEND_URL}/api/tipo_pago`),
+          fetch(`${BACKEND_URL}/api/citascombo`),
+          fetch(`${BACKEND_URL}/api/listaempleado`),
         ]);
 
         const [clientesData, articulosData, tiposPagoData, citasData, empleadosData] =
@@ -93,7 +94,7 @@ export default function VentaFormulario() {
   // 🔹 Función para recargar clientes después de crear uno nuevo
   const recargarClientes = async () => {
     try {
-      const clientesRes = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/clientes`);
+      const clientesRes = await fetch(`${BACKEND_URL}/api/clientes`);
       const clientesData = await clientesRes.json();
       const clientesOpciones = clientesData.map((c) => ({
         value: c.ClienteID,
@@ -233,7 +234,7 @@ export default function VentaFormulario() {
     };
 
     try {
-      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/ventas`, {
+      const res = await fetch(`${BACKEND_URL}/api/ventas`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(ventaData),

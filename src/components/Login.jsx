@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { BACKEND_URL } from '../config';
+
 
 export default function Login({ onLogin }) {
   const [usuario, setUsuario] = useState("");
@@ -31,7 +33,7 @@ export default function Login({ onLogin }) {
       
       // Solo probar el endpoint /health
       try {
-        const response = await fetch(`https://sistemagolden-backend-production.up.railway.app/health`, {
+        const response = await fetch(`${BACKEND_URL}/health`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -76,9 +78,9 @@ export default function Login({ onLogin }) {
     setError("");
 
     try {
-      console.log("🔐 Intentando login en:", `https://sistemagolden-backend-production.up.railway.app/api/auth/login`);
+      console.log("🔐 Intentando login en:", `${BACKEND_URL}/api/auth/login`);
       
-      const response = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/auth/login`, {
+      const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

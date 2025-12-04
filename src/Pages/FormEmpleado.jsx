@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-//import { fetchArrayWithAuth } from '../utils/api';
 import { User, UserPlus, Calendar, MapPin, DollarSign, IdCard, Briefcase } from "lucide-react";
+import { BACKEND_URL } from '../config';
 
 function FormEmpleado() {
   const [tipos, setTipos] = useState([]);
@@ -17,14 +17,14 @@ function FormEmpleado() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch(`https://sistemagolden-backend-production.up.railway.app/api/tipo-empleado`)
+    fetch(`${BACKEND_URL}/api/tipo-empleado`)
       .then((res) => res.json())
       .then((data) => setTipos(Array.isArray(data) ? data : []))
       .catch((err) => console.error("❌ Error al obtener tipos:", err));
   }, []);
 
   useEffect(() => {
-    fetch(`https://sistemagolden-backend-production.up.railway.app/api/cargo-empleado`)
+    fetch(`${BACKEND_URL}/api/cargo-empleado`)
       .then((res) => res.json())
       .then((data) => setCargos(Array.isArray(data) ? data : []))
       .catch((err) => console.error("❌ Error al obtener cargos:", err));
@@ -50,7 +50,7 @@ function FormEmpleado() {
     };
 
     try {
-      const response = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/empleado`, {
+      const response = await fetch(`${BACKEND_URL}/api/empleado`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(empleado),

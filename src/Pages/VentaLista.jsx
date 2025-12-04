@@ -17,6 +17,7 @@ import {
   Filter,
   X
 } from "lucide-react";
+import { BACKEND_URL } from '../config';
 
 export default function VentaLista() {
   const [ventas, setVentas] = useState([]);
@@ -57,11 +58,10 @@ export default function VentaLista() {
       if (fechaInicio) params.append('fechaInicio', fechaInicio);
       if (fechaFin) params.append('fechaFin', fechaFin);
 
-/*       const res = await fetch(
-        `https://sistemagolden-backend-production.up.railway.app/api/venta?${params.toString()}`
+      const res = await fetch(
+        `${BACKEND_URL}/api/venta?${params.toString()}`
       );
-      const data = await res.json(); */
-      const data = await apiClient.fetch(`/api/venta?${params.toString()}`);
+      const data = await res.json(); 
       setVentas(data.ventas || []);
       setTotalPaginas(data.totalPaginas || 1);
 
@@ -91,7 +91,7 @@ export default function VentaLista() {
       if (fechaInicio) params.append('fechaInicio', fechaInicio);
       if (fechaFin) params.append('fechaFin', fechaFin);
 
-      const url = `https://sistemagolden-backend-production.up.railway.app/api/estadisticas/ventas?${params.toString()}`;
+      const url = `${BACKEND_URL}/api/estadisticas/ventas?${params.toString()}`;
 
       console.log('📊 Solicitando estadísticas desde:', url);
 
@@ -127,7 +127,7 @@ export default function VentaLista() {
       if (fechaFin) params.append('fechaFin', fechaFin);
 
       const res = await fetch(
-        `https://sistemagolden-backend-production.up.railway.app/api/venta/todas?${params.toString()}`
+        `${BACKEND_URL}/api/venta/todas?${params.toString()}`
       );
 
       if (res.ok) {
@@ -240,7 +240,7 @@ export default function VentaLista() {
     if (!window.confirm("¿Seguro que deseas eliminar esta venta?")) return;
 
     try {
-      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/venta/${ventaID}`, {
+      const res = await fetch(`${BACKEND_URL}/api/venta/${ventaID}`, {
         method: "DELETE",
       });
       if (res.ok) {

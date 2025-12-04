@@ -9,6 +9,7 @@ import {
   X,
   Save
 } from "lucide-react";
+import { BACKEND_URL } from '../config';
 
 const RegistroGasto = () => {
   const [descripcion, setDescripcion] = useState("");
@@ -32,9 +33,9 @@ const RegistroGasto = () => {
       try {
         setLoading(true);
         const [catRes, perRes, tipRes] = await Promise.all([
-          fetch(`https://sistemagolden-backend-production.up.railway.app/api/categorias`),
-          fetch(`https://sistemagolden-backend-production.up.railway.app/api/periodos`),
-          fetch(`https://sistemagolden-backend-production.up.railway.app/api/tipo_pagos`),
+          fetch(`${BACKEND_URL}/api/categorias`),
+          fetch(`${BACKEND_URL}/api/periodos`),
+          fetch(`${BACKEND_URL}/api/tipo_pagos`),
         ]);
 
         setCategorias(await catRes.json());
@@ -86,7 +87,7 @@ const RegistroGasto = () => {
     console.log("📤 Enviando:", data);
 
     try {
-      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos`, {
+      const res = await fetch(`${BACKEND_URL}/api/gastos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

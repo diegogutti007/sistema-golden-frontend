@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Modal from "react-modal";
+import { BACKEND_URL } from '../config';
 import { FaPlus, FaTimes, FaUser, FaPhone, FaEnvelope, FaSave } from "react-icons/fa";
 
 export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
@@ -70,7 +71,7 @@ export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
     setIsLoading(true);
 
     try {
-      const res = await fetch("https://sistemagolden-backend-production.up.railway.app/api/clientes", {
+      const res = await fetch(`${BACKEND_URL}/api/clientes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

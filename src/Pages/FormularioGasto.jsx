@@ -10,6 +10,7 @@ import {
   Save,
   Calendar
 } from "lucide-react";
+import { BACKEND_URL } from '../config';
 
 export default function FormularioGasto() {
   const [categorias, setCategorias] = useState([]);
@@ -35,10 +36,10 @@ export default function FormularioGasto() {
       try {
         setLoading(true);
         const [cat, per, tp, emp] = await Promise.all([
-          fetch(`https://sistemagolden-backend-production.up.railway.app/api/categorias`).then(r => r.json()),
-          fetch(`https://sistemagolden-backend-production.up.railway.app/api/periodos`).then(r => r.json()),
-          fetch(`https://sistemagolden-backend-production.up.railway.app/api/tipo_pago`).then(r => r.json()),
-          fetch(`https://sistemagolden-backend-production.up.railway.app/api/listaempleado`).then(r => r.json())
+          fetch(`${BACKEND_URL}/api/categorias`).then(r => r.json()),
+          fetch(`${BACKEND_URL}/api/periodos`).then(r => r.json()),
+          fetch(`${BACKEND_URL}/api/tipo_pago`).then(r => r.json()),
+          fetch(`${BACKEND_URL}/api/listaempleado`).then(r => r.json())
         ]);
 
         setCategorias(cat);
@@ -87,7 +88,7 @@ export default function FormularioGasto() {
     setLoading(true);
 
     try {
-      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos`, {
+      const res = await fetch(`${BACKEND_URL}/api/gastos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

@@ -13,6 +13,7 @@ import {
   Target
 } from "lucide-react";
 import ComisionDetalleModal from "../Modales/ComisionDetalleModal";
+import { BACKEND_URL } from '../config';
 
 export default function ListaComisiones() {
   const [comisiones, setComisiones] = useState([]);
@@ -36,7 +37,7 @@ export default function ListaComisiones() {
     setCargando(true);
     try {
       const res = await fetch(
-        `https://sistemagolden-backend-production.up.railway.app/api/comisiones?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+        `${BACKEND_URL}/api/comisiones?fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
       );
       const data = await res.json();
       

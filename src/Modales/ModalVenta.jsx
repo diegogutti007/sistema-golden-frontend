@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Modal from "react-modal";
 import ComboMin from "../util/ComboMin";
+import { BACKEND_URL } from '../config';
 
 Modal.setAppElement('#root');
 
@@ -73,9 +74,9 @@ export default function ModalVenta({
                 setCargando(true);
                 
                 const [articulosRes, pagosRes, empleadosRes] = await Promise.all([
-                    fetch("https://sistemagolden-backend-production.up.railway.app/api/articulos"),
-                    fetch("https://sistemagolden-backend-production.up.railway.app/api/tipo_pago"),
-                    fetch("https://sistemagolden-backend-production.up.railway.app/api/listaempleado"),
+                    fetch(`${BACKEND_URL}/api/articulos`),
+                    fetch(`${BACKEND_URL}/api/tipo_pago`),
+                    fetch(`${BACKEND_URL}/api/listaempleado`),
                 ]);
 
                 const [articulosData, tiposPagoData, empleadosData] = await Promise.all([
@@ -208,7 +209,7 @@ export default function ModalVenta({
         try {
             setCargando(true);
             
-            const res = await fetch("https://sistemagolden-backend-production.up.railway.app/api/ventas", {
+            const res = await fetch(`${BACKEND_URL}/api/ventas`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(ventaData),
@@ -218,7 +219,7 @@ export default function ModalVenta({
                 alert("✅ Venta registrada correctamente");
 
                 if (form.CitaID) {
-                    await fetch(`https://sistemagolden-backend-production.up.railway.app/api/citas/${form.CitaID}/estado`, {
+                    await fetch(`${BACKEND_URL}/api/citas/${form.CitaID}/estado`, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ Estado: "Completada" }),

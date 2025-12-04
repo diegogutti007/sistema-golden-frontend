@@ -29,6 +29,7 @@ import {
   X
 } from "lucide-react";
 import Modal from "react-modal";
+import { BACKEND_URL } from '../config';
 
 Modal.setAppElement("#root");
 
@@ -44,10 +45,10 @@ function ListaEmpleado() {
   useEffect(() => {
     cargarEmpleados();
   }, []);
-  
+
   const cargarEmpleados = () => {
     setLoading(true);
-    fetch(`https://sistemagolden-backend-production.up.railway.app/api/listaempleado`)
+    fetch(`${BACKEND_URL}/api/listaempleado`)
       .then((res) => res.json())
       .then((data) => setEmpleados(Array.isArray(data) ? data : []))
       .catch((err) => console.error("❌ Error al obtener empleados:", err))
@@ -56,7 +57,7 @@ function ListaEmpleado() {
 
   const eliminarEmpleado = (id) => {
     if (window.confirm("¿Seguro que deseas eliminar este empleado?")) {
-      fetch(`https://sistemagolden-backend-production.up.railway.app/api/empleado/${id}`, {
+      fetch(`${BACKEND_URL}/api/empleado/${id}`, {
         method: "DELETE",
       })
         .then((res) => res.json())

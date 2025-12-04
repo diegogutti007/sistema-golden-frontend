@@ -12,7 +12,6 @@ import {
   Tag
 } from "lucide-react";
 import FormularioGasto from "./FormularioGasto";
-import { apiClient } from "../util/api";
 import { BACKEND_URL } from '../config';
 
 export default function ListaGastos() {
@@ -48,7 +47,7 @@ export default function ListaGastos() {
   const eliminarGasto = async (id) => {
     if (!window.confirm("¿Seguro que deseas eliminar este gasto?")) return;
     try {
-      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos/${id}`, {
+      const res = await fetch(`${BACKEND_URL}/api/gastos/${id}`, {
         method: "DELETE",
       });
       if (res.ok) {
