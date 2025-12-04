@@ -194,7 +194,7 @@ const MenuSecundario = () => {
       {/* Footer */}
       <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-yellow-500/20">
         <div className="text-center">
-          <div className="text-[10px] text-gray-500 mb-1">Sistema Pilona 2.0</div>
+          <div className="text-[10px] text-gray-500 mb-1">Pichona 2.0</div>
           <div className="text-[8px] text-gray-600 uppercase tracking-wider">
             v2.0.1
           </div>

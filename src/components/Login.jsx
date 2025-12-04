@@ -238,7 +238,7 @@ export default function Login({ onLogin }) {
         </div> */}
 
         <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500">Sistema seguro • Golden Nails</p>
+          <p className="text-xs text-gray-500">Sistema seguro • Pichona 2.0</p>
         </div>
       </div>
     </div>

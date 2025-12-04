@@ -20,12 +20,6 @@ export default function ListaGastos() {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGasto, setSelectedGasto] = useState(null);
   const [showForm, setShowForm] = useState(false);
-/*   const [backendUrl, setBackendUrl] = useState("");
-
-  useEffect(() => {
-    setBackendUrl(BACKEND_URL);
-  }, []); */
-
 
   // ✅ Cargar lista de gastos
   const cargarGastos = async () => {

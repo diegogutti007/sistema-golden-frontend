@@ -33,10 +33,15 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
   const [gastosOpen, setGastosOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true); // Inicializar en true
   const wrapperRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // ✅ REFS PARA EL TIMEOUT DE INACTIVIDAD
+  const inactivityTimeoutRef = useRef(null);
+  const lastActivityRef = useRef(Date.now());
+  const [timeoutMinutes] = useState(20); // 20 minutos de inactividad
 
   // ✅ DEFINIR ROLES
   const ROLES = {
@@ -49,7 +54,43 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
   // Obtener el rol del usuario (por defecto 'empleado' si no existe)
   const userRole = usuario?.rol || ROLES.EMPLEADO;
 
-  // ✅ VERIFICACIÓN DE AUTENTICACIÓN MEJORADA
+  // ✅ FUNCIONES PARA MANEJAR LA ACTIVIDAD
+  const resetInactivityTimer = () => {
+    lastActivityRef.current = Date.now();
+    
+    if (inactivityTimeoutRef.current) {
+      clearTimeout(inactivityTimeoutRef.current);
+    }
+    
+    // Establecer timeout de 20 minutos (20 * 60 * 1000 ms)
+    inactivityTimeoutRef.current = setTimeout(() => {
+      handleAutoLogout();
+    }, timeoutMinutes * 60 * 1000);
+  };
+
+  const handleAutoLogout = () => {
+    console.log("⏰ Sesión expirada por inactividad (20 minutos)");
+    
+    // Limpiar localStorage
+    localStorage.removeItem("usuario");
+    localStorage.removeItem("token");
+    
+    // Limpiar timeout
+    if (inactivityTimeoutRef.current) {
+      clearTimeout(inactivityTimeoutRef.current);
+      inactivityTimeoutRef.current = null;
+    }
+    
+    // Redirigir al login
+    navigate('/login', { replace: true });
+  };
+
+  // ✅ FUNCIONES PARA DETECTAR ACTIVIDAD
+  const handleUserActivity = () => {
+    resetInactivityTimer();
+  };
+
+  // ✅ VERIFICACIÓN DE AUTENTICACIÓN MEJORADA (sin redirigir automáticamente)
   useEffect(() => {
     const token = localStorage.getItem('token');
     const usuarioData = localStorage.getItem('usuario');
@@ -63,7 +104,7 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
     if (!token || !usuarioData) {
       console.log("❌ No hay sesión activa");
       setIsAuthenticated(false);
-
+      
       // Solo redirigir si no estamos ya en login
       if (location.pathname !== '/login') {
         console.log("🔄 Redirigiendo a login...");
@@ -72,14 +113,34 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
     } else {
       console.log("✅ Sesión activa encontrada");
       setIsAuthenticated(true);
-
-      // Si estamos en login pero hay sesión, redirigir a inicio
+      
+      // Iniciar el timer de inactividad
+      resetInactivityTimer();
+      
+      // Solo redirigir a inicio si estamos en login y hay sesión
       if (location.pathname === '/login') {
         console.log("🔄 Redirigiendo a página principal desde login...");
         navigate('/', { replace: true });
       }
     }
-  }, [location.pathname, navigate]);
+    
+    // Agregar event listeners para detectar actividad
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+    events.forEach(event => {
+      window.addEventListener(event, handleUserActivity);
+    });
+
+    // Limpiar al desmontar
+    return () => {
+      events.forEach(event => {
+        window.removeEventListener(event, handleUserActivity);
+      });
+      
+      if (inactivityTimeoutRef.current) {
+        clearTimeout(inactivityTimeoutRef.current);
+      }
+    };
+  }, [location.pathname, navigate, timeoutMinutes]);
 
   // Cerrar submenus al hacer click fuera
   useEffect(() => {
@@ -115,6 +176,12 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
     // Cerrar todos los menús
     setUserMenuOpen(false);
     setMobileMenuOpen(false);
+
+    // Limpiar timeout de inactividad
+    if (inactivityTimeoutRef.current) {
+      clearTimeout(inactivityTimeoutRef.current);
+      inactivityTimeoutRef.current = null;
+    }
 
     // Limpiar localStorage
     localStorage.removeItem("usuario");
@@ -167,6 +234,7 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
       <nav
         ref={wrapperRef}
         className="fixed top-0 left-0 right-0 bg-gradient-to-r from-gray-900 to-black border-b border-yellow-500/20 shadow-2xl z-50 w-full"
+        onClick={handleUserActivity}
       >
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
           <div className="flex justify-between items-center h-14 lg:h-16">
@@ -236,6 +304,7 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                         setVentasOpen(false);
                         setGastosOpen(false);
                         setUserMenuOpen(false);
+                        handleUserActivity();
                       }}
                       className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
                     >
@@ -258,7 +327,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                           >
                             <Link
                               to="/NuevoEmpleados"
-                              onClick={() => setEmpleadosOpen(false)}
+                              onClick={() => {
+                                setEmpleadosOpen(false);
+                                handleUserActivity();
+                              }}
                               className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 group"
                             >
                               <div className="w-8 h-8 bg-yellow-500/10 rounded-lg flex items-center justify-center">
@@ -278,7 +350,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                           >
                             <Link
                               to="/GestionEmpleados"
-                              onClick={() => setEmpleadosOpen(false)}
+                              onClick={() => {
+                                setEmpleadosOpen(false);
+                                handleUserActivity();
+                              }}
                               className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 group"
                             >
                               <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
@@ -298,7 +373,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                           >
                             <Link
                               to="/ComisionDetalles"
-                              onClick={() => setEmpleadosOpen(false)}
+                              onClick={() => {
+                                setEmpleadosOpen(false);
+                                handleUserActivity();
+                              }}
                               className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 group"
                             >
                               <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center">
@@ -318,7 +396,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                           >
                             <Link
                               to="/Asistencias"
-                              onClick={() => setEmpleadosOpen(false)}
+                              onClick={() => {
+                                setEmpleadosOpen(false);
+                                handleUserActivity();
+                              }}
                               className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 group"
                             >
                               <div className="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
@@ -345,6 +426,7 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                       setVentasOpen(false);
                       setGastosOpen(false);
                       setUserMenuOpen(false);
+                      handleUserActivity();
                     }}
                     className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
                   >
@@ -362,7 +444,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                       <div className="p-2">
                         <Link
                           to="/citas"
-                          onClick={() => setCitasOpen(false)}
+                          onClick={() => {
+                            setCitasOpen(false);
+                            handleUserActivity();
+                          }}
                           className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 group"
                         >
                           <div className="w-8 h-8 bg-yellow-500/10 rounded-lg flex items-center justify-center">
@@ -379,7 +464,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                         >
                           <Link
                             to="/citas/Historial"
-                            onClick={() => setCitasOpen(false)}
+                            onClick={() => {
+                              setCitasOpen(false);
+                              handleUserActivity();
+                            }}
                             className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 group"
                           >
                             <div className="w-8 h-8 bg-blue-500/10 rounded-lg flex items-center justify-center">
@@ -405,6 +493,7 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                       setCitasOpen(false);
                       setGastosOpen(false);
                       setUserMenuOpen(false);
+                      handleUserActivity();
                     }}
                     className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
                   >
@@ -422,7 +511,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                       <div className="p-2">
                         <Link
                           to="/Ventas"
-                          onClick={() => setVentasOpen(false)}
+                          onClick={() => {
+                            setVentasOpen(false);
+                            handleUserActivity();
+                          }}
                           className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 group"
                         >
                           <div className="w-8 h-8 bg-yellow-500/10 rounded-lg flex items-center justify-center">
@@ -441,7 +533,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                         >
                           <Link
                             to="/Ventas/GestionVentas"
-                            onClick={() => setVentasOpen(false)}
+                            onClick={() => {
+                              setVentasOpen(false);
+                              handleUserActivity();
+                            }}
                             className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 group"
                           >
                             <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center">
@@ -471,6 +566,7 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                         setCitasOpen(false);
                         setVentasOpen(false);
                         setUserMenuOpen(false);
+                        handleUserActivity();
                       }}
                       className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
                     >
@@ -488,7 +584,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                         <div className="p-2">
                           <Link
                             to="/gastos"
-                            onClick={() => setGastosOpen(false)}
+                            onClick={() => {
+                              setGastosOpen(false);
+                              handleUserActivity();
+                            }}
                             className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 group"
                           >
                             <div className="w-8 h-8 bg-yellow-500/10 rounded-lg flex items-center justify-center">
@@ -501,7 +600,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                           </Link>
                           <Link
                             to="/gastos/GestionGastos"
-                            onClick={() => setGastosOpen(false)}
+                            onClick={() => {
+                              setGastosOpen(false);
+                              handleUserActivity();
+                            }}
                             className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 group"
                           >
                             <div className="w-8 h-8 bg-red-500/10 rounded-lg flex items-center justify-center">
@@ -525,6 +627,7 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                 >
                   <Link
                     to="/reportes"
+                    onClick={handleUserActivity}
                     className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
                   >
                     <BarChart3 className="w-4 h-4" />
@@ -545,6 +648,7 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                     setCitasOpen(false);
                     setVentasOpen(false);
                     setGastosOpen(false);
+                    handleUserActivity();
                   }}
                   className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
                 >
@@ -592,7 +696,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                       {/* Opciones del menú */}
                       <Link
                         to="/perfil"
-                        onClick={() => setUserMenuOpen(false)}
+                        onClick={() => {
+                          setUserMenuOpen(false);
+                          handleUserActivity();
+                        }}
                         className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 group"
                       >
                         <div className="w-8 h-8 bg-gray-700/50 rounded-lg flex items-center justify-center">
@@ -640,7 +747,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
 
               {/* Mobile Menu Button */}
               <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                onClick={() => {
+                  setMobileMenuOpen(!mobileMenuOpen);
+                  handleUserActivity();
+                }}
                 className="lg:hidden p-2 rounded-lg text-gray-400 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200"
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -656,7 +766,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
             {/* Inicio */}
             <a
               href="/"
-              onClick={handleInicioClick}
+              onClick={(e) => {
+                handleInicioClick(e);
+                handleUserActivity();
+              }}
               className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 text-lg cursor-pointer"
             >
               <Home className="w-5 h-5" />
@@ -677,7 +790,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                 >
                   <Link
                     to="/NuevoEmpleados"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleUserActivity();
+                    }}
                     className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                   >
                     <Users className="w-5 h-5" />
@@ -691,7 +807,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                 >
                   <Link
                     to="/GestionEmpleados"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleUserActivity();
+                    }}
                     className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                   >
                     <Users className="w-5 h-5" />
@@ -705,7 +824,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                 >
                   <Link
                     to="/ComisionDetalles"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleUserActivity();
+                    }}
                     className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                   >
                     <DollarSign className="w-5 h-5" />
@@ -719,7 +841,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                 >
                   <Link
                     to="/Asistencias"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleUserActivity();
+                    }}
                     className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                   >
                     <Calendar className="w-5 h-5" />
@@ -735,7 +860,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
 
               <Link
                 to="/citas"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleUserActivity();
+                }}
                 className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
               >
                 <Calendar className="w-5 h-5" />
@@ -748,7 +876,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
               >
                 <Link
                   to="/citas/Historial"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleUserActivity();
+                  }}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                 >
                   <History className="w-5 h-5" />
@@ -763,7 +894,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
 
               <Link
                 to="/Ventas"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleUserActivity();
+                }}
                 className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
               >
                 <ShoppingCart className="w-5 h-5" />
@@ -776,7 +910,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
               >
                 <Link
                   to="/Ventas/GestionVentas"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleUserActivity();
+                  }}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                 >
                   <DollarSign className="w-5 h-5" />
@@ -795,7 +932,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
 
                 <Link
                   to="/gastos"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleUserActivity();
+                  }}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                 >
                   <TrendingDown className="w-5 h-5" />
@@ -804,7 +944,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
 
                 <Link
                   to="/gastos/GestionGastos"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleUserActivity();
+                  }}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                 >
                   <DollarSign className="w-5 h-5" />
@@ -823,7 +966,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
 
                 <Link
                   to="/reportes"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleUserActivity();
+                  }}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                 >
                   <BarChart3 className="w-5 h-5" />
@@ -836,7 +982,10 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
             <div className="pt-4 border-t border-gray-700">
               <Link
                 to="/perfil"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleUserActivity();
+                }}
                 className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
               >
                 <User className="w-5 h-5" />

@@ -28,15 +28,6 @@ export default function FormularioGasto() {
     EmpId: "",
     pagos: [],
   });
-  const [backendUrl, setBackendUrl] = useState("");
-
-  useEffect(() => {
-    // Para Create React App usa REACT_APP_API_URL
-    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
-    //"https://sistemagolden-backend-production.up.railway.app"
-    setBackendUrl(url);
-    console.log("🔗 URL del backend detectada:", url);
-  }, []);
 
   // ✅ Cargar datos desde el backend
   useEffect(() => {

@@ -30,15 +30,6 @@ export default function HistorialCitas() {
   const [modalCita, setModalCita] = useState(false);
   const [modalCliente, setModalCliente] = useState(false);
   const [modalKey, setModalKey] = useState(0);
-  const [backendUrl, setBackendUrl] = useState("");
-
-  useEffect(() => {
-    // Para Create React App usa REACT_APP_API_URL
-    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
-    //"https://sistemagolden-backend-production.up.railway.app"
-    setBackendUrl(url);
-    console.log("🔗 URL del backend detectada:", url);
-  }, []);
 
   // Estados para filtros
   const [filtros, setFiltros] = useState({

@@ -44,16 +44,7 @@ function ListaEmpleado() {
   useEffect(() => {
     cargarEmpleados();
   }, []);
-
-/*   const cargarEmpleados = () => {
-    setLoading(true);
-    fetch(`${backendUrl}/api/listaempleado`)
-/*       .then((res) => res.json())
-      .then((data) => setEmpleados(Array.isArray(data) ? data : []))
-      .catch((err) => console.error("❌ Error al obtener empleados:", err))
-      .finally(() => setLoading(false)); 
-  }; */
-
+  
   const cargarEmpleados = () => {
     setLoading(true);
     fetch(`https://sistemagolden-backend-production.up.railway.app/api/listaempleado`)
