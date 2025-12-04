@@ -58,7 +58,7 @@ export default function VentaLista() {
       if (fechaFin) params.append('fechaFin', fechaFin);
 
       const res = await fetch(
-        `${backendUrl}/api/venta?${params.toString()}`
+        `https://sistemagolden-backend-production.up.railway.app/api/venta?${params.toString()}`
       );
       const data = await res.json();
       setVentas(data.ventas || []);
@@ -239,7 +239,7 @@ export default function VentaLista() {
     if (!window.confirm("¿Seguro que deseas eliminar esta venta?")) return;
 
     try {
-      const res = await fetch(`${backendUrl}/api/venta/${ventaID}`, {
+      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/venta/${ventaID}`, {
         method: "DELETE",
       });
       if (res.ok) {
