@@ -57,59 +57,153 @@ export const fetchArrayWithAuth = async (url) => {
 }; */
 
 // src/utils/api.js
-class ApiClient {
-  constructor() {
-    this.baseUrl = this.getBaseUrl();
+// src/utils/api.js
+
+// Configuraciones predefinidas
+const API_CONFIGS = {
+  development: {
+    url: 'http://localhost:5000',
+    protocol: 'http'
+  },
+  production: {
+    url: 'https://sistemagolden-backend-production.up.railway.app',
+    protocol: 'https'
+  }
+};
+
+// Detectar entorno
+const detectEnvironment = () => {
+  // 1. Por variable de entorno explícita
+  if (process.env.REACT_APP_ENVIRONMENT) {
+    return process.env.REACT_APP_ENVIRONMENT;
   }
   
-  getBaseUrl() {
-    // 1. Variable de entorno (la más confiable)
-    if (process.env.REACT_APP_API_URL) {
-      return process.env.REACT_APP_API_URL;
+  // 2. Por hostname en el navegador
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'development';
     }
     
-    // 2. Runtime detection (solo en navegador)
-    if (typeof window !== 'undefined') {
-      const { hostname, protocol } = window.location;
-      
-      // Local development
-      if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return 'http://localhost:5000';
-      }
-      
-      // Production - asegurar HTTPS
-      return 'https://sistemagolden-backend-production.up.railway.app';
+    // Agrega aquí otros dominios de desarrollo si los tienes
+    if (hostname.includes('dev.') || hostname.includes('staging.')) {
+      return 'staging';
     }
     
-    // 3. Default fallback (always HTTPS for production)
-    return 'https://sistemagolden-backend-production.up.railway.app';
+    return 'production';
+  }
+  
+  // 3. Por defecto, producción
+  return 'production';
+};
+
+// Obtener URL base con validación
+const getBaseUrl = () => {
+  const environment = detectEnvironment();
+  
+  // Opción 1: URL específica desde variable de entorno
+  if (process.env.REACT_APP_API_URL) {
+    let url = process.env.REACT_APP_API_URL.trim();
+    
+    // Validar y corregir URL
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      // Añadir protocolo basado en entorno
+      const protocol = environment === 'development' ? 'http://' : 'https://';
+      url = protocol + url;
+      console.warn(`⚠️  Añadido protocolo ${protocol} a la URL`);
+    }
+    
+    console.log(`✅ Usando URL personalizada: ${url}`);
+    return url;
+  }
+  
+  // Opción 2: URL predefinida según entorno
+  const config = API_CONFIGS[environment] || API_CONFIGS.production;
+  console.log(`✅ Usando configuración ${environment}: ${config.url}`);
+  return config.url;
+};
+
+class ApiClient {
+  constructor() {
+    this.baseUrl = getBaseUrl();
+    console.log('🚀 ApiClient inicializado con baseUrl:', this.baseUrl);
+  }
+  
+  // Normalizar URL (asegurar formato correcto)
+  normalizeUrl(base, endpoint) {
+    // Remover / al final de la base
+    const cleanBase = base.replace(/\/+$/, '');
+    
+    // Añadir / al inicio del endpoint si no lo tiene
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    
+    return `${cleanBase}${cleanEndpoint}`;
   }
   
   url(endpoint) {
-    const base = this.baseUrl.endsWith('/') ? this.baseUrl : this.baseUrl + '/';
-    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
-    return base + cleanEndpoint;
+    return this.normalizeUrl(this.baseUrl, endpoint);
   }
   
   async fetch(endpoint, options = {}) {
     const url = this.url(endpoint);
-    console.log('📡 Fetching:', url);
+    console.log('📡 Fetching URL:', url);
     
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('❌ Error en fetch:', error.message);
+      throw error;
     }
-    
-    return response.json();
+  }
+  
+  // Métodos específicos para tu aplicación
+  async getGastos() {
+    return this.fetch('/api/gastos');
+  }
+  
+  async getGastoById(id) {
+    return this.fetch(`/api/gastos/${id}`);
+  }
+  
+  async createGasto(data) {
+    return this.fetch('/api/gastos', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+  
+  async updateGasto(id, data) {
+    return this.fetch(`/api/gastos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+  
+  async deleteGasto(id) {
+    return this.fetch(`/api/gastos/${id}`, {
+      method: 'DELETE'
+    });
   }
 }
 
 export const apiClient = new ApiClient();
 export const BACKEND_URL = apiClient.baseUrl;
+
+// Función helper para usar en componentes antiguos
+export const createApiUrl = (endpoint) => {
+  return apiClient.url(endpoint);
+};
