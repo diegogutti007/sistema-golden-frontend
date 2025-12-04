@@ -75,16 +75,6 @@ export default function Dashboard() {
       color: "bg-red-500 text-white hover:bg-red-600"
     }
   ];
-  const [backendUrl, setBackendUrl] = useState("");
-
-  useEffect(() => {
-    // Para Create React App usa REACT_APP_API_URL
-    const url = "https://sistemagolden-backend-production.up.railway.app"//process.env.REACT_APP_API_URL || "http://localhost:5000"//"https://sistemagolden-backend-production.up.railway.app";//
-    //"https://sistemagolden-backend-production.up.railway.app"
-    setBackendUrl(url);
-    console.log("🔗 URL del backend detectada:", url);
-  }, []);
-
 
   return (
     <div className="min-h-screen bg-white pt-6">
