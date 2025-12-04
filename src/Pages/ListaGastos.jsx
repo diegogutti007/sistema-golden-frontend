@@ -18,6 +18,7 @@ import {
   ChevronUp
 } from "lucide-react";
 import FormularioGasto from "./FormularioGasto";
+import urlLink from "../config/config";
 
 export default function ListaGastos() {
   const [gastos, setGastos] = useState([]);
@@ -45,6 +46,7 @@ export default function ListaGastos() {
 
   // ✅ Cargar datos iniciales (categorías y usuarios)
   useEffect(() => {
+    console.log("la tuya ",urlLink.toString);
     cargarCategorias();
     cargarUsuarios();
   }, []);
