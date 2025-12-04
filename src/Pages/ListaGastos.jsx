@@ -46,7 +46,7 @@ export default function ListaGastos() {
 
   // ✅ Cargar datos iniciales (categorías y usuarios)
   useEffect(() => {
-    console.log("la tuya ",BACKEND_URL.toString);
+    console.log("la tuya ",BACKEND_URL.toString());
     cargarCategorias();
     cargarUsuarios();
   }, []);
