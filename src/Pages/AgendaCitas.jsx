@@ -12,6 +12,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import ModalCita from "../Modales/ModalCita";
 import ModalVenta from "../Modales/ModalVenta";
 import ModalCliente from "../Modales/ModalCliente";
+import { apiClient } from "../util/api";
 
 Modal.setAppElement("#root");
 
@@ -81,8 +82,9 @@ export default function AgendaCitas() {
   const cargarCitas = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/citas`);
-      const data = await res.json();
+/*       const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/citas`);
+      const data = await res.json(); */
+      const data = await apiClient.fetch('/api/citas');
       console.log("🧾 Datos crudos desde API:", data);
       const eventosConvertidos = data.map((cita) => {
         let backgroundColor = "#00aae4";
@@ -119,8 +121,9 @@ export default function AgendaCitas() {
 
   const cargarClientes = async () => {
     try {
-      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/clientes`);
-      const data = await res.json();
+/*       const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/clientes`);
+      const data = await res.json(); */
+      const data = await apiClient.fetch('/api/clientes');
       setClientes(data);
     } catch (error) {
       console.error("❌ Error al cargar clientes:", error);
@@ -129,8 +132,9 @@ export default function AgendaCitas() {
 
   const cargarEmpleados = async () => {
     try {
-      const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/listaempleado`);
-      const data = await res.json();
+/*       const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/listaempleado`);
+      const data = await res.json(); */
+      const data = await apiClient.fetch('/api/listaempleado');
       setEmpleados(data);
     } catch (error) {
       console.error("❌ Error al cargar empleados:", error);

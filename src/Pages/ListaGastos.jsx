@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import FormularioGasto from "./FormularioGasto";
 import { apiClient } from "../util/api";
-//import { BACKEND_URL } from "../config/config"; // Ajusta la ruta según tu estructura
+import { BACKEND_URL } from '../config';
 
 export default function ListaGastos() {
   const [gastos, setGastos] = useState([]);
@@ -24,12 +24,11 @@ export default function ListaGastos() {
 
   // ✅ Cargar lista de gastos
   const cargarGastos = async () => {
-   // console.log(BACKEND_URL.toString);
+    
     setLoading(true);
     try {
-      //const res = await fetch(`https://sistemagolden-backend-production.up.railway.app/api/gastos`);
-      //const data = await res.json();
-      const data = await apiClient.fetch('/api/gastos');
+      const res = await fetch(`${BACKEND_URL}/api/gastos`);
+      const data = await res.json();
       setGastos(data);
     } catch (error) {
       console.error("Error cargando gastos:", error);
@@ -40,6 +39,7 @@ export default function ListaGastos() {
 
 
      useEffect(() => {
+      console.log(BACKEND_URL);
       cargarGastos();
     }, []); 
 

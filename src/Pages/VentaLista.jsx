@@ -57,10 +57,11 @@ export default function VentaLista() {
       if (fechaInicio) params.append('fechaInicio', fechaInicio);
       if (fechaFin) params.append('fechaFin', fechaFin);
 
-      const res = await fetch(
+/*       const res = await fetch(
         `https://sistemagolden-backend-production.up.railway.app/api/venta?${params.toString()}`
       );
-      const data = await res.json();
+      const data = await res.json(); */
+      const data = await apiClient.fetch(`/api/venta?${params.toString()}`);
       setVentas(data.ventas || []);
       setTotalPaginas(data.totalPaginas || 1);
 
