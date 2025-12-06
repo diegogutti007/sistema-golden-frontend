@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import Login from "./components/Login";
 import MenuPrincipal from "./components/MenuPrincipal";
 import MenuSecundario from "./components/MenuSecundario";
@@ -14,98 +14,100 @@ import ListaEmpleado from "./Pages/ListaEmpleado";
 import Dashboard from "./Pages/Dashboard";
 import PerfilUsuario from "./Pages/PerfilUsuario";
 import HistorialCitas from "./Pages/HistorialCitas";
-import { BACKEND_URL } from './config';
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
-  const [cargando, setCargando] = useState(true);
+  const [cargando, setCargando] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // En tu App.jsx - modifica el useEffect para verificar el token
+  console.log("🔄 App renderizado:", {
+    pathname: location.pathname,
+    usuario: !!usuario,
+    cargando
+  });
+
+  // Solo verificar autenticación una vez al cargar
   useEffect(() => {
-    const verificarAutenticacion = async () => {
+    console.log("🔍 Verificando autenticación inicial...");
+    
+    const token = localStorage.getItem("token");
+    const usuarioGuardado = localStorage.getItem("usuario");
+
+    console.log("📊 Datos en localStorage:", { 
+      token: !!token, 
+      usuario: !!usuarioGuardado 
+    });
+
+    if (token && usuarioGuardado) {
       try {
-        const token = localStorage.getItem("token");
-        const usuarioGuardado = localStorage.getItem("usuario");
-
-        if (token && usuarioGuardado) {
-          // Verificar si el token es válido
-          const response = await fetch(`${BACKEND_URL}/api/auth/verify`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            setUsuario(data.user);
-          } else {
-            // Token inválido, limpiar localStorage
-            localStorage.removeItem("token");
-            localStorage.removeItem("usuario");
-          }
+        const user = JSON.parse(usuarioGuardado);
+        console.log("✅ Usuario encontrado:", user);
+        setUsuario(user);
+        
+        // Si estamos en login, redirigir
+        if (location.pathname === '/login') {
+          console.log("🔄 Redirigiendo de login a dashboard");
+          navigate('/', { replace: true });
         }
       } catch (error) {
-        console.error("Error al verificar autenticación:", error);
+        console.error("❌ Error al parsear usuario:", error);
         localStorage.removeItem("token");
         localStorage.removeItem("usuario");
-      } finally {
-        setCargando(false);
+        setUsuario(null);
       }
-    };
-
-    verificarAutenticacion();
-  }, []);
-
-  const handleLogin = (userData) => {
-    try {
-      localStorage.setItem("usuario", JSON.stringify(userData));
-      setUsuario(userData);
-    } catch (error) {
-      console.error("Error al guardar usuario:", error);
-    }
-  };
-
-  // Modifica handleLogout para llamar al backend
-  const handleLogout = async () => {
-    try {
-      const token = localStorage.getItem("token");
-
-      if (token) {
-        await fetch(`${BACKEND_URL}/api/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-      }
-    } catch (error) {
-      console.error("Error en logout:", error);
-    } finally {
-      localStorage.removeItem("token");
-      localStorage.removeItem("usuario");
+    } else {
+      console.log("❌ No hay usuario autenticado");
       setUsuario(null);
+      
+      // Si no estamos en login y no hay usuario, redirigir a login
+      if (location.pathname !== '/login') {
+        console.log("🔄 Redirigiendo a login");
+        navigate('/login', { replace: true });
+      }
     }
+    
+    // No necesitamos cargando en este caso
+    // setCargando(false);
+  }, []); // SOLO al montar, no en cada cambio de ruta
+
+  // Manejar login exitoso
+  const handleLogin = (userData) => {
+    console.log("✅ Login exitoso, actualizando estado:", userData);
+    setUsuario(userData);
   };
 
-  if (cargando) {
+  // Manejar logout
+  const handleLogout = () => {
+    console.log("🚪 Cerrando sesión");
+    localStorage.removeItem("token");
+    localStorage.removeItem("usuario");
+    setUsuario(null);
+    navigate('/login');
+  };
+
+  // Si estamos en la ruta /login, mostrar solo Login
+  if (location.pathname === '/login') {
+    console.log("📱 Mostrando página de login");
+    return <Login onLogin={handleLogin} />;
+  }
+
+  // Si no hay usuario (y no estamos en login), mostrar spinner
+  if (!usuario) {
+    console.log("⏳ No hay usuario, mostrando spinner");
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
         <div className="flex flex-col items-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
-          <p className="text-gray-400 text-sm">Cargando...</p>
+          <p className="text-gray-400 text-sm">Verificando autenticación...</p>
         </div>
       </div>
     );
   }
 
-  // Si no hay usuario, mostrar Login
-  if (!usuario) {
-    console.log("No hay usuario, mostrando Login"); // Para debug
-    return <Login onLogin={handleLogin} />;
-  }
-
-  // Si hay usuario, mostrar la aplicación con rutas
-  console.log("Usuario autenticado, mostrando aplicación"); // Para debug
+  // Si hay usuario, mostrar la aplicación
+  console.log("🏠 Mostrando aplicación para usuario:", usuario);
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 font-sans relative overflow-hidden flex flex-col">
       {/* Fondo */}
@@ -119,21 +121,91 @@ function App() {
         <main className="flex-1 p-2 sm:p-3 md:p-4 lg:px-8 xl:px-12 transition-all duration-300">
           <div className="bg-white rounded-xl shadow-md border border-gray-200 min-h-full">
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/NuevoEmpleados" element={<FormEmpleado />} />
-              <Route path="/GestionEmpleados" element={<ListaEmpleado />} />
-              <Route path="/ComisionDetalles" element={<ListaComisiones />} />
-              <Route path="/Asistencias" element={<div className="p-6">Página de Asistencias - En desarrollo</div>} />
-              <Route path="/citas" element={<AgendaCitas />} />
-              <Route path="/citas/Historial" element={<HistorialCitas />} />
-              <Route path="/gastos" element={<FormularioGasto />} />
-              <Route path="/gastos/GestionGastos" element={<ListaGastos />} />
-              <Route path="/Ventas" element={<VentaFormulario />} />
-              <Route path="/Ventas/GestionVentas" element={<VentaLista />} />
-              <Route path="/perfil" element={<PerfilUsuario />} />
-
-              <Route path="/configuracion" element={<div className="p-6">Configuración - En desarrollo</div>} />
-              <Route path="*" element={<div className="p-6 text-center">Página no encontrada</div>} />
+              {/* Todas las rutas están protegidas */}
+              <Route path="/" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/NuevoEmpleados" element={
+                <ProtectedRoute>
+                  <FormEmpleado />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/GestionEmpleados" element={
+                <ProtectedRoute>
+                  <ListaEmpleado />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/ComisionDetalles" element={
+                <ProtectedRoute>
+                  <ListaComisiones />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/Asistencias" element={
+                <ProtectedRoute>
+                  <div className="p-6">Página de Asistencias - En desarrollo</div>
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/citas" element={
+                <ProtectedRoute>
+                  <AgendaCitas />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/citas/Historial" element={
+                <ProtectedRoute>
+                  <HistorialCitas />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/gastos" element={
+                <ProtectedRoute>
+                  <FormularioGasto />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/gastos/GestionGastos" element={
+                <ProtectedRoute>
+                  <ListaGastos />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/Ventas" element={
+                <ProtectedRoute>
+                  <VentaFormulario />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/Ventas/GestionVentas" element={
+                <ProtectedRoute>
+                  <VentaLista />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/perfil" element={
+                <ProtectedRoute>
+                  <PerfilUsuario />
+                </ProtectedRoute>
+              } />
+              
+              <Route path="/configuracion" element={
+                <ProtectedRoute>
+                  <div className="p-6">Configuración - En desarrollo</div>
+                </ProtectedRoute>
+              } />
+              
+              {/* Ruta por defecto */}
+              <Route path="*" element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } />
             </Routes>
           </div>
         </main>
