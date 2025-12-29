@@ -12,7 +12,8 @@ import {
   LogOut,
   BarChart3,
   History,
-  ChevronDown
+  ChevronDown,
+  PanelLeft // <-- AÑADIDO
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useInactivity } from "../hooks/useInactivity";
@@ -20,11 +21,11 @@ import { useInactivity } from "../hooks/useInactivity";
 // Importar el logo
 import logo from "../logo.png";
 
-// ✅ Breakpoints optimizados para iPad
+// ✅ Breakpoints optimizados
 const BREAKPOINTS = {
-  MOBILE: 768,           // Hasta tablet portrait
-  TABLET_LANDSCAPE: 1024, // iPad horizontal (1024x768)
-  LAPTOP: 1280,          // Laptops
+  MOBILE: 768,
+  TABLET_LANDSCAPE: 1024,
+  LAPTOP: 1280,
 };
 
 // ✅ COMPONENTE PARA OCULTAR ELEMENTOS SEGÚN ROL
@@ -52,7 +53,7 @@ const SubmenuItem = ({ to, onClick, icon: Icon, title, description, iconBg = "bg
   </Link>
 );
 
-const MenuPrincipal = ({ onLogout, usuario }) => {
+const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
   const [empleadosOpen, setEmpleadosOpen] = useState(false);
   const [citasOpen, setCitasOpen] = useState(false);
   const [ventasOpen, setVentasOpen] = useState(false);
@@ -89,7 +90,7 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
       setWindowWidth(newWidth);
       setWindowHeight(newHeight);
 
-      // Cerrar menú móvil cuando se cambia a escritorio (laptop)
+      // Cerrar menú móvil cuando se cambia a escritorio
       if (newWidth >= BREAKPOINTS.LAPTOP && mobileMenuOpen) {
         setMobileMenuOpen(false);
       }
@@ -165,6 +166,14 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
     navigate('/');
   };
 
+  // ✅ FUNCIÓN PARA TOGGLE DEL MENÚ SECUNDARIO
+  const handleToggleSecondaryMenu = () => {
+    if (onToggleSecondaryMenu) {
+      onToggleSecondaryMenu();
+    }
+    handleUserActivity();
+  };
+
   // ✅ SI NO ESTÁ AUTENTICADO, NO RENDERIZAR
   if (!isAuthenticated) return null;
 
@@ -173,20 +182,19 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
   const isTablet = windowWidth >= BREAKPOINTS.MOBILE && windowWidth < BREAKPOINTS.LAPTOP;
   const isLaptop = windowWidth >= BREAKPOINTS.LAPTOP;
   
-  // Para iPad horizontal, siempre usar menú móvil (solo logo + hamburguesa)
   const shouldUseMobileMenu = isMobile || isTablet;
   const shouldUseDesktopMenu = isLaptop;
 
-  // ✅ Obtener altura del navbar según dispositivo
+  // ✅ Obtener altura del navbar
   const getNavbarHeight = () => {
     if (isMobile) return 'h-14';
-    return 'h-16'; // Tablet y laptop
+    return 'h-16';
   };
 
   // ✅ Obtener padding superior para contenido
   const getContentPadding = () => {
     if (isMobile) return 'pt-14';
-    return 'pt-16'; // Tablet y laptop
+    return 'pt-16';
   };
 
   return (
@@ -201,7 +209,7 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
 
       <nav
         ref={wrapperRef}
-        className="fixed top-0 left-0 right-0 bg-gradient-to-r from-gray-900 to-black border-b border-yellow-500/20 shadow-2xl z-50 w-full"
+        className="bg-gradient-to-r from-gray-900 to-black border-b border-yellow-500/20 shadow-2xl w-full"
         onClick={handleUserActivity}
       >
         <div className={`mx-auto ${
@@ -211,30 +219,25 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
         }`}>
           <div className={`flex justify-between items-center ${getNavbarHeight()}`}>
             
-            {/* ✅ LOGO CIRCULAR - TODOS LOS DISPOSITIVOS */}
+            {/* ✅ LOGO */}
             <div className="flex-shrink-0">
               <a
                 href="/"
                 onClick={handleLogoClick}
                 className="flex items-center space-x-2 group cursor-pointer"
               >
-                {/* Contenedor circular para el logo */}
                 <div className={`${
-                  isMobile ? 'h-14 w-14' : 
-                  isTablet ? 'h-14 w-14' : 
+                  isMobile ? 'h-12 w-12' : 
                   'h-14 w-14'
                 } relative rounded-full overflow-hidden shadow-lg transform group-hover:scale-105 transition-transform duration-200`}>
-                  {/* Imagen del logo que se ajusta al círculo */}
                   <img 
                     src={logo} 
                     alt="Golden Nails Logo"
                     className="w-full h-full object-cover" 
                   />
-                  {/* Overlay de gradiente sutil */}
                   <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent pointer-events-none" />
                 </div>
 
-                {/* ✅ Texto solo para móvil muy pequeño */}
                 {isMobile && windowWidth < 400 && (
                   <div className="flex flex-col ml-2">
                     <span className="text-xs font-bold font-bodoni bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">
@@ -248,7 +251,20 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
               </a>
             </div>
 
-            {/* ✅ DESKTOP NAVIGATION (Solo para laptops grandes) */}
+            {/* ✅ BOTÓN PANEL LEFT PARA MOBILE/TABLET */}
+            {shouldUseMobileMenu && onToggleSecondaryMenu && (
+              <div className="flex items-center mr-2">
+                <button
+                  onClick={handleToggleSecondaryMenu}
+                  className="p-2 rounded-lg text-gray-400 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200"
+                  title="Mostrar/Ocultar menú lateral"
+                >
+                  <PanelLeft className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />
+                </button>
+              </div>
+            )}
+
+            {/* ✅ DESKTOP NAVIGATION */}
             {shouldUseDesktopMenu && (
               <div className="flex items-center justify-center flex-1 mx-8 max-w-3xl">
                 <div className="flex items-center space-x-2">
@@ -355,34 +371,34 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                       <ChevronDown className={`w-4 h-4 transition-transform ${citasOpen ? 'rotate-180' : ''}`} />
                     </button>
 
-                    {citasOpen && (
-                      <div className="absolute top-full left-0 mt-2 w-56 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl backdrop-blur-lg z-50 overflow-hidden animate-fadeIn">
-                        <div className="p-2">
-                          <SubmenuItem
-                            to="/citas"
-                            onClick={() => setCitasOpen(false)}
-                            icon={Calendar}
-                            title="Agenda"
-                            description="Calendario de citas"
-                          />
-                          <HideIfUnauthorized
-                            userRole={userRole}
-                            allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}
-                          >
+                      {citasOpen && (
+                        <div className="absolute top-full left-0 mt-2 w-56 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl backdrop-blur-lg z-50 overflow-hidden animate-fadeIn">
+                          <div className="p-2">
                             <SubmenuItem
-                              to="/citas/Historial"
+                              to="/citas"
                               onClick={() => setCitasOpen(false)}
-                              icon={History}
-                              iconBg="bg-blue-500/10"
-                              iconColor="text-blue-400"
-                              title="Historial"
-                              description="Citas anteriores"
+                              icon={Calendar}
+                              title="Agenda"
+                              description="Calendario de citas"
                             />
-                          </HideIfUnauthorized>
+                            <HideIfUnauthorized
+                              userRole={userRole}
+                              allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}
+                            >
+                              <SubmenuItem
+                                to="/citas/Historial"
+                                onClick={() => setCitasOpen(false)}
+                                icon={History}
+                                iconBg="bg-blue-500/10"
+                                iconColor="text-blue-400"
+                                title="Historial"
+                                description="Citas anteriores"
+                              />
+                            </HideIfUnauthorized>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
 
                   {/* Ventas Dropdown */}
                   <div className="relative">
@@ -496,7 +512,7 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
               </div>
             )}
 
-            {/* ✅ USER SECTION - TODOS LOS DISPOSITIVOS */}
+            {/* ✅ USER SECTION */}
             <div className="flex items-center space-x-2 lg:space-x-4">
               {/* Menú de Usuario - Solo para laptops */}
               {shouldUseDesktopMenu && (
@@ -594,7 +610,7 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
                 </div>
               )}
 
-              {/* Mobile Menu Button - Para móvil y tablet (incluido iPad horizontal) */}
+              {/* Mobile Menu Button */}
               {shouldUseMobileMenu && (
                 <button
                   onClick={() => {
@@ -614,7 +630,7 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
           </div>
         </div>
 
-        {/* ✅ MOBILE & TABLET MENU (incluido iPad horizontal) */}
+        {/* ✅ MOBILE & TABLET MENU */}
         {shouldUseMobileMenu && (
           <div className={`fixed top-${getNavbarHeight().split('-')[1]} left-0 right-0 bottom-0 bg-gray-900 transform transition-transform duration-300 ease-in-out z-40 overflow-y-auto ${
             mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
@@ -810,9 +826,6 @@ const MenuPrincipal = ({ onLogout, usuario }) => {
           </div>
         )}
       </nav>
-      
-      {/* ✅ ESPACIO PARA EL CONTENIDO PRINCIPAL */}
-      <div className={getContentPadding()}></div>
     </>
   );
 };

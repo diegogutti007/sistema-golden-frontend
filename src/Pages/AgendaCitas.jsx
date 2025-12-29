@@ -479,21 +479,22 @@ export default function AgendaCitas() {
                 <div className="p-1 text-left h-full overflow-hidden flex flex-col justify-start gap-0.5 leading-tight bg-opacity-90 hover:bg-opacity-100 transition-all duration-150">
                   {/* Estado y Título */}
                   <div className="flex items-center gap-1">
-                    <span className="text-[10px] flex-shrink-0">{iconoEstado}</span>
-                    <div className="font-bold text-white text-[10px] leading-tight truncate flex-1">
+                    <span className="text-[8px] flex-shrink-0">{iconoEstado}</span>
+                    <div className="font-bold text-white text-[12px] leading-tight truncate flex-1 
+                tracking-tight antialiased">
                       {titulo}
                     </div>
                   </div>
 
                   {/* Cliente */}
                   {cliente && (
-                    <div className="text-white text-[9px] leading-tight flex items-center gap-1">
+                    <div className="text-white text-[10px] leading-tight flex items-center gap-1">
                       <span className="text-[8px] flex-shrink-0">👤</span>
                       <span className="truncate flex-1">{cliente}</span>
                     </div>
                   )}
                   {horaInicio && (
-                    <div className="text-white text-[9px] leading-tight flex items-center gap-1">
+                    <div className="text-white text-[10px] leading-tight flex items-center gap-1">
                       <span className="text-[8px] flex-shrink-0">🕒</span>
                       <span className="fruncate flex-1">{horaInicio} </span>
                     </div>
@@ -509,7 +510,7 @@ export default function AgendaCitas() {
               );
             }}
             // Configuración para mejor alineación
-            dayMaxEvents={3}
+            dayMaxEvents={6}
             moreLinkClick="week"
             moreLinkContent={(args) => {
               return `+${args.num} más`;
