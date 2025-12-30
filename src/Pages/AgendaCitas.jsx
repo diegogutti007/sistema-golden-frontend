@@ -118,7 +118,7 @@ export default function AgendaCitas() {
     }
   }; */
 
- const cargarCitas = async () => {
+  const cargarCitas = async () => {
   setIsLoading(true);
   try {
     const res = await fetch(`${BACKEND_URL}/api/citas`);
@@ -126,20 +126,32 @@ export default function AgendaCitas() {
     console.log("🧾 Datos crudos desde API:", data);
     
     const eventosConvertidos = data.map((cita) => {
-      // AJUSTAR HORARIO PARA PERÚ (GMT-5)
-      const startDate = new Date(cita.start);
-      const endDate = new Date(cita.end);
+      // CONVERSIÓN EXPLÍCITA DE FECHAS
+      let startDate, endDate;
       
-      // Si las fechas vienen en UTC, convertirlas a hora local Perú
-      // O simplemente usar las fechas como vienen pero en modo local
-      const startLocal = new Date(startDate.getTime() - (5 * 60 * 60 * 1000));
-      const endLocal = new Date(endDate.getTime() - (5 * 60 * 60 * 1000));
+      // Opción A: Si vienen como string ISO (recomendado)
+      startDate = new Date(cita.start);
+      endDate = new Date(cita.end);
       
-      console.log(`Debug fecha:`);
-      console.log(`- Original en DB: 2025-12-31 10:00:00 (hora Perú)`);
-      console.log(`- Desde API (UTC): ${cita.start}`);
-      console.log(`- Convertida local: ${startLocal.toLocaleString('es-PE')}`);
+      // Opción B: Si vienen en otro formato, ajustar
+      // startDate = new Date(cita.start.replace(' ', 'T'));
+      // endDate = new Date(cita.end.replace(' ', 'T'));
       
+      // Verificar si las fechas son válidas
+      console.log(`Fecha start original: ${cita.start}, convertida: ${startDate}`);
+      console.log(`Fecha end original: ${cita.end}, convertida: ${endDate}`);
+      
+      // Manejar fechas inválidas
+      if (isNaN(startDate.getTime())) {
+        console.error("Fecha start inválida:", cita.start);
+        startDate = new Date(); // valor por defecto
+      }
+      
+      if (isNaN(endDate.getTime())) {
+        console.error("Fecha end inválida:", cita.end);
+        endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // +1 hora
+      }
+
       let backgroundColor = "#00aae4";
       if (cita.extendedProps.estado === "Programada") backgroundColor = "#00aae4";
       else if (cita.extendedProps.estado === "En progreso") backgroundColor = "#f59e0b";
@@ -149,8 +161,8 @@ export default function AgendaCitas() {
       return {
         id: cita.id,
         title: cita.title,
-        start: startLocal, // Usar fecha ajustada
-        end: endLocal,     // Usar fecha ajustada
+        start: startDate, // Usar la fecha convertida
+        end: endDate,     // Usar la fecha convertida
         backgroundColor,
         borderColor: "#000000",
         textColor: "#fafbfd",
@@ -396,6 +408,7 @@ export default function AgendaCitas() {
             dateClick={manejarClickCelda}
             events={eventos}
             eventClick={manejarClickEvento}
+            timeZone='America/Lima' // ← Agrega esta línea
             nowIndicator={true}
             height="auto"
             // HORARIO CONFIGURADO: 9AM - 11PM
