@@ -520,7 +520,7 @@ export default function AgendaCitas() {
               const cliente = arg.event.extendedProps?.ClienteNombre || "";
               const estado = arg.event.extendedProps?.Estado || "";
 
-              const horaInicio = arg.event.start
+/*               const horaInicio = arg.event.start
                 ? (() => {
                   const fecha = new Date(arg.event.start);
                   let hora = fecha.getHours();
@@ -529,12 +529,12 @@ export default function AgendaCitas() {
 
                   // Convertir a formato 12h
                   hora = hora % 12 || 12;
-
+                  console.log('Fecha original:', arg.event.start);
                   return `${hora}:${minutos} ${ampm}`;
                 })()
-                : "";
+                : ""; */
 
-
+               const horaInicio = arg.timeText || "";
 
               console.log('=== DEBUG HORA ===');
               console.log('Fecha original:', arg.event.start);
