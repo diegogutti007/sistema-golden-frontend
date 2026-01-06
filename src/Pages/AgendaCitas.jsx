@@ -529,6 +529,26 @@ export default function AgendaCitas() {
                   hourCycle: 'h12'
                 })
                 : "";
+
+
+
+              console.log('=== DEBUG HORA ===');
+              console.log('Fecha original:', arg.event.start);
+              console.log('Como Date:', new Date(arg.event.start));
+              console.log('Hora UTC:', new Date(arg.event.start).toISOString());
+              console.log('Hora en Lima (24h):', new Date(arg.event.start).toLocaleTimeString('es-PE', {
+                timeZone: 'America/Lima',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              }));
+              console.log('Hora en Lima (12h):', new Date(arg.event.start).toLocaleTimeString('es-PE', {
+                timeZone: 'America/Lima',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+              }));
+
               const horaFin = arg.event.end
                 ? arg.event.end.toLocaleTimeString('es-ES', {
                   hour: 'numeric',
