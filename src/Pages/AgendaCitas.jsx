@@ -522,19 +522,15 @@ export default function AgendaCitas() {
 
               const horaInicio = arg.event.start
                 ? (() => {
-                  // Extraer hora y minutos directamente del string
-                  const match = arg.event.start.match(/T(\d{2}):(\d{2}):/);
-                  if (match) {
-                    let hora = parseInt(match[1]);
-                    const minutos = match[2];
-                    const ampm = hora >= 12 ? 'p. m.' : 'a. m.';
+                  const fecha = new Date(arg.event.start);
+                  let hora = fecha.getHours();
+                  const minutos = fecha.getMinutes().toString().padStart(2, '0');
+                  const ampm = hora >= 12 ? 'p. m.' : 'a. m.';
 
-                    // Convertir a formato 12h
-                    hora = hora % 12 || 12;
+                  // Convertir a formato 12h
+                  hora = hora % 12 || 12;
 
-                    return `${hora}:${minutos} ${ampm}`;
-                  }
-                  return "";
+                  return `${hora}:${minutos} ${ampm}`;
                 })()
                 : "";
 
