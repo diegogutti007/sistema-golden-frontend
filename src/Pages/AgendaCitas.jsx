@@ -521,12 +521,21 @@ export default function AgendaCitas() {
               const estado = arg.event.extendedProps?.Estado || "";
 
               const horaInicio = arg.event.start
-                ? new Date(arg.event.start.replace('T', ' ') + ' GMT-0500')
-                  .toLocaleTimeString('es-PE', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                  })
+                ? (() => {
+                  // Extraer hora y minutos directamente del string
+                  const match = arg.event.start.match(/T(\d{2}):(\d{2}):/);
+                  if (match) {
+                    let hora = parseInt(match[1]);
+                    const minutos = match[2];
+                    const ampm = hora >= 12 ? 'p. m.' : 'a. m.';
+
+                    // Convertir a formato 12h
+                    hora = hora % 12 || 12;
+
+                    return `${hora}:${minutos} ${ampm}`;
+                  }
+                  return "";
+                })()
                 : "";
 
 
