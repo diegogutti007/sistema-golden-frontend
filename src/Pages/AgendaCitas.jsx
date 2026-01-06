@@ -521,7 +521,7 @@ export default function AgendaCitas() {
               const estado = arg.event.extendedProps?.Estado || "";
 
               const horaInicio = arg.event.start
-                ? new Date(arg.event.start.endsWith('Z') ? arg.event.start : arg.event.start + 'Z')
+                ? new Date(arg.event.start + 'Z')  // Agregar 'Z' para indicar que es UTC
                   .toLocaleTimeString('es-PE', {
                     timeZone: 'America/Lima',
                     hour: 'numeric',
