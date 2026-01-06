@@ -521,11 +521,12 @@ export default function AgendaCitas() {
               const estado = arg.event.extendedProps?.Estado || "";
 
               const horaInicio = arg.event.start
-                ? arg.event.start.toLocaleTimeString('es-PE', {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true
-                })
+                ? new Date(arg.event.start.replace('T', ' ') + ' GMT-0500')
+                  .toLocaleTimeString('es-PE', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })
                 : "";
 
 
