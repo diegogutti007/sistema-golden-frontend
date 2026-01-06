@@ -14,6 +14,7 @@ import Dashboard from "./Pages/Dashboard";
 import PerfilUsuario from "./Pages/PerfilUsuario";
 import HistorialCitas from "./Pages/HistorialCitas";
 import ProtectedRoute from "./components/ProtectedRoute";
+import CierreCaja from "./Pages/CierreCaja";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -110,6 +111,7 @@ function App() {
         <Route path="/gastos/GestionGastos" element={<ProtectedRoute><ListaGastos /></ProtectedRoute>} />
         <Route path="/Ventas" element={<ProtectedRoute><VentaFormulario /></ProtectedRoute>} />
         <Route path="/Ventas/GestionVentas" element={<ProtectedRoute><VentaLista /></ProtectedRoute>} />
+        <Route path="/Ventas/CierreCaja" element={<ProtectedRoute><CierreCaja /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><PerfilUsuario /></ProtectedRoute>} />
         <Route path="/configuracion" element={<ProtectedRoute><div className="p-6">Configuración - En desarrollo</div></ProtectedRoute>} />
         

@@ -79,13 +79,79 @@ export default function AgendaCitas() {
     setModalCita(false); // ← AÑADE ESTA LÍNEA
   };
 
-/*   const cargarCitas = async () => {
+  /*   const cargarCitas = async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/citas`);
+        const data = await res.json(); 
+        console.log("🧾 Datos crudos desde API:", data);
+        const eventosConvertidos = data.map((cita) => {
+          let backgroundColor = "#00aae4";
+          if (cita.extendedProps.estado === "Programada") backgroundColor = "#00aae4";
+          else if (cita.extendedProps.estado === "En progreso") backgroundColor = "#f59e0b";
+          else if (cita.extendedProps.estado === "Completada") backgroundColor = "#16a34a";
+          else if (cita.extendedProps.estado === "Cancelada") backgroundColor = "#dc2626";
+  
+          return {
+            id: cita.id,
+            title: cita.title,
+            start: cita.start,
+            end: cita.end,
+            backgroundColor,
+            borderColor: "#000000",
+            textColor: "#fafbfd",
+            extendedProps: {
+              Descripcion: cita.descripcion,
+              ClienteID: cita.extendedProps.clienteID,
+              EmpId: cita.extendedProps.EmpId,
+              ClienteNombre: cita.extendedProps.clienteNombre,
+              EmpleadoNombre: cita.extendedProps.empleadoNombre,
+              Estado: cita.extendedProps.estado,
+            },
+          };
+        });
+        setEventos(eventosConvertidos);
+      } catch (error) {
+        console.error("❌ Error al cargar citas:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }; */
+
+  const cargarCitas = async () => {
     setIsLoading(true);
     try {
       const res = await fetch(`${BACKEND_URL}/api/citas`);
-      const data = await res.json(); 
+      const data = await res.json();
       console.log("🧾 Datos crudos desde API:", data);
+
       const eventosConvertidos = data.map((cita) => {
+        // CONVERSIÓN EXPLÍCITA DE FECHAS
+        let startDate, endDate;
+
+        // Opción A: Si vienen como string ISO (recomendado)
+        startDate = new Date(cita.start);
+        endDate = new Date(cita.end);
+
+        // Opción B: Si vienen en otro formato, ajustar
+        // startDate = new Date(cita.start.replace(' ', 'T'));
+        // endDate = new Date(cita.end.replace(' ', 'T'));
+
+        // Verificar si las fechas son válidas
+        console.log(`Fecha start original: ${cita.start}, convertida: ${startDate}`);
+        console.log(`Fecha end original: ${cita.end}, convertida: ${endDate}`);
+
+        // Manejar fechas inválidas
+        if (isNaN(startDate.getTime())) {
+          console.error("Fecha start inválida:", cita.start);
+          startDate = new Date(); // valor por defecto
+        }
+
+        if (isNaN(endDate.getTime())) {
+          console.error("Fecha end inválida:", cita.end);
+          endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // +1 hora
+        }
+
         let backgroundColor = "#00aae4";
         if (cita.extendedProps.estado === "Programada") backgroundColor = "#00aae4";
         else if (cita.extendedProps.estado === "En progreso") backgroundColor = "#f59e0b";
@@ -95,8 +161,8 @@ export default function AgendaCitas() {
         return {
           id: cita.id,
           title: cita.title,
-          start: cita.start,
-          end: cita.end,
+          start: startDate, // Usar la fecha convertida
+          end: endDate,     // Usar la fecha convertida
           backgroundColor,
           borderColor: "#000000",
           textColor: "#fafbfd",
@@ -110,85 +176,19 @@ export default function AgendaCitas() {
           },
         };
       });
+
       setEventos(eventosConvertidos);
     } catch (error) {
       console.error("❌ Error al cargar citas:", error);
     } finally {
       setIsLoading(false);
     }
-  }; */
-
-  const cargarCitas = async () => {
-  setIsLoading(true);
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/citas`);
-    const data = await res.json(); 
-    console.log("🧾 Datos crudos desde API:", data);
-    
-    const eventosConvertidos = data.map((cita) => {
-      // CONVERSIÓN EXPLÍCITA DE FECHAS
-      let startDate, endDate;
-      
-      // Opción A: Si vienen como string ISO (recomendado)
-      startDate = new Date(cita.start);
-      endDate = new Date(cita.end);
-      
-      // Opción B: Si vienen en otro formato, ajustar
-      // startDate = new Date(cita.start.replace(' ', 'T'));
-      // endDate = new Date(cita.end.replace(' ', 'T'));
-      
-      // Verificar si las fechas son válidas
-      console.log(`Fecha start original: ${cita.start}, convertida: ${startDate}`);
-      console.log(`Fecha end original: ${cita.end}, convertida: ${endDate}`);
-      
-      // Manejar fechas inválidas
-      if (isNaN(startDate.getTime())) {
-        console.error("Fecha start inválida:", cita.start);
-        startDate = new Date(); // valor por defecto
-      }
-      
-      if (isNaN(endDate.getTime())) {
-        console.error("Fecha end inválida:", cita.end);
-        endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // +1 hora
-      }
-
-      let backgroundColor = "#00aae4";
-      if (cita.extendedProps.estado === "Programada") backgroundColor = "#00aae4";
-      else if (cita.extendedProps.estado === "En progreso") backgroundColor = "#f59e0b";
-      else if (cita.extendedProps.estado === "Completada") backgroundColor = "#16a34a";
-      else if (cita.extendedProps.estado === "Cancelada") backgroundColor = "#dc2626";
-
-      return {
-        id: cita.id,
-        title: cita.title,
-        start: startDate, // Usar la fecha convertida
-        end: endDate,     // Usar la fecha convertida
-        backgroundColor,
-        borderColor: "#000000",
-        textColor: "#fafbfd",
-        extendedProps: {
-          Descripcion: cita.descripcion,
-          ClienteID: cita.extendedProps.clienteID,
-          EmpId: cita.extendedProps.EmpId,
-          ClienteNombre: cita.extendedProps.clienteNombre,
-          EmpleadoNombre: cita.extendedProps.empleadoNombre,
-          Estado: cita.extendedProps.estado,
-        },
-      };
-    });
-    
-    setEventos(eventosConvertidos);
-  } catch (error) {
-    console.error("❌ Error al cargar citas:", error);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const cargarClientes = async () => {
     try {
       const res = await fetch(`${BACKEND_URL}/api/clientes`);
-      const data = await res.json(); 
+      const data = await res.json();
       setClientes(data);
     } catch (error) {
       console.error("❌ Error al cargar clientes:", error);
@@ -198,7 +198,7 @@ export default function AgendaCitas() {
   const cargarEmpleados = async () => {
     try {
       const res = await fetch(`${BACKEND_URL}/api/listaempleado`);
-      const data = await res.json(); 
+      const data = await res.json();
       setEmpleados(data);
     } catch (error) {
       console.error("❌ Error al cargar empleados:", error);
@@ -522,6 +522,7 @@ export default function AgendaCitas() {
 
               const horaInicio = arg.event.start
                 ? arg.event.start.toLocaleTimeString('es-ES', {
+                  timeZone: 'America/Lima',
                   hour: 'numeric',
                   minute: '2-digit',
                   hour12: true

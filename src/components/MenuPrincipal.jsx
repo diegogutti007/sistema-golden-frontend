@@ -441,6 +441,15 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                               title="Gestión Ventas"
                               description="Administrar ventas"
                             />
+                            <SubmenuItem
+                              to="/Ventas/CierreCaja"
+                              onClick={() => setVentasOpen(false)}
+                              icon={DollarSign}
+                              iconBg="bg-yellow-500/10"
+                              iconColor="text-yellow-400"
+                              title="Cierre de Caja"
+                              description="Cierre de Caja Diario"
+                            />
                           </HideIfUnauthorized>
                         </div>
                       </div>
@@ -752,6 +761,14 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                   >
                     <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
                     <span>Gestión Ventas</span>
+                  </Link>
+                  <Link
+                    to="/Ventas/CierreCaja"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                  >
+                    <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                    <span>Cierre de Caja</span>
                   </Link>
                 </HideIfUnauthorized>
               </div>
