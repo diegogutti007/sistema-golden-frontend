@@ -127,7 +127,7 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
       }
     }; */
 
-  const cargarCitas = async () => {
+  /* const cargarCitas = async () => {
     setIsLoading(true);
     try {
       const res = await fetch(`${BACKEND_URL}/api/citas`);
@@ -192,7 +192,93 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
     } finally {
       setIsLoading(false);
     }
-  };
+  }; */
+
+  const cargarCitas = async () => {
+  setIsLoading(true);
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/citas`);
+    const data = await res.json();
+    console.log("🧾 Datos crudos desde API:", data);
+
+    // Obtener la zona horaria de Perú (UTC-5)
+    const timeZone = 'America/Lima';
+    
+    const eventosConvertidos = data.map((cita) => {
+      // FUNCIÓN PARA CONVERTIR A HORA PERUANA
+      const convertirAPeruTime = (dateString) => {
+        // Opción 1: Si la fecha ya viene en ISO (ej: "2024-01-15T10:00:00Z")
+        let fecha = new Date(dateString);
+        
+        // Opción 2: Si viene sin zona horaria (ajustar según tu formato)
+        // if (!dateString.includes('Z') && !dateString.includes('+')) {
+        //   fecha = new Date(`${dateString}-05:00`);
+        // } else {
+        //   fecha = new Date(dateString);
+        // }
+        
+        // Convertir a zona horaria de Perú
+        return new Date(fecha.toLocaleString('en-US', { timeZone }));
+      };
+
+      let startDate, endDate;
+
+      // CONVERSIÓN CON ZONA HORARIA DE PERÚ
+      startDate = convertirAPeruTime(cita.start);
+      endDate = convertirAPeruTime(cita.end);
+
+      // Verificar si las fechas son válidas
+      console.log(`Fecha start original: ${cita.start}, convertida Perú: ${startDate}`);
+      console.log(`Fecha end original: ${cita.end}, convertida Perú: ${endDate}`);
+      
+      console.log(`Start en UTC: ${startDate.toISOString()}, Local: ${startDate.toString()}`);
+      console.log(`End en UTC: ${endDate.toISOString()}, Local: ${endDate.toString()}`);
+
+      // Manejar fechas inválidas
+      if (isNaN(startDate.getTime())) {
+        console.error("Fecha start inválida:", cita.start);
+        startDate = new Date(new Date().toLocaleString('en-US', { timeZone }));
+      }
+
+      if (isNaN(endDate.getTime())) {
+        console.error("Fecha end inválida:", cita.end);
+        // +1 hora en horario peruano
+        endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+        endDate = new Date(endDate.toLocaleString('en-US', { timeZone }));
+      }
+
+      let backgroundColor = "#00aae4";
+      if (cita.extendedProps.estado === "Programada") backgroundColor = "#00aae4";
+      else if (cita.extendedProps.estado === "En progreso") backgroundColor = "#f59e0b";
+      else if (cita.extendedProps.estado === "Completada") backgroundColor = "#16a34a";
+      else if (cita.extendedProps.estado === "Cancelada") backgroundColor = "#dc2626";
+
+      return {
+        id: cita.id,
+        title: cita.title,
+        start: startDate,
+        end: endDate,
+        backgroundColor,
+        borderColor: "#000000",
+        textColor: "#fafbfd",
+        extendedProps: {
+          Descripcion: cita.descripcion,
+          ClienteID: cita.extendedProps.clienteID,
+          EmpId: cita.extendedProps.EmpId,
+          ClienteNombre: cita.extendedProps.clienteNombre,
+          EmpleadoNombre: cita.extendedProps.empleadoNombre,
+          Estado: cita.extendedProps.estado,
+        },
+      };
+    });
+
+    setEventos(eventosConvertidos);
+  } catch (error) {
+    console.error("❌ Error al cargar citas:", error);
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const cargarClientes = async () => {
     try {
