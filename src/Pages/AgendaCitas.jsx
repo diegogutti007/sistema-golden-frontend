@@ -28,15 +28,6 @@ export default function AgendaCitas() {
   const [modalKey, setModalKey] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
-
-//modificacion
-const [slotHeight, setSlotHeight] = useState(60); // Altura inicial de 60px
-const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inicial de 30 min/
-
-////////////////////
-
-
-
   const [form, setForm] = useState({
     CitaID: null,
     ClienteID: "",
@@ -56,6 +47,9 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
     { estado: "Completada", color: "#16a34a", icono: "✅" },
     { estado: "Cancelada", color: "#dc2626", icono: "❌" }
   ];
+
+  // Configuración de zona horaria
+  const TIME_ZONE = 'America/Lima';
 
   // Detectar si es móvil
   useEffect(() => {
@@ -78,56 +72,50 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
   const handleGuardarVenta = (datosVenta) => {
     console.log("✅ Venta registrada:", datosVenta);
     setIsVentaModalOpen(false);
-    setModalCita(false); // ← AÑADE ESTA LÍNEA
+    setModalCita(false);
     cargarCitas();
   };
 
-
   const handleCloseVentaModal = () => {
     setIsVentaModalOpen(false);
-    setModalCita(false); // ← AÑADE ESTA LÍNEA
+    setModalCita(false);
   };
 
-  /*   const cargarCitas = async () => {
-      setIsLoading(true);
-      try {
-        const res = await fetch(`${BACKEND_URL}/api/citas`);
-        const data = await res.json(); 
-        console.log("🧾 Datos crudos desde API:", data);
-        const eventosConvertidos = data.map((cita) => {
-          let backgroundColor = "#00aae4";
-          if (cita.extendedProps.estado === "Programada") backgroundColor = "#00aae4";
-          else if (cita.extendedProps.estado === "En progreso") backgroundColor = "#f59e0b";
-          else if (cita.extendedProps.estado === "Completada") backgroundColor = "#16a34a";
-          else if (cita.extendedProps.estado === "Cancelada") backgroundColor = "#dc2626";
-  
-          return {
-            id: cita.id,
-            title: cita.title,
-            start: cita.start,
-            end: cita.end,
-            backgroundColor,
-            borderColor: "#000000",
-            textColor: "#fafbfd",
-            extendedProps: {
-              Descripcion: cita.descripcion,
-              ClienteID: cita.extendedProps.clienteID,
-              EmpId: cita.extendedProps.EmpId,
-              ClienteNombre: cita.extendedProps.clienteNombre,
-              EmpleadoNombre: cita.extendedProps.empleadoNombre,
-              Estado: cita.extendedProps.estado,
-            },
-          };
-        });
-        setEventos(eventosConvertidos);
-      } catch (error) {
-        console.error("❌ Error al cargar citas:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }; */
+  // Función para convertir fecha a formato ISO con zona horaria Perú
+  const toPeruTimeISO = (dateString) => {
+    if (!dateString) return '';
+    
+    const date = new Date(dateString);
+    
+    // Si ya es una fecha válida, convertir a string en zona horaria peruana
+    if (!isNaN(date.getTime())) {
+      // Obtener componentes en horario peruano
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+    
+    return dateString;
+  };
 
-  /* const cargarCitas = async () => {
+  // Función para formatear fecha a string legible en horario peruano
+  const formatToPeruTimeString = (date) => {
+    return date.toLocaleString('es-PE', {
+      timeZone: TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  };
+
+  const cargarCitas = async () => {
     setIsLoading(true);
     try {
       const res = await fetch(`${BACKEND_URL}/api/citas`);
@@ -135,22 +123,11 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
       console.log("🧾 Datos crudos desde API:", data);
 
       const eventosConvertidos = data.map((cita) => {
-        // CONVERSIÓN EXPLÍCITA DE FECHAS
-        let startDate, endDate;
-
-        // Opción A: Si vienen como string ISO (recomendado)
-        startDate = new Date(cita.start);
-        endDate = new Date(cita.end);
-
-        // Opción B: Si vienen en otro formato, ajustar
-        // startDate = new Date(cita.start.replace(' ', 'T'));
-        // endDate = new Date(cita.end.replace(' ', 'T'));
+        // Convertir fechas a objetos Date
+        let startDate = new Date(cita.start);
+        let endDate = new Date(cita.end);
 
         // Verificar si las fechas son válidas
-        console.log(`Fecha start original: ${cita.start}, convertida: ${startDate}`);
-        console.log(`Fecha end original: ${cita.end}, convertida: ${endDate}`);
-
-        // Manejar fechas inválidas
         if (isNaN(startDate.getTime())) {
           console.error("Fecha start inválida:", cita.start);
           startDate = new Date(); // valor por defecto
@@ -161,6 +138,10 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
           endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // +1 hora
         }
 
+        // Log de conversión para depuración
+        console.log(`Fecha original: ${cita.start} -> Convertida: ${startDate.toISOString()}`);
+        console.log(`En horario Perú: ${formatToPeruTimeString(startDate)}`);
+
         let backgroundColor = "#00aae4";
         if (cita.extendedProps.estado === "Programada") backgroundColor = "#00aae4";
         else if (cita.extendedProps.estado === "En progreso") backgroundColor = "#f59e0b";
@@ -170,8 +151,8 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
         return {
           id: cita.id,
           title: cita.title,
-          start: startDate, // Usar la fecha convertida
-          end: endDate,     // Usar la fecha convertida
+          start: startDate, // FullCalendar manejará la zona horaria
+          end: endDate,     // FullCalendar manejará la zona horaria
           backgroundColor,
           borderColor: "#000000",
           textColor: "#fafbfd",
@@ -192,93 +173,7 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
     } finally {
       setIsLoading(false);
     }
-  }; */
-
-  const cargarCitas = async () => {
-  setIsLoading(true);
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/citas`);
-    const data = await res.json();
-    console.log("🧾 Datos crudos desde API:", data);
-
-    // Obtener la zona horaria de Perú (UTC-5)
-    const timeZone = 'America/Lima';
-    
-    const eventosConvertidos = data.map((cita) => {
-      // FUNCIÓN PARA CONVERTIR A HORA PERUANA
-      const convertirAPeruTime = (dateString) => {
-        // Opción 1: Si la fecha ya viene en ISO (ej: "2024-01-15T10:00:00Z")
-        let fecha = new Date(dateString);
-        
-        // Opción 2: Si viene sin zona horaria (ajustar según tu formato)
-        // if (!dateString.includes('Z') && !dateString.includes('+')) {
-        //   fecha = new Date(`${dateString}-05:00`);
-        // } else {
-        //   fecha = new Date(dateString);
-        // }
-        
-        // Convertir a zona horaria de Perú
-        return new Date(fecha.toLocaleString('en-US', { timeZone }));
-      };
-
-      let startDate, endDate;
-
-      // CONVERSIÓN CON ZONA HORARIA DE PERÚ
-      startDate = convertirAPeruTime(cita.start);
-      endDate = convertirAPeruTime(cita.end);
-
-      // Verificar si las fechas son válidas
-      console.log(`Fecha start original: ${cita.start}, convertida Perú: ${startDate}`);
-      console.log(`Fecha end original: ${cita.end}, convertida Perú: ${endDate}`);
-      
-      console.log(`Start en UTC: ${startDate.toISOString()}, Local: ${startDate.toString()}`);
-      console.log(`End en UTC: ${endDate.toISOString()}, Local: ${endDate.toString()}`);
-
-      // Manejar fechas inválidas
-      if (isNaN(startDate.getTime())) {
-        console.error("Fecha start inválida:", cita.start);
-        startDate = new Date(new Date().toLocaleString('en-US', { timeZone }));
-      }
-
-      if (isNaN(endDate.getTime())) {
-        console.error("Fecha end inválida:", cita.end);
-        // +1 hora en horario peruano
-        endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
-        endDate = new Date(endDate.toLocaleString('en-US', { timeZone }));
-      }
-
-      let backgroundColor = "#00aae4";
-      if (cita.extendedProps.estado === "Programada") backgroundColor = "#00aae4";
-      else if (cita.extendedProps.estado === "En progreso") backgroundColor = "#f59e0b";
-      else if (cita.extendedProps.estado === "Completada") backgroundColor = "#16a34a";
-      else if (cita.extendedProps.estado === "Cancelada") backgroundColor = "#dc2626";
-
-      return {
-        id: cita.id,
-        title: cita.title,
-        start: startDate,
-        end: endDate,
-        backgroundColor,
-        borderColor: "#000000",
-        textColor: "#fafbfd",
-        extendedProps: {
-          Descripcion: cita.descripcion,
-          ClienteID: cita.extendedProps.clienteID,
-          EmpId: cita.extendedProps.EmpId,
-          ClienteNombre: cita.extendedProps.clienteNombre,
-          EmpleadoNombre: cita.extendedProps.empleadoNombre,
-          Estado: cita.extendedProps.estado,
-        },
-      };
-    });
-
-    setEventos(eventosConvertidos);
-  } catch (error) {
-    console.error("❌ Error al cargar citas:", error);
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const cargarClientes = async () => {
     try {
@@ -309,17 +204,17 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
   const manejarClickCelda = (clickInfo) => {
     console.log("🟢 Click en celda:", clickInfo);
 
-    // Obtener la fecha local correctamente (sin problemas de zona horaria)
-    const fechaClick = new Date(clickInfo.date);
+    // Obtener la fecha del click (ya viene en la zona horaria configurada del calendario)
+    const fechaClick = new Date(clickInfo.dateStr);
 
-    // Crear fecha de inicio (usando métodos locales)
+    // Crear fecha de inicio
     const fechaInicio = new Date(fechaClick);
 
     // Crear fecha de fin (1 hora después)
     const fechaFin = new Date(fechaClick);
     fechaFin.setHours(fechaFin.getHours() + 1);
 
-    // Formatear a ISO string sin problemas de zona horaria
+    // Formatear para el formulario (mantener en zona horaria local)
     const formatoISO = (fecha) => {
       const year = fecha.getFullYear();
       const month = String(fecha.getMonth() + 1).padStart(2, '0');
@@ -343,8 +238,8 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
     });
 
     console.log("📝 Formulario configurado para nueva cita");
-    console.log("⏰ Hora inicio:", formatoISO(fechaInicio));
-    console.log("⏰ Hora fin:", formatoISO(fechaFin));
+    console.log("⏰ Hora inicio Perú:", formatoISO(fechaInicio));
+    console.log("⏰ Hora fin Perú:", formatoISO(fechaFin));
 
     setModalKey(prev => prev + 1);
     setModalCita(true);
@@ -355,13 +250,27 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
     const ev = clickInfo.event;
     const props = ev.extendedProps || {};
 
+    // Convertir las fechas del evento a formato ISO local para el formulario
+    const formatEventDate = (date) => {
+      if (!date) return '';
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return '';
+      
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
     setForm({
       CitaID: ev.id,
       Titulo: props.Titulo || ev.title || "",
       clienteNombre: props.ClienteNombre,
       Descripcion: props.Descripcion || "",
-      FechaInicio: ev.startStr,
-      FechaFin: ev.endStr || ev.startStr,
+      FechaInicio: formatEventDate(ev.start),
+      FechaFin: formatEventDate(ev.end) || formatEventDate(ev.start),
       ClienteID: props.ClienteID || "",
       EmpId: props.EmpId || "",
       Estado: props.Estado || "Programada",
@@ -369,6 +278,9 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
     });
 
     console.log("📝 Formulario configurado para editar cita");
+    console.log("📅 Fecha inicio:", formatEventDate(ev.start));
+    console.log("📅 Fecha fin:", formatEventDate(ev.end));
+
     setModalKey(prev => prev + 1);
     setModalCita(true);
   };
@@ -393,20 +305,25 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
         ? `${BACKEND_URL}/api/citas/${form.CitaID}`
         : `${BACKEND_URL}/api/citas`;
 
+      // IMPORTANTE: Asegurar que las fechas se envíen en formato ISO
+      const fechaInicioISO = new Date(form.FechaInicio).toISOString();
+      const fechaFinISO = new Date(form.FechaFin).toISOString();
+
       const cuerpoCita = {
         ...form,
         title: form.Titulo,
         descripcion: form.Descripcion,
-        start: form.FechaInicio,
-        end: form.FechaFin,
+        start: fechaInicioISO, // Enviar en formato ISO
+        end: fechaFinISO,      // Enviar en formato ISO
         extendedProps: {
           clienteID: form.ClienteID,
           EmpId: form.EmpId,
-          estado: form.Estado
+          estado: form.Estado,
+          clienteNombre: form.clienteNombre || ""
         }
       };
 
-      console.log("📤 Enviando datos:", cuerpoCita);
+      console.log("📤 Enviando datos al servidor:", cuerpoCita);
 
       const respuesta = await fetch(url, {
         method: metodo,
@@ -445,7 +362,6 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
   };
 
   return (
-    
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4 md:p-6">
       {/* Header ultra compacto */}
       <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4 mb-3 border border-blue-100">
@@ -456,7 +372,7 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
             </div>
             <div>
               <h1 className="text-lg sm:text-xl font-bold text-gray-800">Agenda de Citas</h1>
-              <p className="text-gray-600 text-xs">Horario: 9:00 AM - 11:00 PM</p>
+              <p className="text-gray-600 text-xs">Horario Perú: 9:00 AM - 11:00 PM (GMT-5)</p>
             </div>
           </div>
 
@@ -504,31 +420,42 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
             dateClick={manejarClickCelda}
             events={eventos}
             eventClick={manejarClickEvento}
-            timeZone='America/Lima' // ← Agrega esta línea
+            
+            // CONFIGURACIÓN PARA HORARIO PERUANO
+            timeZone={TIME_ZONE}
             nowIndicator={true}
             height="auto"
-            // HORARIO CONFIGURADO: 9AM - 11PM
+            
+            // HORARIO CONFIGURADO: 9AM - 11PM (Horario Perú)
             slotMinTime="09:00:00"
             slotMaxTime="23:00:00"
             allDaySlot={false}
-            // CAMBIO IMPORTANTE: Slot de 30 minutos para permitir eventos en medias horas
+            
+            // Configuración de slots
             slotDuration="00:30:00"
-            slotLabelInterval="01:00:00" // Mostrar etiquetas cada hora
+            slotLabelInterval="01:00:00"
+            
+            // Configuración regional
             locale={esLocale}
             firstDay={1}
-            displayEventTime={true} // MOSTRAR TIEMPO en los eventos
+            
+            // Mostrar tiempo en eventos
+            displayEventTime={true}
             eventTimeFormat={{
               hour: 'numeric',
               minute: '2-digit',
               hour12: true,
               meridiem: 'short'
             }}
+            
             slotLabelFormat={{
               hour: 'numeric',
               minute: '2-digit',
               hour12: true,
-              meridiem: 'short'
+              meridiem: 'short',
+              timeZoneName: 'short'
             }}
+            
             buttonText={{
               today: "Hoy",
               month: "Mes",
@@ -536,11 +463,13 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
               day: "Día",
               list: "Lista",
             }}
+            
             headerToolbar={{
               left: "prev,next today",
               center: "title",
               right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek",
             }}
+            
             views={{
               dayGridMonth: {
                 titleFormat: { year: 'numeric', month: 'long' },
@@ -556,29 +485,22 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
                   hour12: true,
                   meridiem: 'short'
                 },
-                // CAMBIO IMPORTANTE: Slot de 30 minutos
                 slotDuration: '00:30:00',
                 slotLabelInterval: '01:00:00',
                 allDaySlot: false,
                 expandRows: true,
-                dayHeaderFormat: { weekday: 'long', day: 'numeric', month: 'short' },
+                dayHeaderFormat: { 
+                  weekday: 'long', 
+                  day: 'numeric', 
+                  month: 'short' 
+                },
                 dateClick: manejarClickCelda,
                 slotEventOverlap: false,
-                // CELDAS MÁS ALTAS PARA MEJOR VISUALIZACIÓN
-                slotHeight: 60, // Reducido porque ahora hay el doble de slots
+                slotHeight: 60,
                 contentHeight: 'auto',
                 dayMinHeight: 120,
-                dayMaxEvents: true,  // ✅ Permitir todos los eventos
-                moreLinkClick: "popover",  // ✅ Popover para eventos adicionales
-                // MEJOR ALINEACIÓN DE EVENTOS
-                eventPositioned: (info) => {
-                  // Forzar alineación correcta
-                  const eventEl = info.el;
-                  if (eventEl) {
-                    eventEl.style.position = 'absolute';
-                    eventEl.style.top = '0px';
-                  }
-                }
+                dayMaxEvents: true,
+                moreLinkClick: "popover",
               },
               timeGridDay: {
                 titleFormat: { year: 'numeric', month: 'long', day: 'numeric' },
@@ -601,6 +523,7 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
                 listDaySideFormat: false
               }
             }}
+            
             eventMaxStack={2}
             eventOrder="start,title"
             eventOverlap={false}
@@ -609,16 +532,14 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
               startTime: '09:00',
               endTime: '23:00'
             }}
-            // EVENTOS CON MEJOR ALINEACIÓN Y ESPACIADO INTERNO
+            
             eventContent={(arg) => {
               const empleado = arg.event.extendedProps?.EmpleadoNombre || "";
               const titulo = arg.event.title || "";
               const cliente = arg.event.extendedProps?.ClienteNombre || "";
               const estado = arg.event.extendedProps?.Estado || "";
-
               const horaInicio = arg.timeText || "";
 
-              // Icono según estado
               const iconoEstado = {
                 'Programada': '⏰',
                 'En progreso': '🔄',
@@ -631,8 +552,7 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
                   {/* Estado y Título */}
                   <div className="flex items-center gap-1">
                     <span className="text-[8px] flex-shrink-0">{iconoEstado}</span>
-                    <div className="font-bold text-white text-[12px] leading-tight truncate flex-1 
-                tracking-tight antialiased">
+                    <div className="font-bold text-white text-[12px] leading-tight truncate flex-1 tracking-tight antialiased">
                       {titulo}
                     </div>
                   </div>
@@ -644,46 +564,38 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
                       <span className="truncate flex-1">{cliente}</span>
                     </div>
                   )}
+                  
+                  {/* Hora */}
                   {horaInicio && (
                     <div className="text-white text-[10px] leading-tight flex items-center gap-1">
                       <span className="text-[8px] flex-shrink-0">🕒</span>
-                      <span className="fruncate flex-1">{horaInicio} </span>
+                      <span className="truncate flex-1">{horaInicio}</span>
                     </div>
                   )}
-                  {/* Empleado */}
-                  {/*                   {empleado && (
-                    <div className="text-white text-[9px] leading-tight opacity-90 flex items-center gap-1">
-                      <span className="text-[8px] flex-shrink-0">💼</span>
-                      <span className="truncate flex-1">{empleado}</span>
-                    </div>
-                  )} */}
                 </div>
               );
             }}
-            // Configuración para mejor alineación
+            
             dayMaxEvents={6}
             moreLinkClick="week"
             moreLinkContent={(args) => {
               return `+${args.num} más`;
             }}
+            
             eventClassNames="border-0 rounded-lg shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer mx-0.5 mb-0.5 align-top"
             dayHeaderClassNames="bg-gray-50 text-gray-700 font-semibold text-sm py-2"
             slotLabelClassNames="text-gray-600 font-medium text-[15px] py-2"
-            // nowIndicatorClassNames="bg-red-500 h-full"
-            // Configuración de altura
+            
             slotHeight={60}
             expandRows={true}
             contentHeight="auto"
-            // Espaciado entre eventos
             eventMargin={1}
-            // Configuración adicional para mejor alineación
             dayCellClassNames="min-h-[60px]"
             eventDisplay="block"
             eventMinHeight={40}
             eventShortHeight={40}
-            // MEJOR ALINEACIÓN: Forzar que los eventos empiecen en el top
+            
             eventDidMount={(info) => {
-              // Asegurar que el evento ocupe el espacio correcto
               const eventEl = info.el;
               if (eventEl) {
                 eventEl.style.position = 'absolute';
@@ -743,8 +655,8 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
 
       <ModalVenta
         isOpen={isVentaModalOpen}
-        onClose={handleCloseVentaModal} // ← USA LA NUEVA FUNCIÓN
-        onRequestClose={handleCloseVentaModal} // ← ESTA LÍNEA ES IMPORTANTE PARA CUANDO SE HACE CLICK FUERA DEL MODAL
+        onClose={handleCloseVentaModal}
+        onRequestClose={handleCloseVentaModal}
         citaInfo={form}
         onSave={handleGuardarVenta}
       />
