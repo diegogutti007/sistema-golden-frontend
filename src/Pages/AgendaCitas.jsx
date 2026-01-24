@@ -139,12 +139,12 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
         let startDate, endDate;
 
         // Opción A: Si vienen como string ISO (recomendado)
-        startDate = new Date(cita.start);
-        endDate = new Date(cita.end);
+/*         startDate = new Date(cita.start);
+        endDate = new Date(cita.end); */
 
         // Opción B: Si vienen en otro formato, ajustar
-        // startDate = new Date(cita.start.replace(' ', 'T'));
-        // endDate = new Date(cita.end.replace(' ', 'T'));
+         startDate = new Date(cita.start.replace(' ', 'T'));
+         endDate = new Date(cita.end.replace(' ', 'T'));
 
         // Verificar si las fechas son válidas
         console.log(`Fecha start original: ${cita.start}, convertida: ${startDate}`);
