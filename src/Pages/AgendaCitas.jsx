@@ -127,7 +127,7 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
       }
     }; */
 
-  /* const cargarCitas = async () => {
+   const cargarCitas = async () => {
     setIsLoading(true);
     try {
       const res = await fetch(`${BACKEND_URL}/api/citas`);
@@ -192,9 +192,9 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
     } finally {
       setIsLoading(false);
     }
-  }; */
+  }; 
 
-  const cargarCitas = async () => {
+  /* const cargarCitas = async () => {
   setIsLoading(true);
   try {
     const res = await fetch(`${BACKEND_URL}/api/citas`);
@@ -278,7 +278,7 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
   } finally {
     setIsLoading(false);
   }
-};
+}; */
 
   const cargarClientes = async () => {
     try {
