@@ -365,7 +365,15 @@ const manejarClickCelda = (clickInfo) => {
 
   // Formatear para input datetime-local (YYYY-MM-DDTHH:MM)
   const formatoInput = (fecha) => {
-    return fecha.toISOString().slice(0, 16);
+    const pad = (num) => num.toString().padStart(2, '0');
+    
+    const año = fecha.getFullYear();
+    const mes = pad(fecha.getMonth() + 1); // Mes es 0-indexed
+    const dia = pad(fecha.getDate());
+    const horas = pad(fecha.getHours());
+    const minutos = pad(fecha.getMinutes());
+    
+    return `${año}-${mes}-${dia}T${horas}:${minutos}`;
   };
 
   setForm({
