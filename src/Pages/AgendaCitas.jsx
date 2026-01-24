@@ -356,7 +356,7 @@ const manejarClickCelda = (clickInfo) => {
   // El calendario está configurado con timeZone='America/Lima'
   // clickInfo.dateStr viene formateada en esa zona horaria
   const fechaClick = new Date(clickInfo.dateStr);
-  
+  console.log('este es un ejemplo',clickInfo.dateStr);
   // Crear fecha de fin (1 hora después)
   const fechaFin = new Date(fechaClick);
   fechaFin.setHours(fechaFin.getHours() + 1);
