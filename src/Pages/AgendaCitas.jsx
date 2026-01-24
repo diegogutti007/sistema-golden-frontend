@@ -355,12 +355,12 @@ const manejarClickCelda = (clickInfo) => {
 
   // El calendario está configurado con timeZone='America/Lima'
   // clickInfo.dateStr viene formateada en esa zona horaria
-  //const fechaClick = new Date(clickInfo.dateStr);
-  const fechaClick = clickInfo.dateStr;
+  const fechaClick = new Date(clickInfo.dateStr);
+  //const fechaClick = clickInfo.dateStr;
   //console.log('este es un ejemplo',);
   // Crear fecha de fin (1 hora después)
-  //const fechaFin = new Date(fechaClick);
-  const fechaFin = fechaClick;
+  const fechaFin = new Date(fechaClick);
+  //const fechaFin = fechaClick;
   fechaFin.setHours(fechaFin.getHours() + 1);
 
   // Formatear para input datetime-local (YYYY-MM-DDTHH:MM)
@@ -546,8 +546,8 @@ const manejarClickCelda = (clickInfo) => {
             dateClick={manejarClickCelda}
             events={eventos}
             eventClick={manejarClickEvento}
-            timeZone='America/Lima' // ← Agrega esta línea
-            timeZoneParam='UTC'  // ← INDICA QUE EL BACKEND ENVÍA EN UTC
+          //  timeZone='America/Lima' // ← Agrega esta línea
+          //  timeZoneParam='UTC'  // ← INDICA QUE EL BACKEND ENVÍA EN UTC
             nowIndicator={true}
             height="auto"
             // HORARIO CONFIGURADO: 9AM - 11PM
