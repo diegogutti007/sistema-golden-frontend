@@ -355,10 +355,12 @@ const manejarClickCelda = (clickInfo) => {
 
   // El calendario está configurado con timeZone='America/Lima'
   // clickInfo.dateStr viene formateada en esa zona horaria
-  const fechaClick = new Date(clickInfo.dateStr);
-  console.log('este es un ejemplo',clickInfo.dateStr);
+  //const fechaClick = new Date(clickInfo.dateStr);
+  const fechaClick = clickInfo.dateStr;
+  //console.log('este es un ejemplo',);
   // Crear fecha de fin (1 hora después)
-  const fechaFin = new Date(fechaClick);
+  //const fechaFin = new Date(fechaClick);
+  const fechaFin = fechaClick;
   fechaFin.setHours(fechaFin.getHours() + 1);
 
   // Formatear para input datetime-local (YYYY-MM-DDTHH:MM)
