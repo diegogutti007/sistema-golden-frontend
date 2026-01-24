@@ -306,7 +306,7 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
     cargarEmpleados();
   }, []);
 
-  const manejarClickCelda = (clickInfo) => {
+ /*  const manejarClickCelda = (clickInfo) => {
     console.log("🟢 Click en celda:", clickInfo);
 
     // Obtener la fecha local correctamente (sin problemas de zona horaria)
@@ -348,7 +348,47 @@ const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inici
 
     setModalKey(prev => prev + 1);
     setModalCita(true);
+  }; */
+
+const manejarClickCelda = (clickInfo) => {
+  console.log("🟢 Click en celda:", clickInfo);
+
+  // El calendario está configurado con timeZone='America/Lima'
+  // clickInfo.dateStr viene formateada en esa zona horaria
+  const fechaClick = new Date(clickInfo.dateStr);
+  
+  // Crear fecha de fin (1 hora después)
+  const fechaFin = new Date(fechaClick);
+  fechaFin.setHours(fechaFin.getHours() + 1);
+
+  // Formatear para input datetime-local (YYYY-MM-DDTHH:MM)
+  const formatoInput = (fecha) => {
+    return fecha.toISOString().slice(0, 16);
   };
+
+  setForm({
+    CitaID: null,
+    ClienteID: "",
+    EmpId: "",
+    Titulo: "",
+    Descripcion: "",
+    clienteNombre: "",
+    FechaInicio: formatoInput(fechaClick),
+    FechaFin: formatoInput(fechaFin),
+    Estado: "Programada",
+    EstadoOriginal: "Programada"
+  });
+
+  console.log("📝 Nueva cita - Horario Perú:");
+  console.log("⏰ Inicio:", formatoInput(fechaClick));
+  console.log("⏰ Fin:", formatoInput(fechaFin));
+  console.log("📅 Fecha objeto:", fechaClick.toString());
+
+  setModalKey(prev => prev + 1);
+  setModalCita(true);
+};
+
+
 
   const manejarClickEvento = (clickInfo) => {
     console.log("🟡 Click en evento:", clickInfo);
