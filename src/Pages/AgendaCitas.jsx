@@ -28,6 +28,15 @@ export default function AgendaCitas() {
   const [modalKey, setModalKey] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
+
+//modificacion
+const [slotHeight, setSlotHeight] = useState(60); // Altura inicial de 60px
+const [slotDuration, setSlotDuration] = useState('00:30:00'); // Duración inicial de 30 min/
+
+////////////////////
+
+
+
   const [form, setForm] = useState({
     CitaID: null,
     ClienteID: "",
@@ -350,6 +359,7 @@ export default function AgendaCitas() {
   };
 
   return (
+    
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4 md:p-6">
       {/* Header ultra compacto */}
       <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4 mb-3 border border-blue-100">
@@ -520,46 +530,7 @@ export default function AgendaCitas() {
               const cliente = arg.event.extendedProps?.ClienteNombre || "";
               const estado = arg.event.extendedProps?.Estado || "";
 
-/*               const horaInicio = arg.event.start
-                ? (() => {
-                  const fecha = new Date(arg.event.start);
-                  let hora = fecha.getHours();
-                  const minutos = fecha.getMinutes().toString().padStart(2, '0');
-                  const ampm = hora >= 12 ? 'p. m.' : 'a. m.';
-
-                  // Convertir a formato 12h
-                  hora = hora % 12 || 12;
-                  console.log('Fecha original:', arg.event.start);
-                  return `${hora}:${minutos} ${ampm}`;
-                })()
-                : ""; */
-
-               const horaInicio = arg.timeText || "";
-
-              console.log('=== DEBUG HORA ===');
-              console.log('Fecha original:', arg.event.start);
-              console.log('Como Date:', new Date(arg.event.start));
-              console.log('Hora UTC:', new Date(arg.event.start).toISOString());
-              console.log('Hora en Lima (24h):', new Date(arg.event.start).toLocaleTimeString('es-PE', {
-                timeZone: 'America/Lima',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-              }));
-              console.log('Hora en Lima (12h):', new Date(arg.event.start).toLocaleTimeString('es-PE', {
-                timeZone: 'America/Lima',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true
-              }));
-
-              const horaFin = arg.event.end
-                ? arg.event.end.toLocaleTimeString('es-ES', {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                  hour12: true
-                })
-                : "";
+              const horaInicio = arg.timeText || "";
 
               // Icono según estado
               const iconoEstado = {

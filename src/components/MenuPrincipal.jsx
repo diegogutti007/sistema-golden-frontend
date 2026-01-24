@@ -66,7 +66,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
   const wrapperRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // ✅ USAR HOOK DE INACTIVIDAD
   const { handleUserActivity } = useInactivity(20);
 
@@ -86,7 +86,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
     const handleResize = () => {
       const newWidth = window.innerWidth;
       const newHeight = window.innerHeight;
-      
+
       setWindowWidth(newWidth);
       setWindowHeight(newHeight);
 
@@ -94,7 +94,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
       if (newWidth >= BREAKPOINTS.LAPTOP && mobileMenuOpen) {
         setMobileMenuOpen(false);
       }
-      
+
       // Cerrar submenús en móvil
       if (newWidth < BREAKPOINTS.LAPTOP) {
         setEmpleadosOpen(false);
@@ -181,7 +181,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
   const isMobile = windowWidth < BREAKPOINTS.MOBILE;
   const isTablet = windowWidth >= BREAKPOINTS.MOBILE && windowWidth < BREAKPOINTS.LAPTOP;
   const isLaptop = windowWidth >= BREAKPOINTS.LAPTOP;
-  
+
   const shouldUseMobileMenu = isMobile || isTablet;
   const shouldUseDesktopMenu = isLaptop;
 
@@ -212,13 +212,12 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
         className="bg-gradient-to-r from-gray-900 to-black border-b border-yellow-500/20 shadow-2xl w-full"
         onClick={handleUserActivity}
       >
-        <div className={`mx-auto ${
-          isMobile ? 'px-3' : 
-          isTablet ? 'px-6' : 
-          'max-w-7xl px-8'
-        }`}>
+        <div className={`mx-auto ${isMobile ? 'px-3' :
+          isTablet ? 'px-6' :
+            'max-w-7xl px-8'
+          }`}>
           <div className={`flex justify-between items-center ${getNavbarHeight()}`}>
-            
+
             {/* ✅ LOGO */}
             <div className="flex-shrink-0">
               <a
@@ -226,14 +225,13 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                 onClick={handleLogoClick}
                 className="flex items-center space-x-2 group cursor-pointer"
               >
-                <div className={`${
-                  isMobile ? 'h-12 w-12' : 
+                <div className={`${isMobile ? 'h-12 w-12' :
                   'h-14 w-14'
-                } relative rounded-full overflow-hidden shadow-lg transform group-hover:scale-105 transition-transform duration-200`}>
-                  <img 
-                    src={logo} 
+                  } relative rounded-full overflow-hidden shadow-lg transform group-hover:scale-105 transition-transform duration-200`}>
+                  <img
+                    src={logo}
                     alt="Golden Nails Logo"
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent pointer-events-none" />
                 </div>
@@ -371,34 +369,34 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                       <ChevronDown className={`w-4 h-4 transition-transform ${citasOpen ? 'rotate-180' : ''}`} />
                     </button>
 
-                      {citasOpen && (
-                        <div className="absolute top-full left-0 mt-2 w-56 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl backdrop-blur-lg z-50 overflow-hidden animate-fadeIn">
-                          <div className="p-2">
+                    {citasOpen && (
+                      <div className="absolute top-full left-0 mt-2 w-56 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl backdrop-blur-lg z-50 overflow-hidden animate-fadeIn">
+                        <div className="p-2">
+                          <SubmenuItem
+                            to="/citas"
+                            onClick={() => setCitasOpen(false)}
+                            icon={Calendar}
+                            title="Agenda"
+                            description="Calendario de citas"
+                          />
+                          <HideIfUnauthorized
+                            userRole={userRole}
+                            allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}
+                          >
                             <SubmenuItem
-                              to="/citas"
+                              to="/citas/Historial"
                               onClick={() => setCitasOpen(false)}
-                              icon={Calendar}
-                              title="Agenda"
-                              description="Calendario de citas"
+                              icon={History}
+                              iconBg="bg-blue-500/10"
+                              iconColor="text-blue-400"
+                              title="Historial"
+                              description="Citas anteriores"
                             />
-                            <HideIfUnauthorized
-                              userRole={userRole}
-                              allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}
-                            >
-                              <SubmenuItem
-                                to="/citas/Historial"
-                                onClick={() => setCitasOpen(false)}
-                                icon={History}
-                                iconBg="bg-blue-500/10"
-                                iconColor="text-blue-400"
-                                title="Historial"
-                                description="Citas anteriores"
-                              />
-                            </HideIfUnauthorized>
-                          </div>
+                          </HideIfUnauthorized>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Ventas Dropdown */}
                   <div className="relative">
@@ -449,6 +447,33 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                               iconColor="text-yellow-400"
                               title="Cierre de Caja"
                               description="Cierre de Caja Diario"
+                            />
+                            <SubmenuItem
+                              to="/Ventas/EstadoResultados"
+                              onClick={() => setVentasOpen(false)}
+                              icon={DollarSign}
+                              iconBg="bg-yellow-500/10"
+                              iconColor="text-yellow-400"
+                              title="Estado de Resultados"
+                              description="Estado de Resultados Mensual"
+                            />
+                            <SubmenuItem
+                              to="/Ventas/BalanceGeneral"
+                              onClick={() => setVentasOpen(false)}
+                              icon={DollarSign}
+                              iconBg="bg-yellow-500/10"
+                              iconColor="text-yellow-400"
+                              title="Balance General"
+                              description="Balance General"
+                            />
+                            <SubmenuItem
+                              to="/Ventas/FlujoEfectivo"
+                              onClick={() => setVentasOpen(false)}
+                              icon={DollarSign}
+                              iconBg="bg-yellow-500/10"
+                              iconColor="text-yellow-400"
+                              title="Flujo de Efectivo"
+                              description="Flujo de Efectivo"
                             />
                           </HideIfUnauthorized>
                         </div>
@@ -544,12 +569,11 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                       <div className="font-medium text-sm truncate max-w-[120px]">
                         {usuario?.nombre || usuario?.usuario || "Usuario"}
                       </div>
-                      <div className={`text-xs px-2 py-0.5 rounded-full ${
-                        userRole === ROLES.ADMIN ? 'bg-purple-500/20 text-purple-400' :
+                      <div className={`text-xs px-2 py-0.5 rounded-full ${userRole === ROLES.ADMIN ? 'bg-purple-500/20 text-purple-400' :
                         userRole === ROLES.GERENTE ? 'bg-blue-500/20 text-blue-400' :
-                        userRole === ROLES.SUPERVISOR ? 'bg-green-500/20 text-green-400' :
-                        'bg-gray-500/20 text-gray-400'
-                      }`}>
+                          userRole === ROLES.SUPERVISOR ? 'bg-green-500/20 text-green-400' :
+                            'bg-gray-500/20 text-gray-400'
+                        }`}>
                         {userRole}
                       </div>
                     </div>
@@ -597,23 +621,19 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
               {shouldUseMobileMenu && (
                 <div className="flex items-center space-x-2 text-gray-400">
                   <div className="flex items-center space-x-1">
-                    <User className={`${
-                      isMobile ? 'w-3 h-3' : 'w-4 h-4'
-                    } text-blue-400`} />
-                    <span className={`${
-                      isMobile ? 'text-xs' : 'text-sm'
-                    } truncate max-w-[100px]`}>
+                    <User className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'
+                      } text-blue-400`} />
+                    <span className={`${isMobile ? 'text-xs' : 'text-sm'
+                      } truncate max-w-[100px]`}>
                       {usuario?.nombre || usuario?.usuario || "Usuario"}
                     </span>
                   </div>
-                  <span className={`${
-                    isMobile ? 'text-[10px]' : 'text-xs'
-                  } px-1.5 py-0.5 rounded-full ${
-                    userRole === ROLES.ADMIN ? 'bg-purple-500/20 text-purple-400' :
-                    userRole === ROLES.GERENTE ? 'bg-blue-500/20 text-blue-400' :
-                    userRole === ROLES.SUPERVISOR ? 'bg-green-500/20 text-green-400' :
-                    'bg-gray-500/20 text-gray-400'
-                  }`}>
+                  <span className={`${isMobile ? 'text-[10px]' : 'text-xs'
+                    } px-1.5 py-0.5 rounded-full ${userRole === ROLES.ADMIN ? 'bg-purple-500/20 text-purple-400' :
+                      userRole === ROLES.GERENTE ? 'bg-blue-500/20 text-blue-400' :
+                        userRole === ROLES.SUPERVISOR ? 'bg-green-500/20 text-green-400' :
+                          'bg-gray-500/20 text-gray-400'
+                    }`}>
                     {userRole}
                   </span>
                 </div>
@@ -641,13 +661,11 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
 
         {/* ✅ MOBILE & TABLET MENU */}
         {shouldUseMobileMenu && (
-          <div className={`fixed top-${getNavbarHeight().split('-')[1]} left-0 right-0 bottom-0 bg-gray-900 transform transition-transform duration-300 ease-in-out z-40 overflow-y-auto ${
-            mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}>
-            <div className={`${
-              isMobile ? 'px-4 py-4' : 'px-6 py-6'
-            } space-y-${isMobile ? '3' : '4'}`}>
-              
+          <div className={`fixed top-${getNavbarHeight().split('-')[1]} left-0 right-0 bottom-0 bg-gray-900 transform transition-transform duration-300 ease-in-out z-40 overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}>
+            <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6'
+              } space-y-${isMobile ? '3' : '4'}`}>
+
               {/* Inicio */}
               <a
                 href="/"
@@ -769,6 +787,30 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                   >
                     <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
                     <span>Cierre de Caja</span>
+                  </Link>
+                  <Link
+                    to="/Ventas/EstadoResultados"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                  >
+                    <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                    <span>Estado de Resultados</span>
+                  </Link>
+                  <Link
+                    to="/Ventas/BalanceGeneral"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                  >
+                    <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                    <span>Balance General</span>
+                  </Link>
+                  <Link
+                    to="/Ventas/FlujoEfectivo"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                  >
+                    <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                    <span>Flujo de Efectivo</span>
                   </Link>
                 </HideIfUnauthorized>
               </div>

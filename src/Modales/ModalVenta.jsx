@@ -30,8 +30,9 @@ export default function ModalVenta({
         const minutos = String(ahora.getMinutes()).padStart(2, '0');
         
         return `${año}-${mes}-${dia}T${horas}:${minutos}`;
+        
     };
-
+    console.log("🎯 citarrrrr:", obtenerFechaLocal());
     // 🔹 Función para formatear fecha de la cita al formato correcto
     const formatearFechaCita = (fechaISO) => {
         if (!fechaISO) return obtenerFechaLocal();
@@ -107,9 +108,9 @@ export default function ModalVenta({
             console.log("🔄 Inicializando form con cita:", citaInfo);
             
             // Usar la fecha de la cita o la fecha actual si no hay cita
-            const fechaVenta = citaInfo.FechaFin 
-                ? formatearFechaCita(citaInfo.FechaFin)
-                : obtenerFechaLocal();
+            const fechaVenta = obtenerFechaLocal(); //citaInfo.FechaFin 
+/*                 ? citaInfo.FechaFin
+                : obtenerFechaLocal(); */
             
             console.log("🕐 Fecha de venta establecida:", fechaVenta);
             
@@ -214,9 +215,9 @@ export default function ModalVenta({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(ventaData),
             });
-
+            console.log("💾 Este es un ejemplo");
             if (res.ok) {
-                alert("✅ Venta registrada correctamente");
+                alert("✅ Venta registrada correctamente", form.CitaID);
 
                 if (form.CitaID) {
                     await fetch(`${BACKEND_URL}/api/citas/${form.CitaID}/estado`, {
@@ -230,7 +231,7 @@ export default function ModalVenta({
                 onClose();
             } else {
                 const errorData = await res.json();
-                alert(`❌ Error al registrar la venta: ${errorData.message || res.statusText}`);
+                alert(`❌ Error al registrar la ventasss: ${errorData.message || res.statusText}`);
             }
         } catch (err) {
             console.error(err);
