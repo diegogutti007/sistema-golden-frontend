@@ -958,9 +958,9 @@ export default function AgendaCitas() {
       <div className="bg-white rounded-xl shadow-lg border border-blue-100 overflow-auto">
         <div className="min-w-[1200px]">
           <FullCalendar
-            height="800px"
+            height="1200px"
             slotMinHeight={90}
-            expandRows={false}
+            //expandRows={false}
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
             initialView="timeGridWeek"
@@ -979,7 +979,7 @@ export default function AgendaCitas() {
             slotDuration="00:30:00"
             //slotMinHeight={80}
             //expandRows={true}
-            contentHeight="auto"
+            //contentHeight="auto"
             slotLabelInterval="01:00:00"
             locale={esLocale}
             firstDay={1}
@@ -1034,7 +1034,7 @@ export default function AgendaCitas() {
                 dayHeaderClassNames: "cursor-pointer hover:bg-gray-200 transition-colors",
                 slotEventOverlap: false,
                 //slotHeight: 60,
-                contentHeight: 'auto',
+                //contentHeight: 'auto',
                 dayMinHeight: 120,
                 dayMaxEvents: true,
                 moreLinkClick: "popover",
@@ -1053,7 +1053,7 @@ export default function AgendaCitas() {
                 dateClick: manejarClickCelda,
                 slotEventOverlap: false,
                 //slotHeight: 60,
-                contentHeight: 'auto',
+                //contentHeight: 'auto',
                 dayMinHeight: 120,
                 dayHeaderClassNames: "cursor-pointer hover:bg-gray-200 transition-colors"
               },
