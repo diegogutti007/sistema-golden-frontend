@@ -974,6 +974,7 @@ export default function AgendaCitas() {
             slotMaxTime="23:00:00"
             allDaySlot={false}
             slotDuration="00:30:00"
+            slotMinHeight={80}
             slotLabelInterval="01:00:00"
             locale={esLocale}
             firstDay={1}
