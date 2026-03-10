@@ -131,24 +131,27 @@ export default function AgendaCitas() {
     };
   };
 
+  const obtenerHoyPeru = () => {
+    const ahora = new Date();
+
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Lima',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+
+    const fechaStr = formatter.format(ahora); // YYYY-MM-DD
+    const [anio, mes, dia] = fechaStr.split('-').map(Number);
+
+    return new Date(anio, mes - 1, dia);
+  };
+
+
   // Inicializar fechas al cargar
   useEffect(() => {
     //const hoy = new Date();
-    const obtenerHoyPeru = () => {
-      const ahora = new Date();
 
-      const formatter = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/Lima',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      });
-
-      const fechaStr = formatter.format(ahora); // YYYY-MM-DD
-      const [anio, mes, dia] = fechaStr.split('-').map(Number);
-
-      return new Date(anio, mes - 1, dia);
-    };
 
     const hoy = obtenerHoyPeru();
     console.log('Inicializar ', hoy);
@@ -692,8 +695,26 @@ export default function AgendaCitas() {
   };
 
   // Componente para mostrar tarjetas de estadísticas
-  const EstadisticasCard = ({ titulo, valor, icono, color, isLoading, subtitulo = null }) => {
-    const displayValue = typeof valor === 'number' ? valor.toFixed(2) : '0.00';
+  /*   const EstadisticasCard = ({ titulo, valor, icono, color, isLoading, subtitulo = null }) => {
+      const displayValue = typeof valor === 'number' ? valor.toFixed(2) : '0.00'; */
+  const EstadisticasCard = ({
+    titulo,
+    valor,
+    icono,
+    color,
+    isLoading,
+    subtitulo = null,
+    tipo = "moneda"
+  }) => {
+
+    let displayValue = "0";
+
+    if (typeof valor === "number") {
+      displayValue = tipo === "moneda"
+        ? valor.toFixed(2)
+        : valor.toString();
+    }
+
 
     return (
       <div className="bg-white rounded-xl shadow-md p-4 border border-gray-100 hover:shadow-lg transition-shadow duration-200">
@@ -711,7 +732,9 @@ export default function AgendaCitas() {
               <div className="h-8 w-24 bg-gray-200 rounded animate-pulse"></div>
             ) : (
               <p className="text-2xl font-bold text-gray-800 flex items-center gap-1">
-                <span className="text-yellow-500 text-lg">S/</span>
+                {tipo === "moneda" && (
+                  <span className="text-yellow-500 text-lg">S/</span>
+                )}
                 {displayValue}
               </p>
             )}
@@ -724,31 +747,19 @@ export default function AgendaCitas() {
     );
   };
 
-  const obtenerHoyPeru = () => {
-    const ahora = new Date();
-
-    const fechaPeru = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Lima",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit"
-    }).format(ahora);
-
-    const [year, month, day] = fechaPeru.split("-").map(Number);
-
-    return new Date(year, month - 1, day);
-  };
-
   // Botón para volver al día actual
   const BotonHoy = () => (
     <button
       onClick={() => {
-        const hoy = obtenerHoyPeru(); // 👈 fecha correcta de Perú
+
+        const hoy = new Date();
+
+        const hoyStr = hoy.toISOString().split("T")[0]; // YYYY-MM-DD
+        console.log('Revisa ', hoyStr);
+
         const semana = calcularFechasSemana(hoy);
 
-        const hoyId = `fc-dom-${hoy.getFullYear()}-${(hoy.getMonth() + 1)
-          .toString()
-          .padStart(2, "0")}-${hoy.getDate().toString().padStart(2, "0")}`;
+        const hoyId = `fc-dom-${hoyStr}`;
 
         setFechasConsulta({
           diaSeleccionado: hoy,
@@ -760,10 +771,11 @@ export default function AgendaCitas() {
 
         const calendarApi = calendarRef.current?.getApi();
         if (calendarApi) {
-          calendarApi.today();
+          calendarApi.gotoDate(hoyStr);
         }
+
       }}
-      className="bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center gap-2 text-sm"
+      className="bg-green-500 text-white px-3 py-2 rounded-lg hover:bg-green-600 flex items-center gap-2 text-sm"
     >
       <FaCalendarDay />
       Hoy
@@ -863,6 +875,16 @@ export default function AgendaCitas() {
           />
 
           <EstadisticasCard
+            titulo="Citas Completadas"
+            subtitulo="Día seleccionado"
+            valor={estadisticasVentas.diaSeleccionado.citasCompletadas}
+            icono={<FaCalendarAlt />}
+            color="bg-purple-50"
+            isLoading={isLoadingVentas}
+            tipo="cantidad"
+          />
+
+          <EstadisticasCard
             titulo="Ventas Semana"
             subtitulo={`${formatearFechaCorta(fechasConsulta.semanaInicio)} - ${formatearFechaCorta(fechasConsulta.semanaFin)}`}
             valor={estadisticasVentas.semanaActual.total}
@@ -872,16 +894,7 @@ export default function AgendaCitas() {
           />
 
           <EstadisticasCard
-            titulo="Citas Completadas"
-            subtitulo="Día seleccionado"
-            valor={estadisticasVentas.diaSeleccionado.citasCompletadas}
-            icono={<FaCalendarAlt className="text-purple-500 text-xl" />}
-            color="bg-purple-50"
-            isLoading={isLoadingVentas}
-          />
-
-          <EstadisticasCard
-            titulo="Total General"
+            titulo="Ventas Mensual"
             subtitulo="Acumulado"
             valor={estadisticasVentas.totalGeneral}
             icono={<FaCreditCard className="text-yellow-500 text-xl" />}
