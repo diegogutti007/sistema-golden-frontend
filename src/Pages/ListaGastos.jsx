@@ -42,6 +42,22 @@ export default function ListaGastos() {
     empleado: ""
   });
 
+  const formatearFecha = (fecha) => {
+    const date = new Date(fecha);
+
+    // corregir desfase de Railway / UTC
+    date.setHours(date.getHours() - 5);
+
+    return date.toLocaleString("es-PE", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"//,
+      //hour: "2-digit",
+      //minute: "2-digit"
+    });
+  };
+
+
   // Opciones para los select
   const [opciones, setOpciones] = useState({
     periodos: [],
@@ -57,6 +73,7 @@ export default function ListaGastos() {
       const data = await res.json();
       setGastos(data);
       setGastosOriginales(data);
+      console.log(data);
 
       // Extraer opciones únicas para los filtros
       const periodosUnicos = [...new Set(data.map(g => g.periodo_nombre).filter(Boolean))].sort();
@@ -116,7 +133,8 @@ export default function ListaGastos() {
     if (filtros.fechaDesde) {
       const fechaDesde = new Date(filtros.fechaDesde);
       resultados = resultados.filter(gasto =>
-        new Date(gasto.fecha_gasto) >= fechaDesde
+        //new Date(gasto.fecha_gasto) >= fechaDesde
+        formatearFecha(gasto.fecha_gasto) >= fechaDesde
       );
     }
 
@@ -124,7 +142,7 @@ export default function ListaGastos() {
       const fechaHasta = new Date(filtros.fechaHasta);
       fechaHasta.setHours(23, 59, 59, 999); // Incluir todo el día
       resultados = resultados.filter(gasto =>
-        new Date(gasto.fecha_gasto) <= fechaHasta
+        formatearFecha(gasto.fecha_gasto) <= fechaHasta
       );
     }
 
@@ -653,7 +671,7 @@ export default function ListaGastos() {
                         <td className="py-4 px-6 text-center text-sm text-gray-700">
                           <div className="flex items-center justify-center space-x-1">
                             <Calendar className="w-4 h-4 text-gray-400" />
-                            <span>{new Date(gasto.fecha_gasto).toLocaleDateString("es-PE")}</span>
+                            <span>{formatearFecha(gasto.fecha_gasto)}</span>
                           </div>
                         </td>
                         <td className="py-4 px-6">
@@ -776,7 +794,7 @@ export default function ListaGastos() {
               <div className="flex items-center space-x-2 mb-3 sm:mb-4">
                 <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400" />
                 <span className="text-xs sm:text-sm text-gray-600">
-                  {new Date(gasto.fecha_gasto).toLocaleDateString("es-PE")}
+                  {formatearFecha(gasto.fecha_gasto)}
                 </span>
               </div>
 
@@ -790,7 +808,7 @@ export default function ListaGastos() {
                   <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="text-xs sm:text-sm">Detalle</span>
                 </button>
-                
+
                 <button
                   onClick={() => openFormulario(gasto)}
                   className="px-3 sm:px-4 py-1.5 sm:py-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors duration-200 flex items-center space-x-1 border border-yellow-200"
@@ -799,7 +817,7 @@ export default function ListaGastos() {
                   <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="text-xs sm:text-sm">Editar</span>
                 </button>
-                
+
                 <button
                   onClick={() => eliminarGasto(gasto.gasto_id)}
                   className="px-3 sm:px-4 py-1.5 sm:py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 flex items-center space-x-1 border border-red-200"
@@ -958,12 +976,7 @@ export default function ListaGastos() {
                         <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Fecha del Gasto</h4>
                         <div className="mt-1">
                           <p className="text-sm sm:text-base font-bold text-gray-900 mb-1">
-                            {new Date(selectedGasto.fecha_gasto).toLocaleDateString("es-PE", {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric'
-                            })}
+                            {formatearFecha(gasto.fecha_gasto)}
                           </p>
                           {/*                          <p className="text-xs text-gray-600">
                             {new Date(selectedGasto.fecha_gasto).toLocaleTimeString("es-PE", {
@@ -1069,7 +1082,7 @@ export default function ListaGastos() {
                   <div className="text-center p-2 sm:p-3 md:col-span-1">
                     <p className="text-gray-400 text-xs mb-1">Fecha Registro</p>
                     <p className="text-white text-xs sm:text-sm">
-                      {new Date(selectedGasto.fecha_gasto).toLocaleDateString("es-PE")}
+                      {formatearFecha(gasto.fecha_gasto)}
                     </p>
                   </div>
                 </div>

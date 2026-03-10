@@ -159,12 +159,12 @@
 
 /* En tu archivo CSS global o módulo */
 .fc-timegrid-slots table {
-  min-height: 1200px !important; /* Altura mínima total */
+  min-height: 15000px !important; /* Altura mínima total */
 }
 
-.fc-timegrid-slot {
-  height: 60px !important; /* Altura específica para cada slot */
-}
+/* .fc-timegrid-slot {
+  height: 60px !important; /* Altura específica para cada slot 
+} */
 
 .fc-timegrid-slot-lane {
   min-height: 60px !important;
