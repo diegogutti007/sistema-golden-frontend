@@ -956,10 +956,10 @@ export default function AgendaCitas() {
 
       {/* Calendar Container */}
       <div className="bg-white rounded-xl shadow-lg border border-blue-100 overflow-auto">
-        <div className="min-w-[1200px]">
+        <div className="w-full max-w-[1800px] mx-auto">
           <FullCalendar
-            height="1200px"
-            slotMinHeight={90}
+            height="1400px"
+            slotMinHeight={100}
             //expandRows={false}
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}

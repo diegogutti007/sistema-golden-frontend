@@ -187,3 +187,7 @@
 .fc .fc-timegrid-slot {
   height: 80px !important;
 }
+
+.fc .fc-timegrid-col {
+  min-width: 220px;
+}
