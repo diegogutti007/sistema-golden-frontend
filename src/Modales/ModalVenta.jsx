@@ -77,7 +77,7 @@ export default function ModalVenta({
                 const [articulosRes, pagosRes, empleadosRes] = await Promise.all([
                     fetch(`${BACKEND_URL}/api/articulos`),
                     fetch(`${BACKEND_URL}/api/tipo_pago`),
-                    fetch(`${BACKEND_URL}/api/listaempleado`),
+                    fetch(`${BACKEND_URL}/api/listaempleadoactivo`),
                 ]);
 
                 const [articulosData, tiposPagoData, empleadosData] = await Promise.all([

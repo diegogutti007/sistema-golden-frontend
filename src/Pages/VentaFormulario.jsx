@@ -51,7 +51,7 @@ export default function VentaFormulario() {
           fetch(`${BACKEND_URL}/api/articulos`),
           fetch(`${BACKEND_URL}/api/tipo_pago`),
           fetch(`${BACKEND_URL}/api/citascombo`),
-          fetch(`${BACKEND_URL}/api/listaempleado`),
+          fetch(`${BACKEND_URL}/api/listaempleadoactivo`),
         ]);
 
         const [clientesData, articulosData, tiposPagoData, citasData, empleadosData] =

@@ -39,7 +39,7 @@ export default function FormularioGasto() {
           fetch(`${BACKEND_URL}/api/categorias`).then(r => r.json()),
           fetch(`${BACKEND_URL}/api/periodos`).then(r => r.json()),
           fetch(`${BACKEND_URL}/api/tipo_pago`).then(r => r.json()),
-          fetch(`${BACKEND_URL}/api/listaempleado`).then(r => r.json())
+          fetch(`${BACKEND_URL}/api/listaempleadoactivo`).then(r => r.json())
         ]);
 
         setCategorias(cat);

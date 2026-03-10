@@ -56,7 +56,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                     fetch(`${BACKEND_URL}/api/clientes`),
                     fetch(`${BACKEND_URL}/api/articulos`),
                     fetch(`${BACKEND_URL}/api/tipo_pago`),
-                    fetch(`${BACKEND_URL}/api/listaempleado`),
+                    fetch(`${BACKEND_URL}/api/listaempleadoactivo`),
                     fetch(`${BACKEND_URL}/api/venta/${ventaId}`)
                 ]);
 
