@@ -548,7 +548,7 @@ export default function AgendaCitas() {
 
   const cargarEmpleados = async () => {
     try {
-      const res = await fetch(`${BACKEND_URL}/api/listaempleado`);
+      const res = await fetch(`${BACKEND_URL}/api/listaempleadoactivo`);
       const data = await res.json();
       setEmpleados(data);
     } catch (error) {
