@@ -958,6 +958,9 @@ export default function AgendaCitas() {
       <div className="bg-white rounded-xl shadow-lg border border-blue-100 overflow-auto">
         <div className="min-w-[1200px]">
           <FullCalendar
+            height="800px"
+            slotMinHeight={90}
+            expandRows={false}
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
             initialView="timeGridWeek"
@@ -969,13 +972,13 @@ export default function AgendaCitas() {
             timeZone='America/Lima'
             timeZoneParam='UTC'
             nowIndicator={true}
-            height="auto"
+            //height="auto"
             slotMinTime="09:00:00"
             slotMaxTime="23:00:00"
             allDaySlot={false}
             slotDuration="00:30:00"
-            slotMinHeight={80}
-            expandRows={true}
+            //slotMinHeight={80}
+            //expandRows={true}
             contentHeight="auto"
             slotLabelInterval="01:00:00"
             locale={esLocale}
@@ -1030,7 +1033,7 @@ export default function AgendaCitas() {
                 dateClick: manejarClickCelda,
                 dayHeaderClassNames: "cursor-pointer hover:bg-gray-200 transition-colors",
                 slotEventOverlap: false,
-                slotHeight: 60,
+                //slotHeight: 60,
                 contentHeight: 'auto',
                 dayMinHeight: 120,
                 dayMaxEvents: true,
@@ -1049,7 +1052,7 @@ export default function AgendaCitas() {
                 slotLabelInterval: '01:00:00',
                 dateClick: manejarClickCelda,
                 slotEventOverlap: false,
-                slotHeight: 60,
+                //slotHeight: 60,
                 contentHeight: 'auto',
                 dayMinHeight: 120,
                 dayHeaderClassNames: "cursor-pointer hover:bg-gray-200 transition-colors"
@@ -1115,9 +1118,9 @@ export default function AgendaCitas() {
             eventClassNames="border-0 rounded-lg shadow-sm hover:shadow-md transition-all duration-150 cursor-pointer mx-0.5 mb-0.5 align-top"
             dayHeaderClassNames="bg-gray-50 text-gray-700 font-semibold text-sm py-2 cursor-pointer hover:bg-gray-200 transition-colors"
             slotLabelClassNames="text-gray-600 font-medium text-[15px] py-2"
-            slotHeight={6000}
-            expandRows={true}
-            contentHeight="auto"
+            //slotHeight={6000}
+            //expandRows={true}
+            //contentHeight="auto"
             eventMargin={1}
             //dayCellClassNames="min-h-[60px] cursor-pointer hover:bg-gray-100 transition-colors"
             eventDisplay="block"
