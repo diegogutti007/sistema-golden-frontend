@@ -138,12 +138,12 @@ export default function AgendaCitas() {
       const ahora = new Date();
 
       // Usar Intl.DateTimeFormat para obtener fecha de Perú
-/*       const formatter = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/Lima',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      }); */
+      /*       const formatter = new Intl.DateTimeFormat('en-CA', {
+              timeZone: 'America/Lima',
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit'
+            }); */
 
       const fechaStr = formatearFecha(ahora); // Formato: YYYY-MM-DD
       const [anio, mes, dia] = fechaStr.split('-').map(Number);
@@ -373,11 +373,16 @@ export default function AgendaCitas() {
           // Agregar nuevo listener
           header.addEventListener('click', function (e) {
             const dateStr = this.getAttribute('data-date');
-            console.log('Que carajos ', dateStr);
+            console.log('Fecha original:', dateStr);
+
             if (dateStr) {
-              const date = new Date(dateStr);
+              const [year, month, day] = dateStr.split('-');
+              const date = new Date(year, month - 1, day); // fecha local correcta
+
+              console.log('Fecha corregida:', date);
+
               handleDayHeaderClick({ date }, this);
-              e.stopPropagation(); // Prevenir comportamiento por defecto
+              e.stopPropagation();
             }
           });
         });
