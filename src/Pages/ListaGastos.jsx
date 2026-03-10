@@ -44,16 +44,10 @@ export default function ListaGastos() {
 
   const formatearFecha = (fecha) => {
     const date = new Date(fecha);
-
-    // corregir desfase de Railway / UTC
-    //date.setHours(date.getHours() - 5);
-
     return date.toLocaleString("es-PE", {
       year: "numeric",
       month: "2-digit",
-      day: "2-digit"//,
-      //hour: "2-digit",
-      //minute: "2-digit"
+      day: "2-digit"
     });
   };
 
@@ -133,7 +127,6 @@ export default function ListaGastos() {
     if (filtros.fechaDesde) {
       const fechaDesde = new Date(filtros.fechaDesde);
       resultados = resultados.filter(gasto =>
-        //new Date(gasto.fecha_gasto) >= fechaDesde
         formatearFecha(gasto.fecha_gasto) >= fechaDesde
       );
     }

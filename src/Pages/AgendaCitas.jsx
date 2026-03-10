@@ -62,6 +62,15 @@ export default function AgendaCitas() {
     semanaFin: new Date()
   });
 
+  const formatearFecha = (fecha) => {
+    const date = new Date(fecha);
+    return date.toLocaleString("es-PE", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    });
+  };
+
   // Estado para controlar qué día está seleccionado (para resaltar)
   const [diaSeleccionadoId, setDiaSeleccionadoId] = useState(null);
 
@@ -129,14 +138,14 @@ export default function AgendaCitas() {
       const ahora = new Date();
 
       // Usar Intl.DateTimeFormat para obtener fecha de Perú
-      const formatter = new Intl.DateTimeFormat('en-CA', {
+/*       const formatter = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'America/Lima',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit'
-      });
+      }); */
 
-      const fechaStr = formatter.format(ahora); // Formato: YYYY-MM-DD
+      const fechaStr = formatearFecha(ahora); // Formato: YYYY-MM-DD
       const [anio, mes, dia] = fechaStr.split('-').map(Number);
 
       return new Date(anio, mes - 1, dia);
@@ -167,14 +176,14 @@ export default function AgendaCitas() {
       const finSemana = fechaFinSemana || fechasConsulta.semanaFin;
 
       // Formatear fechas para la API
-      const formatearFecha = (fecha) => {
+      const formatearFechas = (fecha) => {
         return fecha.toISOString().split('T')[0]; // YYYY-MM-DD
       };
 
       const params = new URLSearchParams({
-        dia: formatearFecha(diaConsulta),
-        inicioSemana: formatearFecha(inicioSemana),
-        finSemana: formatearFecha(finSemana)
+        dia: formatearFechas(diaConsulta),
+        inicioSemana: formatearFechas(inicioSemana),
+        finSemana: formatearFechas(finSemana)
       });
 
       const res = await fetch(`${BACKEND_URL}/api/estadisticas-ventas?${params}`);
