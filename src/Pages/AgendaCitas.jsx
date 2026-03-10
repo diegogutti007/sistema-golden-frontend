@@ -956,7 +956,7 @@ export default function AgendaCitas() {
 
       {/* Calendar Container */}
       <div className="bg-white rounded-xl shadow-lg border border-blue-100 overflow-auto">
-        <div className="w-full max-w-[1800px] mx-auto">
+        <div className="min-w-[2400px]">
           <FullCalendar
             height="1400px"
             slotMinHeight={100}
