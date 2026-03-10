@@ -46,7 +46,7 @@ export default function ListaGastos() {
     const date = new Date(fecha);
 
     // corregir desfase de Railway / UTC
-    date.setHours(date.getHours() - 5);
+    //date.setHours(date.getHours() - 5);
 
     return date.toLocaleString("es-PE", {
       year: "numeric",
