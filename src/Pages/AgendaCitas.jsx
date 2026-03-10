@@ -730,7 +730,7 @@ export default function AgendaCitas() {
       onClick={() => {
         const hoy = new Date();
         const semana = calcularFechasSemana(hoy);
-        const hoyId = `fc-dom-${fechaClick.getUTCFullYear()}-${(fechaClick.getUTCMonth() + 1).toString().padStart(2, '0')}-${fechaClick.getUTCDate().toString().padStart(2, '0')}`;
+        const hoyId = `fc-dom-${hoy.getUTCFullYear()}-${(hoy.getUTCMonth() + 1).toString().padStart(2, '0')}-${hoy.getUTCDate().toString().padStart(2, '0')}`;
 
         setFechasConsulta({
           diaSeleccionado: hoy,
