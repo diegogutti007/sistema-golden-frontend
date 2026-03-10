@@ -137,15 +137,14 @@ export default function AgendaCitas() {
     const obtenerHoyPeru = () => {
       const ahora = new Date();
 
-      // Usar Intl.DateTimeFormat para obtener fecha de Perú
-      /*       const formatter = new Intl.DateTimeFormat('en-CA', {
-              timeZone: 'America/Lima',
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit'
-            }); */
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Lima',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
 
-      const fechaStr = formatearFecha(ahora); // Formato: YYYY-MM-DD
+      const fechaStr = formatter.format(ahora); // YYYY-MM-DD
       const [anio, mes, dia] = fechaStr.split('-').map(Number);
 
       return new Date(anio, mes - 1, dia);
