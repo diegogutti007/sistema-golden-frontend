@@ -373,6 +373,7 @@ export default function AgendaCitas() {
           // Agregar nuevo listener
           header.addEventListener('click', function (e) {
             const dateStr = this.getAttribute('data-date');
+            console.log('Que carajos ', dateStr);
             if (dateStr) {
               const date = new Date(dateStr);
               handleDayHeaderClick({ date }, this);
