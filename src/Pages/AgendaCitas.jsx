@@ -724,6 +724,21 @@ export default function AgendaCitas() {
     );
   };
 
+  const obtenerHoyPeru = () => {
+    const ahora = new Date();
+
+    const fechaPeru = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Lima",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    }).format(ahora);
+
+    const [year, month, day] = fechaPeru.split("-").map(Number);
+
+    return new Date(year, month - 1, day);
+  };
+
   // Botón para volver al día actual
   const BotonHoy = () => (
     <button
