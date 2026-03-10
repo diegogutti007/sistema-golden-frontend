@@ -728,9 +728,12 @@ export default function AgendaCitas() {
   const BotonHoy = () => (
     <button
       onClick={() => {
-        const hoy = new Date();
+        const hoy = obtenerHoyPeru(); // 👈 fecha correcta de Perú
         const semana = calcularFechasSemana(hoy);
-        const hoyId = `fc-dom-${hoy.getUTCFullYear()}-${(hoy.getUTCMonth() + 1).toString().padStart(2, '0')}-${hoy.getUTCDate().toString().padStart(2, '0')}`;
+
+        const hoyId = `fc-dom-${hoy.getFullYear()}-${(hoy.getMonth() + 1)
+          .toString()
+          .padStart(2, "0")}-${hoy.getDate().toString().padStart(2, "0")}`;
 
         setFechasConsulta({
           diaSeleccionado: hoy,
