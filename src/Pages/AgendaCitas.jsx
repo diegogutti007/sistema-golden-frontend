@@ -1125,29 +1125,32 @@ export default function AgendaCitas() {
               return (
                 <div className="p-1 text-left h-full overflow-hidden flex flex-col justify-start gap-0.5 leading-tight bg-opacity-90 hover:bg-opacity-100 transition-all duration-150">
                   <div className="flex items-center gap-1">
-                    <span className="text-[8px] flex-shrink-0">{iconoEstado}</span>
-                    <div className="font-bold text-white text-[15px] leading-tight truncate flex-1 
-                tracking-tight antialiased">
+                    <span className="text-[9px] flex-shrink-0">{iconoEstado}</span>
+                    <div className="font-bold text-white text-[15px] leading-tight truncate flex-1 tracking-tight antialiased">
                       {titulo}
                     </div>
                   </div>
 
-                  {cliente && (
-                    <div className="text-white text-[12px] leading-tight flex items-center gap-1">
-                      <span className="text-[8px] flex-shrink-0">👤</span>
-                      <span className="truncate flex-1">{cliente}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[8px] flex-shrink-0">👤</span>
+                    <div className="font-medium text-gray-100 text-[12px] leading-tight truncate flex-1 tracking-tight">
+                      {cliente}
                     </div>
-                  )}
-                  {horaInicio && (
-                    <div className="text-white text-[12px] leading-tight flex items-center gap-1">
-                      <span className="text-[8px] flex-shrink-0">🕒</span>
-                      <span className="fruncate flex-1">{horaInicio} </span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <span className="text-[8px] flex-shrink-0">🕒</span>
+                    <div className="font-medium text-gray-200 text-[12px] leading-tight truncate flex-1 tracking-tight">
+                      {horaInicio}
                     </div>
-                  )}
+                  </div>
+
                   {precio && (
-                    <div className="text-white text-[12px] leading-tight flex items-center gap-1">
-                      <span className="text-[8px] flex-shrink-0">💰</span>
-                      <span className="truncate flex-1">S/ {precio}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px] flex-shrink-0">💰</span>
+                      <div className="font-bold text-yellow-300 text-[14px] leading-tight truncate flex-1 tracking-tight">
+                        S/ {precio}
+                      </div>
                     </div>
                   )}
                 </div>
