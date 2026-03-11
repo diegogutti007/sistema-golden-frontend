@@ -511,7 +511,7 @@ export default function AgendaCitas() {
         else if (cita.extendedProps.estado === "En progreso") backgroundColor = "#f59e0b";
         else if (cita.extendedProps.estado === "Completada") backgroundColor = "#16a34a";
         else if (cita.extendedProps.estado === "Cancelada") backgroundColor = "#dc2626";
-
+        console.log('Veamos ', cita.extendedProps.Total);
         return {
           id: cita.id,
           title: cita.title,
@@ -527,6 +527,7 @@ export default function AgendaCitas() {
             ClienteNombre: cita.extendedProps.clienteNombre,
             EmpleadoNombre: cita.extendedProps.empleadoNombre,
             Estado: cita.extendedProps.estado,
+            Total:  cita.extendedProps.Total,
           },
         };
       });
@@ -1095,6 +1096,7 @@ export default function AgendaCitas() {
               const cliente = arg.event.extendedProps?.ClienteNombre || "";
               const estado = arg.event.extendedProps?.Estado || "";
               const horaInicio = arg.timeText || "";
+              const precio = arg.event.extendedProps?.Total || "";
 
               const iconoEstado = {
                 'Programada': '⏰',
@@ -1107,22 +1109,28 @@ export default function AgendaCitas() {
                 <div className="p-1 text-left h-full overflow-hidden flex flex-col justify-start gap-0.5 leading-tight bg-opacity-90 hover:bg-opacity-100 transition-all duration-150">
                   <div className="flex items-center gap-1">
                     <span className="text-[8px] flex-shrink-0">{iconoEstado}</span>
-                    <div className="font-bold text-white text-[12px] leading-tight truncate flex-1 
+                    <div className="font-bold text-white text-[15px] leading-tight truncate flex-1 
                 tracking-tight antialiased">
                       {titulo}
                     </div>
                   </div>
 
                   {cliente && (
-                    <div className="text-white text-[10px] leading-tight flex items-center gap-1">
+                    <div className="text-white text-[12px] leading-tight flex items-center gap-1">
                       <span className="text-[8px] flex-shrink-0">👤</span>
                       <span className="truncate flex-1">{cliente}</span>
                     </div>
                   )}
                   {horaInicio && (
-                    <div className="text-white text-[10px] leading-tight flex items-center gap-1">
+                    <div className="text-white text-[12px] leading-tight flex items-center gap-1">
                       <span className="text-[8px] flex-shrink-0">🕒</span>
                       <span className="fruncate flex-1">{horaInicio} </span>
+                    </div>
+                  )}
+                  {precio && (
+                    <div className="text-white text-[12px] leading-tight flex items-center gap-1">
+                      <span className="text-[8px] flex-shrink-0">💰</span>
+                      <span className="truncate flex-1">S/ {precio}</span>
                     </div>
                   )}
                 </div>
