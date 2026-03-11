@@ -50,9 +50,7 @@ export default function VentaLista() {
     setCargando(true);
     try {
       const params = new URLSearchParams({
-        search: busqueda,
-        page: pagina.toString(),
-        limit: LIMITE.toString()
+        search: busqueda
       });
 
       if (fechaInicio) params.append('fechaInicio', fechaInicio);
@@ -61,9 +59,10 @@ export default function VentaLista() {
       const res = await fetch(
         `${BACKEND_URL}/api/venta?${params.toString()}`
       );
-      const data = await res.json(); 
+      const data = await res.json();
       setVentas(data.ventas || []);
       setTotalPaginas(data.totalPaginas || 1);
+      console.log('datoooo', data.ventas);
 
       // Marcar que ya no es la primera carga
       if (primeraCarga) {
