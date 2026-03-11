@@ -497,7 +497,7 @@ export default function VentaLista() {
       </div>
 
       {/* Indicador de filtros activos */}
-      {tieneFiltros() && (
+     {/*  {tieneFiltros() && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-blue-700">
@@ -527,7 +527,7 @@ export default function VentaLista() {
             </button>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Tabla - Versión Desktop */}
       <div className="hidden lg:block bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
@@ -738,7 +738,7 @@ export default function VentaLista() {
       </div>
 
       {/* Paginación */}
-      {ventas.length > 0 && (
+{/*       {ventas.length > 0 && (
         <div className="flex flex-col sm:flex-row justify-between items-center mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
           <div className="text-sm text-gray-600 mb-2 sm:mb-0">
             Mostrando {ventas.length} ventas de {totalPaginas} páginas
@@ -763,7 +763,7 @@ export default function VentaLista() {
             </button>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Modal de detalle */}
       {ventaSeleccionada && !modo && (
