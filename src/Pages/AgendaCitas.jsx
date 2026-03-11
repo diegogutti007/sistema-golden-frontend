@@ -489,12 +489,28 @@ export default function AgendaCitas() {
       console.log("🧾 Datos crudos desde API:", data);
 
       const eventosConvertidos = data.map((cita) => {
-        let startDate, endDate;
-        startDate = new Date(cita.start.replace(' ', 'T'));
-        endDate = new Date(cita.end.replace(' ', 'T'));
+        /*         let startDate, endDate;
+                startDate = new Date(cita.start.replace(' ', 'T'));
+                endDate = new Date(cita.end.replace(' ', 'T'));
+        
+                console.log(`Fecha start original: ${cita.start}, convertida: ${startDate}`);
+                console.log(`Fecha end original: ${cita.end}, convertida: ${endDate}`);
+        
+                if (isNaN(startDate.getTime())) {
+                  console.error("Fecha start inválida:", cita.start);
+                  startDate = new Date();
+                }
+        
+                if (isNaN(endDate.getTime())) {
+                  console.error("Fecha end inválida:", cita.end);
+                  endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+                } */
 
-        console.log(`Fecha start original: ${cita.start}, convertida: ${startDate}`);
-        console.log(`Fecha end original: ${cita.end}, convertida: ${endDate}`);
+        const startStr = cita.start ? cita.start.replace(' ', 'T') : null;
+        const endStr = cita.end ? cita.end.replace(' ', 'T') : null;
+
+        let startDate = startStr ? new Date(startStr) : new Date();
+        let endDate = endStr ? new Date(endStr) : new Date(startDate.getTime() + 60 * 60 * 1000);
 
         if (isNaN(startDate.getTime())) {
           console.error("Fecha start inválida:", cita.start);
@@ -506,12 +522,13 @@ export default function AgendaCitas() {
           endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
         }
 
+
         let backgroundColor = "#00aae4";
         if (cita.extendedProps.estado === "Programada") backgroundColor = "#00aae4";
         else if (cita.extendedProps.estado === "En progreso") backgroundColor = "#f59e0b";
         else if (cita.extendedProps.estado === "Completada") backgroundColor = "#16a34a";
         else if (cita.extendedProps.estado === "Cancelada") backgroundColor = "#dc2626";
-        console.log('Veamos ', cita.extendedProps.Total);
+        console.log('Veamos ', cita.extendedProps.Monto);
         return {
           id: cita.id,
           title: cita.title,
@@ -527,7 +544,7 @@ export default function AgendaCitas() {
             ClienteNombre: cita.extendedProps.clienteNombre,
             EmpleadoNombre: cita.extendedProps.empleadoNombre,
             Estado: cita.extendedProps.estado,
-            Total:  cita.extendedProps.Total,
+            Monto: cita.extendedProps.Monto,
           },
         };
       });
@@ -1096,7 +1113,7 @@ export default function AgendaCitas() {
               const cliente = arg.event.extendedProps?.ClienteNombre || "";
               const estado = arg.event.extendedProps?.Estado || "";
               const horaInicio = arg.timeText || "";
-              const precio = arg.event.extendedProps?.Total || "";
+              const precio = arg.event.extendedProps?.Monto || "";
 
               const iconoEstado = {
                 'Programada': '⏰',
