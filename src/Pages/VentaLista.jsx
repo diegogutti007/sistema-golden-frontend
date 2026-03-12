@@ -184,34 +184,6 @@ export default function VentaLista() {
     return hayFiltros;
   };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  /*   // Función para verificar si hay filtros activos
-    const tieneFiltros = () => {
-      return fechaInicio || fechaFin || busqueda;
-    };
-  
-    // Función para aplicar filtros (se ejecuta manualmente)
-    const aplicarFiltros = () => {
-      console.log('🔍 Aplicando filtros...');
-      setPagina(1); // Resetear a primera página
-      setPrimeraCarga(false); // Ya no es primera carga
-      cargarVentas(true);
-      cargarEstadisticas(true);
-    }; */
-
   // Función para limpiar filtros
   const limpiarFiltros = () => {
     setFechaInicio("");

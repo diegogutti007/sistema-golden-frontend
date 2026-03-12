@@ -19,7 +19,9 @@ import {
   Loader2,
   Save,
   Lock,
-  Info
+  Info,
+  Edit2,
+  Shield
 } from "lucide-react";
 
 const CierreCaja = () => {
@@ -39,6 +41,10 @@ const CierreCaja = () => {
       const usuarioData = localStorage.getItem('usuario');
       if (usuarioData) {
         const usuario = JSON.parse(usuarioData);
+        // Verificar si el usuario es administrador
+        if (usuario.rol === 'admin' || usuario.rol === 'administrador') {
+          setIsAdmin(true);
+        }
         if (usuario.nombre && usuario.apellido) {
           return `${usuario.nombre} ${usuario.apellido}`;
         } else if (usuario.nombre_completo) {
@@ -56,7 +62,8 @@ const CierreCaja = () => {
   };
 
   // Estado para responsable
-  const responsable = obtenerNombreUsuario();
+  const [responsable] = useState(obtenerNombreUsuario);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Estados para ventas
   const [ventasEfectivo, setVentasEfectivo] = useState(0);
@@ -82,15 +89,20 @@ const CierreCaja = () => {
   const [cargandoVentas, setCargandoVentas] = useState(false);
   const [cargandoGastos, setCargandoGastos] = useState(false);
   const [cargandoVerificacion, setCargandoVerificacion] = useState(false);
+  const [cargandoActualizacion, setCargandoActualizacion] = useState(false);
   const [errorVentas, setErrorVentas] = useState(null);
   const [errorGastos, setErrorGastos] = useState(null);
 
   // Estado para confirmación
   const [isConfirmed, setIsConfirmed] = useState(false);
   
-  // NUEVO: Estado para verificar si ya existe cierre en la fecha
+  // Estado para verificar si ya existe cierre en la fecha
   const [cierreExistente, setCierreExistente] = useState(null);
   const [yaRegistradoHoy, setYaRegistradoHoy] = useState(false);
+  
+  // NUEVO: Estado para habilitar edición (solo para administradores)
+  const [edicionHabilitada, setEdicionHabilitada] = useState(false);
+  const [modoEdicion, setModoEdicion] = useState(false);
 
   // Función para convertir hora a formato 24h
   const convertirHora24Horas = (hora12h) => {
@@ -136,16 +148,24 @@ const CierreCaja = () => {
         if (data.existe) {
           setCierreExistente(data.cierre);
           setYaRegistradoHoy(true);
+          setIsConfirmed(true);
           // Si ya existe cierre, cargar los datos existentes
           if (data.cierre) {
             setDineroInicial(data.cierre.dinero_inicial || 500);
             setDineroFinalCaja(data.cierre.dinero_final_caja || 0);
-            setIsConfirmed(true);
+            setVentasEfectivo(data.cierre.ventas_efectivo || 0);
+            setVentasYape(data.cierre.ventas_yape || 0);
+            setVentasPlin(data.cierre.ventas_plin || 0);
+            setVentasTarjeta(data.cierre.ventas_tarjeta || 0);
+            setTotalVentas(data.cierre.ventas_total || 0);
+            setTotalGastos(data.cierre.total_gastos || 0);
           }
         } else {
           setCierreExistente(null);
           setYaRegistradoHoy(false);
           setIsConfirmed(false);
+          setEdicionHabilitada(false);
+          setModoEdicion(false);
         }
       }
     } catch (error) {
@@ -157,24 +177,26 @@ const CierreCaja = () => {
 
   // Calcular totales
   useEffect(() => {
-    const ventasTotal = ventasEfectivo + ventasYape + ventasPlin + ventasTarjeta;
-    setTotalVentas(ventasTotal);
+    if (!yaRegistradoHoy || (yaRegistradoHoy && modoEdicion)) {
+      const ventasTotal = ventasEfectivo + ventasYape + ventasPlin + ventasTarjeta;
+      setTotalVentas(ventasTotal);
 
-    const gastosTotal = gastos.reduce((total, gasto) => {
-      const monto = parseFloat(gasto.monto) || 0;
-      return total + monto;
-    }, 0);
-    setTotalGastos(gastosTotal);
+      const gastosTotal = gastos.reduce((total, gasto) => {
+        const monto = parseFloat(gasto.monto) || 0;
+        return total + monto;
+      }, 0);
+      setTotalGastos(gastosTotal);
 
-    const efectivoEsperadoCalc = ventasTotal - gastosTotal;
-    setEfectivoEsperado(efectivoEsperadoCalc);
+      const efectivoEsperadoCalc = ventasTotal - gastosTotal;
+      setEfectivoEsperado(efectivoEsperadoCalc);
 
-    const retirarCalc = dineroInicial + efectivoEsperadoCalc;
-    setDineroRetirar(retirarCalc);
+      const retirarCalc = dineroInicial + efectivoEsperadoCalc;
+      setDineroRetirar(retirarCalc);
 
-    const diferenciaCalc = dineroFinalCaja - retirarCalc;
-    setDiferencia(diferenciaCalc);
-  }, [ventasEfectivo, ventasYape, ventasPlin, ventasTarjeta, gastos, dineroInicial, dineroFinalCaja]);
+      const diferenciaCalc = dineroFinalCaja - retirarCalc;
+      setDiferencia(diferenciaCalc);
+    }
+  }, [ventasEfectivo, ventasYape, ventasPlin, ventasTarjeta, gastos, dineroInicial, dineroFinalCaja, yaRegistradoHoy, modoEdicion]);
 
   // Función para obtener ventas del día
   const obtenerVentasDelDia = async () => {
@@ -187,10 +209,13 @@ const CierreCaja = () => {
       if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
       const data = await response.json();
 
-      setVentasEfectivo(data.efectivo || 0);
-      setVentasYape(data.yape || 0);
-      setVentasPlin(data.plin || 0);
-      setVentasTarjeta(data.tarjeta || 0);
+      // Solo actualizar si no hay un cierre existente o si estamos en modo edición
+      if (!yaRegistradoHoy || (yaRegistradoHoy && modoEdicion)) {
+        setVentasEfectivo(data.efectivo || 0);
+        setVentasYape(data.yape || 0);
+        setVentasPlin(data.plin || 0);
+        setVentasTarjeta(data.tarjeta || 0);
+      }
 
     } catch (error) {
       console.error("Error obteniendo ventas:", error);
@@ -210,7 +235,11 @@ const CierreCaja = () => {
 
       if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
       const data = await response.json();
-      setGastos(data || []);
+      
+      // Solo actualizar si no hay un cierre existente o si estamos en modo edición
+      if (!yaRegistradoHoy || (yaRegistradoHoy && modoEdicion)) {
+        setGastos(data || []);
+      }
 
     } catch (error) {
       console.error("Error obteniendo gastos:", error);
@@ -228,7 +257,10 @@ const CierreCaja = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setDineroInicial(data.monto || 500);
+        // Solo actualizar si no hay un cierre existente o si estamos en modo edición
+        if (!yaRegistradoHoy || (yaRegistradoHoy && modoEdicion)) {
+          setDineroInicial(data.monto || 500);
+        }
       }
     } catch (error) {
       console.error("Error obteniendo dinero inicial:", error);
@@ -239,23 +271,99 @@ const CierreCaja = () => {
   useEffect(() => {
     // Primero verificar si ya existe cierre
     verificarCierreExistente();
-    
-    // Si no existe cierre o estamos viendo otra fecha, cargar datos
-    if (!yaRegistradoHoy || cierreExistente === null) {
+  }, [fechaCierre]);
+
+  // Efecto para cargar datos después de verificar cierre
+  useEffect(() => {
+    if (!yaRegistradoHoy || (yaRegistradoHoy && modoEdicion)) {
       obtenerVentasDelDia();
       obtenerGastosDelDia();
       obtenerDineroInicial();
     }
-  }, [fechaCierre]);
+  }, [fechaCierre, yaRegistradoHoy, modoEdicion]);
 
-  // Confirmar cierre
-  const confirmarCierre = async () => {
-    // Bloquear si ya existe cierre
-    if (yaRegistradoHoy) {
-      alert("Ya existe un cierre de caja registrado para esta fecha. No se puede registrar otro.");
+  // Función para actualizar cierre (modo edición)
+  const actualizarCierre = async () => {
+    if (!isAdmin) {
+      alert("Solo los administradores pueden modificar cierres existentes.");
       return;
     }
 
+    if (!cierreExistente || !cierreExistente.id) {
+      alert("No se encontró el cierre a modificar.");
+      return;
+    }
+
+    try {
+      setCargandoActualizacion(true);
+      
+      const ventasTotal = totalVentas;
+      const efectivoEsperadoCalc = ventasTotal - totalGastos;
+      const horaFormateada = convertirHora24Horas(horaCierre);
+      
+      const datosCierre = {
+        fecha: fechaCierre,
+        hora: horaFormateada,
+        responsable: responsable,
+        dinero_inicial: dineroInicial,
+        dinero_final_caja: dineroFinalCaja,
+        ventas_efectivo: ventasEfectivo,
+        ventas_yape: ventasYape,
+        ventas_plin: ventasPlin,
+        ventas_tarjeta: ventasTarjeta,
+        ventas_total: ventasTotal,
+        total_gastos: totalGastos,
+        efectivo_esperado: efectivoEsperadoCalc,
+        diferencia: diferencia,
+        dinero_retirar: dineroRetirar,
+        estado: Math.abs(diferencia) < 0.01 ? "CORRECTO" : "CON_DIFERENCIA"
+      };
+
+      const response = await fetch(`${BACKEND_URL}/api/cierre-caja/${cierreExistente.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datosCierre)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al actualizar el cierre');
+      }
+
+      const result = await response.json();
+      
+      // Actualizar el cierre existente
+      await verificarCierreExistente();
+      
+      // Salir del modo edición
+      setModoEdicion(false);
+      setEdicionHabilitada(false);
+      
+      alert(result.message || "Cierre de caja actualizado correctamente");
+
+    } catch (error) {
+      console.error("Error actualizando cierre:", error);
+      alert("Error al actualizar el cierre: " + error.message);
+    } finally {
+      setCargandoActualizacion(false);
+    }
+  };
+
+  // Confirmar cierre (nuevo o edición)
+  const confirmarCierre = async () => {
+    // Si ya existe cierre y no estamos en modo edición, bloquear
+    if (yaRegistradoHoy && !modoEdicion) {
+      alert("Ya existe un cierre de caja registrado para esta fecha. Usa el checkbox de administrador para modificarlo.");
+      return;
+    }
+
+    // Si estamos en modo edición, actualizar en lugar de crear nuevo
+    if (modoEdicion && cierreExistente) {
+      await actualizarCierre();
+      return;
+    }
+
+    // Crear nuevo cierre
     if (!isConfirmed) {
       try {
         const ventasTotal = totalVentas;
@@ -293,10 +401,10 @@ const CierreCaja = () => {
 
         const result = await response.json();
         setIsConfirmed(true);
-        setYaRegistradoHoy(true); // Marcar como ya registrado
+        setYaRegistradoHoy(true);
         
         // Actualizar el cierre existente
-        verificarCierreExistente();
+        await verificarCierreExistente();
         
         alert(result.message || "Cierre de caja confirmado y guardado en el sistema");
 
@@ -307,6 +415,28 @@ const CierreCaja = () => {
     }
   };
 
+  // Manejar cambio en el checkbox de edición
+  const handleEdicionChange = (e) => {
+    const habilitado = e.target.checked;
+    setEdicionHabilitada(habilitado);
+    
+    if (habilitado && yaRegistradoHoy) {
+      // Preguntar si realmente quiere editar
+      if (window.confirm("¿Estás seguro de que quieres modificar este cierre? Esta acción puede afectar los registros del sistema.")) {
+        setModoEdicion(true);
+        // Recargar datos actuales para editar
+        obtenerVentasDelDia();
+        obtenerGastosDelDia();
+        obtenerDineroInicial();
+      } else {
+        setEdicionHabilitada(false);
+        setModoEdicion(false);
+      }
+    } else {
+      setModoEdicion(false);
+    }
+  };
+
   // Generar reporte
   const generarReporte = () => {
     const reporte = `
@@ -314,7 +444,7 @@ REPORTE DE CIERRE DE CAJA
 Fecha: ${fechaCierre}
 Hora: ${horaCierre}
 Responsable: ${responsable}
-Estado: ${cierreExistente?.estado || 'PENDIENTE'}
+Estado: ${cierreExistente?.estado || (modoEdicion ? 'EN EDICIÓN' : 'PENDIENTE')}
 
 VENTAS:
 Efectivo: ${formatearMoneda(ventasEfectivo)}
@@ -336,7 +466,7 @@ Dinero a Retirar: ${formatearMoneda(dineroRetirar)}
 
 ${Math.abs(diferencia || 0) < 0.01 ? "✅ CIERRE CORRECTO" : "⚠️ HAY DIFERENCIA EN CAJA"}
 
-${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
+${yaRegistradoHoy ? (modoEdicion ? "✳️ CIERRE EN MODO EDICIÓN" : "✳️ CIERRE YA REGISTRADO PREVIAMENTE") : ""}
     `;
 
     const blob = new Blob([reporte], { type: 'text/plain' });
@@ -349,11 +479,6 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
 
   // Recargar todos los datos
   const recargarDatos = () => {
-    if (!yaRegistradoHoy) {
-      obtenerVentasDelDia();
-      obtenerGastosDelDia();
-      obtenerDineroInicial();
-    }
     verificarCierreExistente();
   };
 
@@ -366,10 +491,12 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
   // Función para cambiar fecha (con validación)
   const cambiarFecha = (nuevaFecha) => {
     setFechaCierre(nuevaFecha);
+    setModoEdicion(false);
+    setEdicionHabilitada(false);
   };
 
   // Determinar si la interfaz debe estar bloqueada
-  const interfazBloqueada = yaRegistradoHoy;
+  const interfazBloqueada = yaRegistradoHoy && !modoEdicion;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-3 md:p-4 lg:p-6">
@@ -378,14 +505,20 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
         <div className="mb-6 md:mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4 md:mb-6">
             <div className="w-full lg:w-auto">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
                   Cierre de Caja
                 </h1>
-                {yaRegistradoHoy && (
+                {yaRegistradoHoy && !modoEdicion && (
                   <div className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-md text-xs font-medium border border-yellow-200 flex items-center gap-1">
                     <Lock className="w-3 h-3" />
                     <span>YA REGISTRADO</span>
+                  </div>
+                )}
+                {modoEdicion && (
+                  <div className="px-2 py-1 bg-purple-100 text-purple-800 rounded-md text-xs font-medium border border-purple-200 flex items-center gap-1">
+                    <Edit2 className="w-3 h-3" />
+                    <span>MODO EDICIÓN</span>
                   </div>
                 )}
               </div>
@@ -419,8 +552,7 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
 
               <button
                 onClick={generarReporte}
-                disabled={interfazBloqueada}
-                className="flex-1 lg:flex-none flex items-center justify-center gap-1 md:gap-2 px-3 md:px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 border border-green-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+                className="flex-1 lg:flex-none flex items-center justify-center gap-1 md:gap-2 px-3 md:px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-all duration-200 border border-green-200 text-sm md:text-base"
               >
                 <Download className="w-3 h-3 md:w-4 md:h-4" />
                 <span className="hidden sm:inline">Reporte</span>
@@ -428,8 +560,46 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
             </div>
           </div>
 
+          {/* NUEVO: Checkbox para administradores */}
+          {yaRegistradoHoy && isAdmin && (
+            <div className="mb-4 p-3 md:p-4 bg-purple-50 border-2 border-purple-300 rounded-xl shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <Shield className="w-5 h-5 md:w-6 md:h-6 text-purple-600 mt-0.5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <h3 className="text-base md:text-lg font-bold text-purple-800 flex items-center gap-2">
+                      <Edit2 className="w-4 h-4" />
+                      Modo Administrador
+                    </h3>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={edicionHabilitada}
+                        onChange={handleEdicionChange}
+                        className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 focus:ring-2"
+                      />
+                      <span className="text-sm font-medium text-purple-700">
+                        {modoEdicion ? 'Editando cierre existente' : 'Habilitar edición'}
+                      </span>
+                    </label>
+                  </div>
+                  <p className="text-purple-700 text-sm md:text-base mt-2">
+                    Como administrador, puedes modificar cierres existentes. Activa el modo edición para realizar cambios.
+                  </p>
+                  {modoEdicion && (
+                    <div className="mt-2 text-xs text-purple-600 bg-purple-100 p-2 rounded">
+                      ⚠️ Estás modificando un cierre existente. Los cambios se guardarán sobre el registro original.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* AVISO DE CIERRE YA REGISTRADO */}
-          {yaRegistradoHoy && (
+          {yaRegistradoHoy && !modoEdicion && (
             <div className="mb-4 md:mb-6 p-3 md:p-4 bg-yellow-50 border-2 border-yellow-300 rounded-xl shadow-sm">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0">
@@ -457,9 +627,11 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
                       <div>Efectivo final: <strong>{formatearMoneda(cierreExistente.dinero_final_caja || 0)}</strong></div>
                     </div>
                   )}
-                  <p className="text-xs text-yellow-600 mt-2">
-                    Si necesitas modificar este cierre, contacta con un administrador del sistema.
-                  </p>
+                  {!isAdmin && (
+                    <p className="text-xs text-yellow-600 mt-2">
+                      Si necesitas modificar este cierre, contacta con un administrador del sistema.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -468,7 +640,7 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
           {/* Información del cierre - Grid responsivo */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6 md:mb-8">
             <div className="bg-white rounded-xl p-3 md:p-4 border border-blue-200 shadow-sm relative">
-              {yaRegistradoHoy && (
+              {(interfazBloqueada) && (
                 <div className="absolute inset-0 bg-gray-100 bg-opacity-50 rounded-xl z-10 flex items-center justify-center">
                   <Lock className="w-6 h-6 text-gray-400" />
                 </div>
@@ -481,8 +653,8 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
                 type="date"
                 value={fechaCierre}
                 onChange={(e) => cambiarFecha(e.target.value)}
-                disabled={cargandoVerificacion}
-                className={`w-full bg-transparent text-gray-900 text-base md:text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 rounded ${yaRegistradoHoy ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={cargandoVerificacion || modoEdicion}
+                className={`w-full bg-transparent text-gray-900 text-base md:text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 rounded ${(interfazBloqueada || modoEdicion) ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
               {cargandoVerificacion && (
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
@@ -492,7 +664,7 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
             </div>
 
             <div className="bg-white rounded-xl p-3 md:p-4 border border-blue-200 shadow-sm relative">
-              {yaRegistradoHoy && (
+              {(interfazBloqueada) && (
                 <div className="absolute inset-0 bg-gray-100 bg-opacity-50 rounded-xl z-10 flex items-center justify-center">
                   <Lock className="w-6 h-6 text-gray-400" />
                 </div>
@@ -505,13 +677,13 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
                 type="time"
                 value={horaCierre}
                 onChange={(e) => setHoraCierre(e.target.value)}
-                disabled={yaRegistradoHoy}
-                className={`w-full bg-transparent text-gray-900 text-base md:text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 rounded ${yaRegistradoHoy ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={interfazBloqueada}
+                className={`w-full bg-transparent text-gray-900 text-base md:text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 rounded ${interfazBloqueada ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
             </div>
 
             <div className="bg-white rounded-xl p-3 md:p-4 border border-blue-200 shadow-sm relative">
-              {yaRegistradoHoy && (
+              {(interfazBloqueada) && (
                 <div className="absolute inset-0 bg-gray-100 bg-opacity-50 rounded-xl z-10 flex items-center justify-center">
                   <Lock className="w-6 h-6 text-gray-400" />
                 </div>
@@ -520,7 +692,7 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
                 <Users className="w-3 h-3 md:w-4 md:h-4" />
                 <span className="text-xs md:text-sm">Responsable</span>
               </div>
-              <div className={`w-full bg-gray-50 text-gray-800 text-base md:text-lg font-semibold py-1 md:py-2 px-2 md:px-3 rounded border border-gray-200 ${yaRegistradoHoy ? 'opacity-50' : ''}`}>
+              <div className={`w-full bg-gray-50 text-gray-800 text-base md:text-lg font-semibold py-1 md:py-2 px-2 md:px-3 rounded border border-gray-200 ${interfazBloqueada ? 'opacity-50' : ''}`}>
                 {responsable}
               </div>
               <div className="text-xs text-gray-500 mt-1">
@@ -529,7 +701,7 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
             </div>
 
             <div className="bg-white rounded-xl p-3 md:p-4 border border-blue-200 shadow-sm relative">
-              {yaRegistradoHoy && (
+              {(interfazBloqueada) && (
                 <div className="absolute inset-0 bg-gray-100 bg-opacity-50 rounded-xl z-10 flex items-center justify-center">
                   <Lock className="w-6 h-6 text-gray-400" />
                 </div>
@@ -545,8 +717,8 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
                   step="0.01"
                   value={dineroInicial}
                   onChange={(e) => setDineroInicial(parseFloat(e.target.value) || 0)}
-                  disabled={yaRegistradoHoy}
-                  className={`w-full bg-transparent text-gray-900 text-base md:text-lg font-semibold pl-6 md:pl-8 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded ${yaRegistradoHoy ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={interfazBloqueada}
+                  className={`w-full bg-transparent text-gray-900 text-base md:text-lg font-semibold pl-6 md:pl-8 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded ${interfazBloqueada ? 'opacity-50 cursor-not-allowed' : ''}`}
                   placeholder="0.00"
                 />
               </div>
@@ -579,7 +751,7 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
           <div className="space-y-4 md:space-y-6">
             {/* Sección de Ventas */}
             <div className="bg-white rounded-xl p-4 md:p-6 border border-green-200 shadow-sm relative">
-              {yaRegistradoHoy && (
+              {interfazBloqueada && (
                 <div className="absolute inset-0 bg-gray-100 bg-opacity-50 rounded-xl z-10 flex items-center justify-center">
                   <Lock className="w-10 h-10 text-gray-400" />
                 </div>
@@ -621,7 +793,7 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
 
             {/* Sección de Gastos */}
             <div className="bg-white rounded-xl p-4 md:p-6 border border-red-200 shadow-sm relative">
-              {yaRegistradoHoy && (
+              {interfazBloqueada && (
                 <div className="absolute inset-0 bg-gray-100 bg-opacity-50 rounded-xl z-10 flex items-center justify-center">
                   <Lock className="w-10 h-10 text-gray-400" />
                 </div>
@@ -657,14 +829,14 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
                   </div>
                 ))}
 
-                {gastos.length === 0 && !cargandoGastos && !yaRegistradoHoy && (
+                {gastos.length === 0 && !cargandoGastos && !interfazBloqueada && (
                   <div className="text-center py-6 md:py-8 text-gray-500">
                     <TrendingDown className="w-8 h-8 md:w-12 md:h-12 mx-auto mb-2 opacity-50" />
                     <p className="text-sm md:text-base">No hay gastos registrados</p>
                   </div>
                 )}
 
-                {yaRegistradoHoy && cierreExistente?.total_gastos && (
+                {interfazBloqueada && cierreExistente?.total_gastos && (
                   <div className="text-center py-4">
                     <div className="text-sm text-gray-600 mb-1">Gastos registrados en el cierre:</div>
                     <div className="text-xl font-bold text-red-600">{formatearMoneda(cierreExistente.total_gastos)}</div>
@@ -685,7 +857,7 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
           <div className="space-y-4 md:space-y-6">
             {/* Resumen de Cierre */}
             <div className="bg-white rounded-xl p-4 md:p-6 border border-yellow-200 shadow-sm relative">
-              {yaRegistradoHoy && (
+              {interfazBloqueada && (
                 <div className="absolute inset-0 bg-gray-100 bg-opacity-50 rounded-xl z-10 flex items-center justify-center">
                   <div className="text-center">
                     <Lock className="w-12 h-12 text-gray-400 mx-auto mb-2" />
@@ -729,8 +901,8 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
                       step="0.01"
                       value={dineroFinalCaja}
                       onChange={(e) => setDineroFinalCaja(parseFloat(e.target.value) || 0)}
-                      disabled={yaRegistradoHoy}
-                      className={`w-full bg-white text-gray-900 text-xl md:text-2xl font-bold px-8 md:px-10 py-2 md:py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300 text-right ${yaRegistradoHoy ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={interfazBloqueada}
+                      className={`w-full bg-white text-gray-900 text-xl md:text-2xl font-bold px-8 md:px-10 py-2 md:py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-300 text-right ${interfazBloqueada ? 'opacity-50 cursor-not-allowed' : ''}`}
                       placeholder="0.00"
                     />
                   </div>
@@ -762,19 +934,32 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
                 </div>
               </div>
 
-              {/* Botón de Confirmación */}
+              {/* Botón de Confirmación/Actualización */}
               <div className="mt-6 md:mt-8">
                 <button
                   onClick={confirmarCierre}
-                  disabled={isConfirmed || cargandoVentas || cargandoGastos || yaRegistradoHoy}
-                  className={`w-full py-3 md:py-4 rounded-xl font-bold text-base md:text-lg transition-all duration-200 ${isConfirmed || yaRegistradoHoy
-                    ? 'bg-green-100 text-green-700 border border-green-300 cursor-not-allowed'
-                    : cargandoVentas || cargandoGastos
-                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-400 hover:to-yellow-500 shadow-md hover:shadow-lg'
+                  disabled={(!modoEdicion && (isConfirmed || cargandoVentas || cargandoGastos)) || (modoEdicion && !isAdmin) || cargandoActualizacion}
+                  className={`w-full py-3 md:py-4 rounded-xl font-bold text-base md:text-lg transition-all duration-200 ${
+                    modoEdicion 
+                      ? 'bg-purple-500 hover:bg-purple-600 text-white shadow-md hover:shadow-lg'
+                      : (isConfirmed || interfazBloqueada)
+                        ? 'bg-green-100 text-green-700 border border-green-300 cursor-not-allowed'
+                        : cargandoVentas || cargandoGastos
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-400 hover:to-yellow-500 shadow-md hover:shadow-lg'
                     }`}
                 >
-                  {yaRegistradoHoy ? (
+                  {cargandoActualizacion ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin" />
+                      <span>Actualizando...</span>
+                    </div>
+                  ) : modoEdicion ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <Save className="w-5 h-5 md:w-6 md:h-6" />
+                      <span>Actualizar Cierre</span>
+                    </div>
+                  ) : interfazBloqueada ? (
                     <div className="flex items-center justify-center gap-2">
                       <Lock className="w-5 h-5 md:w-6 md:h-6" />
                       <span>Ya Registrado</span>
@@ -797,9 +982,15 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
                   )}
                 </button>
 
-                {(isConfirmed || yaRegistradoHoy) && (
+                {(isConfirmed || yaRegistradoHoy) && !modoEdicion && (
                   <div className="mt-3 md:mt-4 text-center text-sm md:text-sm text-green-600">
                     ✅ {yaRegistradoHoy ? 'Cierre ya registrado anteriormente' : 'El cierre ha sido registrado en el sistema'}
+                  </div>
+                )}
+
+                {modoEdicion && (
+                  <div className="mt-3 md:mt-4 text-center text-sm md:text-sm text-purple-600">
+                    ⚠️ Modo edición activo. Los cambios se guardarán sobre el registro existente.
                   </div>
                 )}
               </div>
@@ -807,7 +998,7 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
 
             {/* Estadísticas */}
             <div className="bg-white rounded-xl p-4 md:p-6 border border-blue-200 shadow-sm relative">
-              {yaRegistradoHoy && (
+              {interfazBloqueada && (
                 <div className="absolute inset-0 bg-gray-100 bg-opacity-50 rounded-xl z-10 flex items-center justify-center">
                   <Lock className="w-10 h-10 text-gray-400" />
                 </div>
@@ -859,8 +1050,12 @@ ${yaRegistradoHoy ? "✳️ CIERRE YA REGISTRADO PREVIAMENTE" : ""}
             <li className="list-disc">Confirme el cierre solo después de verificar todos los montos.</li>
             <li className="list-disc">
               <span className="font-bold text-yellow-700">Solo se permite un cierre de caja por día.</span>
-              Si ya existe un cierre registrado, no podrás registrar otro.
             </li>
+            {isAdmin && (
+              <li className="list-disc text-purple-700">
+                <span className="font-bold">Modo Administrador:</span> Puedes modificar cierres existentes usando el checkbox en la parte superior.
+              </li>
+            )}
           </ul>
         </div>
       </div>

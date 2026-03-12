@@ -1125,21 +1125,21 @@ export default function AgendaCitas() {
               return (
                 <div className="p-1 text-left h-full overflow-hidden flex flex-col justify-start gap-0.5 leading-tight bg-opacity-90 hover:bg-opacity-100 transition-all duration-150">
                   <div className="flex items-center gap-1">
-                    <span className="text-[9px] flex-shrink-0">{iconoEstado}</span>
+                    <span className="text-[10px] flex-shrink-0">{iconoEstado}</span>
                     <div className="font-bold text-white text-[15px] leading-tight truncate flex-1 tracking-tight antialiased">
                       {titulo}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1">
-                    <span className="text-[8px] flex-shrink-0">👤</span>
+                    <span className="text-[9px] flex-shrink-0">👤</span>
                     <div className="font-medium text-gray-100 text-[12px] leading-tight truncate flex-1 tracking-tight">
                       {cliente}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1">
-                    <span className="text-[8px] flex-shrink-0">🕒</span>
+                    <span className="text-[9px] flex-shrink-0">🕒</span>
                     <div className="font-medium text-gray-200 text-[12px] leading-tight truncate flex-1 tracking-tight">
                       {horaInicio}
                     </div>
@@ -1147,7 +1147,7 @@ export default function AgendaCitas() {
 
                   {precio && (
                     <div className="flex items-center gap-1">
-                      <span className="text-[9px] flex-shrink-0">💰</span>
+                      <span className="text-[10px] flex-shrink-0">💰</span>
                       <div className="font-bold text-yellow-300 text-[14px] leading-tight truncate flex-1 tracking-tight">
                         S/ {precio}
                       </div>
