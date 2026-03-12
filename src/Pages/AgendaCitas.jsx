@@ -1067,7 +1067,8 @@ export default function AgendaCitas() {
                 //slotHeight: 60,
                 //contentHeight: 'auto',
                 dayMinHeight: 120,
-                dayMaxEvents: true,
+                // 👇 ELIMINA O COMENTA ESTA LÍNEA
+                // dayMaxEvents: true,
                 moreLinkClick: "popover",
                 eventPositioned: (info) => {
                   const eventEl = info.el;
@@ -1099,7 +1100,8 @@ export default function AgendaCitas() {
                 listDaySideFormat: false
               }
             }}
-            eventMaxStack={2}
+            // 👇 ELIMINA O COMENTA ESTA LÍNEA
+            // eventMaxStack={2}
             eventOrder="start,title"
             eventOverlap={false}
             slotEventOverlap={false}
@@ -1147,7 +1149,7 @@ export default function AgendaCitas() {
 
                   {precio && (
                     <div className="flex items-center gap-1">
-                      <span className="text-[10px] flex-shrink-0">💰</span>
+                      <span className="text-[11px] flex-shrink-0">💰</span>
                       <div className="font-bold text-yellow-300 text-[14px] leading-tight truncate flex-1 tracking-tight">
                         S/ {precio}
                       </div>
