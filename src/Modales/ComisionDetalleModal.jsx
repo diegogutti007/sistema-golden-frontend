@@ -46,11 +46,37 @@ export default function ComisionDetalleModal({ empleado, onClose, fechaInicio, f
     alert("Funcionalidad de exportación PDF próximamente");
   };
 
+  // Prevenir scroll del body cuando el modal está abierto
+  useEffect(() => {
+    // Guardar el scroll actual
+    const scrollY = window.scrollY;
+    
+    // Prevenir scroll del body
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.overflow = 'hidden';
+    document.body.style.width = '100%';
+
+    return () => {
+      // Restaurar scroll del body al cerrar
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      document.body.style.width = '';
+      
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden animate-slideUp">
-        {/* Header del Modal */}
-        <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 sm:px-6 py-4 flex justify-between items-center">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl flex flex-col" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
+        {/* Header del Modal - Fijo */}
+        <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 sm:px-6 py-4 flex justify-between items-center flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
               <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
@@ -79,10 +105,10 @@ export default function ComisionDetalleModal({ empleado, onClose, fechaInicio, f
           </div>
         </div>
 
-        {/* Información del Periodo */}
-        <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 px-4 sm:px-6 py-4">
+        {/* Información del Periodo - Fijo */}
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200 px-4 sm:px-6 py-4 flex-shrink-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center space-x-4 text-sm">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
               <div className="flex items-center space-x-2 bg-white px-3 py-2 rounded-xl shadow-sm">
                 <Calendar className="w-4 h-4 text-emerald-500" />
                 <span className="font-medium text-gray-700">
@@ -98,7 +124,7 @@ export default function ComisionDetalleModal({ empleado, onClose, fechaInicio, f
             </div>
 
             {/* Totales */}
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               <div className="flex items-center space-x-2 bg-white px-3 py-2 rounded-xl shadow-sm">
                 <DollarSign className="w-4 h-4 text-blue-500" />
                 <div>
@@ -119,8 +145,11 @@ export default function ComisionDetalleModal({ empleado, onClose, fechaInicio, f
           </div>
         </div>
 
-        {/* Contenido del Modal */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        {/* Contenido del Modal - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6" style={{ 
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain'
+        }}>
           {cargando ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mb-4"></div>
@@ -140,76 +169,78 @@ export default function ComisionDetalleModal({ empleado, onClose, fechaInicio, f
             <>
               {/* Vista Desktop */}
               <div className="hidden lg:block bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
-                <table className="min-w-full">
-                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-                    <tr>
-                      <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        <div className="flex items-center space-x-2">
-                          <Calendar className="w-4 h-4 text-gray-400" />
-                          <span>Fecha</span>
-                        </div>
-                      </th>
-                      <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        <div className="flex items-center space-x-2">
-                          <Hash className="w-4 h-4 text-gray-400" />
-                          <span>Venta ID</span>
-                        </div>
-                      </th>
-                      <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        <div className="flex items-center space-x-2">
-                          <Package className="w-4 h-4 text-gray-400" />
-                          <span>Artículo</span>
-                        </div>
-                      </th>
-                      <th className="py-3 px-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        Cantidad
-                      </th>
-                      <th className="py-3 px-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        P. Unitario
-                      </th>
-                      <th className="py-3 px-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                        Importe
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {detalle.map((d, i) => (
-                      <tr
-                        key={i}
-                        className="hover:bg-gray-50 transition-colors duration-150"
-                      >
-                        <td className="py-3 px-4 text-sm text-gray-900">
-                          {d.FechaVenta ? (() => {
-                            const parts = d.FechaVenta.split('/');
-                            if (parts.length === 3) {
-                              // Formato: DD/MM/YYYY -> MM/DD/YYYY
-                              const date = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`);
-                              return !isNaN(date) ? date.toLocaleDateString('es-ES') : 'Fecha inválida';
-                            }
-                            return 'Formato incorrecto';
-                          })() : '—'}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            #{d.VentaID}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-900 font-medium">
-                          {d.Articulo}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-900 text-right">
-                          {d.Cantidad}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-900 text-right">
-                          S/ {parseFloat(d.PrecioUnitario).toFixed(2)}
-                        </td>
-                        <td className="py-3 px-4 text-sm text-green-600 font-semibold text-right">
-                          S/ {parseFloat(d.Importe).toFixed(2)}
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                      <tr>
+                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          <div className="flex items-center space-x-2">
+                            <Calendar className="w-4 h-4 text-gray-400" />
+                            <span>Fecha</span>
+                          </div>
+                        </th>
+                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          <div className="flex items-center space-x-2">
+                            <Hash className="w-4 h-4 text-gray-400" />
+                            <span>Venta ID</span>
+                          </div>
+                        </th>
+                        <th className="py-3 px-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          <div className="flex items-center space-x-2">
+                            <Package className="w-4 h-4 text-gray-400" />
+                            <span>Artículo</span>
+                          </div>
+                        </th>
+                        <th className="py-3 px-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Cantidad
+                        </th>
+                        <th className="py-3 px-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          P. Unitario
+                        </th>
+                        <th className="py-3 px-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                          Importe
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {detalle.map((d, i) => (
+                        <tr
+                          key={i}
+                          className="hover:bg-gray-50 transition-colors duration-150"
+                        >
+                          <td className="py-3 px-4 text-sm text-gray-900">
+                            {d.FechaVenta ? (() => {
+                              const parts = d.FechaVenta.split('/');
+                              if (parts.length === 3) {
+                                // Formato: DD/MM/YYYY -> MM/DD/YYYY
+                                const date = new Date(`${parts[1]}/${parts[0]}/${parts[2]}`);
+                                return !isNaN(date) ? date.toLocaleDateString('es-ES') : 'Fecha inválida';
+                              }
+                              return 'Formato incorrecto';
+                            })() : '—'}
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              #{d.VentaID}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-900 font-medium">
+                            {d.Articulo}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-900 text-right">
+                            {d.Cantidad}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-gray-900 text-right">
+                            S/ {parseFloat(d.PrecioUnitario).toFixed(2)}
+                          </td>
+                          <td className="py-3 px-4 text-sm text-green-600 font-semibold text-right">
+                            S/ {parseFloat(d.Importe).toFixed(2)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* Vista Móvil */}
@@ -218,7 +249,7 @@ export default function ComisionDetalleModal({ empleado, onClose, fechaInicio, f
                   <div key={i} className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
                     {/* Header de la venta */}
                     <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 flex-wrap gap-1">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           #{d.VentaID}
                         </span>
@@ -246,7 +277,7 @@ export default function ComisionDetalleModal({ empleado, onClose, fechaInicio, f
                           {d.Articulo}
                         </span>
                       </div>
-                      <div className="flex justify-between text-xs text-gray-600">
+                      <div className="flex flex-wrap justify-between gap-2 text-xs text-gray-600">
                         <div className="flex items-center space-x-2">
                           <span>Cantidad:</span>
                           <span className="font-semibold">{d.Cantidad}</span>
@@ -283,8 +314,8 @@ export default function ComisionDetalleModal({ empleado, onClose, fechaInicio, f
           )}
         </div>
 
-        {/* Footer del Modal */}
-        <div className="border-t border-gray-200 px-4 sm:px-6 py-4 bg-gray-50">
+        {/* Footer del Modal - Fijo */}
+        <div className="border-t border-gray-200 px-4 sm:px-6 py-4 bg-gray-50 flex-shrink-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="text-xs text-gray-500 text-center sm:text-left">
               Mostrando {detalle.length} venta{detalle.length !== 1 ? 's' : ''}
