@@ -58,20 +58,15 @@ const LayoutPrincipal = ({ children, usuario, onLogout }) => {
 
       {/* Contenedor principal */}
       <div className="pt-16 min-h-screen flex">
-        {/* Menú Secundario */}
+        {/* Menú Secundario - AHORA EL OVERLAY ESTÁ DENTRO DE ESTE COMPONENTE */}
         <MenuSecundario 
           onClose={handleCloseSecondaryMenu}
           isMobile={isMobileOrTablet}
           isOpen={isSecondaryMenuOpen}
+          usuario={usuario} // Pasamos el usuario para los permisos
         />
 
-        {/* Overlay para mobile/tablet */}
-        {isMobileOrTablet && isSecondaryMenuOpen && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
-            onClick={handleCloseSecondaryMenu}
-          />
-        )}
+        {/* ⚠️ ELIMINADO: Overlay duplicado que causaba el problema */}
 
         {/* Contenido Principal */}
         <main className={`
@@ -79,6 +74,7 @@ const LayoutPrincipal = ({ children, usuario, onLogout }) => {
           ${isDesktop && isSecondaryMenuOpen ? 'ml-64' : 'ml-0'}
           min-h-[calc(100vh-64px)]
           overflow-auto
+          relative z-10
         `}>
           <div className="p-4 md:p-6">
             <div className="bg-white rounded-xl shadow-md border border-gray-200 min-h-full">

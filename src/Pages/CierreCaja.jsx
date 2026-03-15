@@ -124,7 +124,7 @@ const CierreCaja = () => {
   const [gastos, setGastos] = useState([]);
 
   // Estados para dinero
-  const [dineroInicial, setDineroInicial] = useState(500);
+  const [dineroInicial, setDineroInicial] = useState(0);
   const [efectivoEsperado, setEfectivoEsperado] = useState(0);
   const [dineroFinalCaja, setDineroFinalCaja] = useState(0);
   const [diferencia, setDiferencia] = useState(0);
@@ -365,7 +365,7 @@ const CierreCaja = () => {
 
       if (response.status === 404) {
         console.warn("⚠️ Endpoint de dinero inicial no encontrado, usando valor por defecto 500");
-        setDineroInicial(500);
+        setDineroInicial(0);
         return;
       }
 

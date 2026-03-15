@@ -13,10 +13,29 @@ import {
   X
 } from "lucide-react";
 
-const MenuSecundario = ({ onClose, isMobile, isOpen }) => {
+// ✅ COMPONENTE PARA OCULTAR ELEMENTOS SEGÚN ROL (mismo que en MenuPrincipal)
+const HideIfUnauthorized = ({ children, allowedRoles = [], userRole }) => {
+  if (!allowedRoles.includes(userRole)) {
+    return null;
+  }
+  return children;
+};
+
+const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
   const location = useLocation();
   const [activeSection, setActiveSection] = useState("Dashboard");
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  // ✅ DEFINIR ROLES (mismo que en MenuPrincipal)
+  const ROLES = {
+    ADMIN: 'admin',
+    GERENTE: 'gerente',
+    SUPERVISOR: 'supervisor',
+    EMPLEADO: 'empleado'
+  };
+
+  // Obtener el rol del usuario
+  const userRole = usuario?.rol || ROLES.EMPLEADO;
 
   useEffect(() => {
     const handleResize = () => {
@@ -36,30 +55,66 @@ const MenuSecundario = ({ onClose, isMobile, isOpen }) => {
 
   const isDesktop = windowWidth >= 1280;
 
+  // ✅ Estructura de menú con permisos integrados
   const menuItems = [
     {
       titulo: "Dashboard",
       icon: BarChart3,
       sub: [
-        { nombre: "Ventas", ruta: "/dashboard/ventas", icon: TrendingUp },
-        { nombre: "Comisiones", ruta: "/dashboard/comisiones", icon: Users },
-        { nombre: "Citas", ruta: "/dashboard/citas", icon: Calendar },
+        { 
+          nombre: "Ventas", 
+          ruta: "/dashboard/ventas", 
+          icon: TrendingUp,
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
+        },
+        { 
+          nombre: "Comisiones", 
+          ruta: "/dashboard/comisiones", 
+          icon: Users,
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR] // Solo admin, gerente y supervisor
+        },
+        { 
+          nombre: "Citas", 
+          ruta: "/dashboard/citas", 
+          icon: Calendar,
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
+        },
       ],
     },
     {
       titulo: "Ventas",
       icon: ShoppingCart,
       sub: [
-        { nombre: "Productos", ruta: "/ventas/productos", icon: Package },
-        { nombre: "Servicios", ruta: "/ventas/servicios", icon: ShoppingCart },
+        { 
+          nombre: "Productos", 
+          ruta: "/ventas/productos", 
+          icon: Package,
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
+        },
+        { 
+          nombre: "Servicios", 
+          ruta: "/ventas/servicios", 
+          icon: ShoppingCart,
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
+        },
       ],
     },
     {
       titulo: "Inventario",
       icon: Package,
       sub: [
-        { nombre: "Stock", ruta: "/inventario/stock", icon: Box },
-        { nombre: "Proveedores", ruta: "/inventario/proveedores", icon: Truck },
+        { 
+          nombre: "Stock", 
+          ruta: "/inventario/stock", 
+          icon: Box,
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR] // Solo admin, gerente y supervisor
+        },
+        { 
+          nombre: "Proveedores", 
+          ruta: "/inventario/proveedores", 
+          icon: Truck,
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE] // Solo admin y gerente
+        },
       ],
     },
   ];
@@ -83,18 +138,33 @@ const MenuSecundario = ({ onClose, isMobile, isOpen }) => {
 
   return (
     <>
+      {/* Overlay para móvil/tablet cuando el menú está abierto - SOLO PARA CERRAR */}
+      {isMobile && isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-20"
+          onClick={onClose}
+          style={{ 
+            backdropFilter: 'blur(2px)',
+            WebkitBackdropFilter: 'blur(2px)'
+          }}
+        />
+      )}
+
       {/* Contenido del menú */}
       <aside className={`
         ${isDesktop 
           ? 'w-64 fixed top-16 left-0 h-[calc(100vh-64px)] z-30' 
           : shouldShow 
-            ? 'w-64 fixed top-16 left-0 h-[calc(100vh-64px)] z-40 translate-x-0' 
-            : 'w-64 fixed top-16 left-0 h-[calc(100vh-64px)] z-40 -translate-x-full'
+            ? 'w-64 fixed top-16 left-0 h-[calc(100vh-64px)] z-30 translate-x-0' 
+            : 'w-64 fixed top-16 left-0 h-[calc(100vh-64px)] z-30 -translate-x-full'
         }
         bg-gradient-to-b from-gray-900 to-black border-r border-yellow-500/20
         transition-transform duration-300 ease-in-out shadow-2xl
         overflow-y-auto
-      `}>
+      `}
+      style={{
+        WebkitOverflowScrolling: 'touch', // Scroll suave en iOS
+      }}>
         {/* Header */}
         <div className="p-4 border-b border-yellow-500/20">
           <div className="flex items-center justify-between">
@@ -126,60 +196,70 @@ const MenuSecundario = ({ onClose, isMobile, isOpen }) => {
           </div>
         </div>
 
-        {/* Navegación */}
-        <nav className="p-4 space-y-4 overflow-y-auto h-[calc(100%-120px)]">
-          {menuItems.map((section, sectionIndex) => (
-            <div key={sectionIndex} className="space-y-2">
-              <button
-                onClick={() => handleSectionClick(section.titulo)}
-                className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-all duration-200 ${
-                  activeSection === section.titulo
-                    ? "bg-yellow-500/20 border border-yellow-500/30 text-yellow-400"
-                    : "text-gray-400 hover:text-yellow-400 hover:bg-gray-800/50 border border-transparent"
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <section.icon className="w-4 h-4" />
-                  <span className="font-medium text-sm">{section.titulo}</span>
-                </div>
-                <ChevronRight 
-                  className={`w-3 h-3 transition-transform duration-200 ${
-                    activeSection === section.titulo ? "rotate-90 text-yellow-400" : "text-gray-600"
-                  }`} 
-                />
-              </button>
+        {/* Navegación con permisos */}
+        <nav className="p-4 space-y-4 overflow-y-auto" style={{ height: 'calc(100% - 140px)' }}>
+          {menuItems.map((section, sectionIndex) => {
+            // Filtrar los items del submenú según el rol
+            const filteredSubItems = section.sub.filter(item => 
+              item.allowedRoles.includes(userRole)
+            );
 
-              {activeSection === section.titulo && (
-                <div className="space-y-1 ml-2">
-                  {section.sub.map((item, itemIndex) => (
-                    <Link
-                      key={itemIndex}
-                      to={item.ruta}
-                      onClick={handleLinkClick}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-all duration-200 group ${
-                        isLinkActive(item.ruta)
-                          ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
-                          : "text-gray-300 hover:text-yellow-400 hover:bg-gray-800/30 border border-transparent"
-                      }`}
-                    >
-                      <div className={`w-6 h-6 rounded flex items-center justify-center transition-colors duration-200 ${
-                        isLinkActive(item.ruta)
-                          ? "bg-yellow-500/20"
-                          : "bg-gray-800 group-hover:bg-yellow-500/10"
-                      }`}>
-                        <item.icon className={`w-3 h-3 ${
+            // Si no hay items permitidos en esta sección, no mostrar la sección
+            if (filteredSubItems.length === 0) return null;
+
+            return (
+              <div key={sectionIndex} className="space-y-2">
+                <button
+                  onClick={() => handleSectionClick(section.titulo)}
+                  className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-all duration-200 ${
+                    activeSection === section.titulo
+                      ? "bg-yellow-500/20 border border-yellow-500/30 text-yellow-400"
+                      : "text-gray-400 hover:text-yellow-400 hover:bg-gray-800/50 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <section.icon className="w-4 h-4" />
+                    <span className="font-medium text-sm">{section.titulo}</span>
+                  </div>
+                  <ChevronRight 
+                    className={`w-3 h-3 transition-transform duration-200 ${
+                      activeSection === section.titulo ? "rotate-90 text-yellow-400" : "text-gray-600"
+                    }`} 
+                  />
+                </button>
+
+                {activeSection === section.titulo && (
+                  <div className="space-y-1 ml-2">
+                    {filteredSubItems.map((item, itemIndex) => (
+                      <Link
+                        key={itemIndex}
+                        to={item.ruta}
+                        onClick={handleLinkClick}
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-all duration-200 group ${
                           isLinkActive(item.ruta)
-                            ? "text-yellow-400"
-                            : "text-gray-400 group-hover:text-yellow-400"
-                        }`} />
-                      </div>
-                      <span className="font-medium">{item.nombre}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+                            ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
+                            : "text-gray-300 hover:text-yellow-400 hover:bg-gray-800/30 border border-transparent"
+                        }`}
+                      >
+                        <div className={`w-6 h-6 rounded flex items-center justify-center transition-colors duration-200 ${
+                          isLinkActive(item.ruta)
+                            ? "bg-yellow-500/20"
+                            : "bg-gray-800 group-hover:bg-yellow-500/10"
+                        }`}>
+                          <item.icon className={`w-3 h-3 ${
+                            isLinkActive(item.ruta)
+                              ? "text-yellow-400"
+                              : "text-gray-400 group-hover:text-yellow-400"
+                          }`} />
+                        </div>
+                        <span className="font-medium">{item.nombre}</span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         {/* Footer */}

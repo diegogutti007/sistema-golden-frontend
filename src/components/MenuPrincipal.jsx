@@ -64,6 +64,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [windowHeight, setWindowHeight] = useState(window.innerHeight);
   const wrapperRef = useRef(null);
+  const mobileMenuRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -108,6 +109,45 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, [mobileMenuOpen]);
+
+  // ✅ CONTROLAR EL SCROLL DEL BODY CUANDO EL MENÚ MÓVIL ESTÁ ABIERTO
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      // Guardar el scroll actual
+      const scrollY = window.scrollY;
+      
+      // Prevenir scroll del body
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.overflow = 'hidden';
+      document.body.style.width = '100%';
+    } else {
+      // Restaurar scroll del body
+      const scrollY = document.body.style.top;
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      document.body.style.width = '';
+      
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || '0') * -1);
+      }
+    }
+
+    return () => {
+      // Limpiar al desmontar
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      document.body.style.width = '';
+    };
   }, [mobileMenuOpen]);
 
   // ✅ VERIFICACIÓN DE AUTENTICACIÓN
@@ -209,7 +249,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
 
       <nav
         ref={wrapperRef}
-        className="bg-gradient-to-r from-gray-900 to-black border-b border-yellow-500/20 shadow-2xl w-full"
+        className="bg-gradient-to-r from-gray-900 to-black border-b border-yellow-500/20 shadow-2xl w-full fixed top-0 left-0 right-0 z-50"
         onClick={handleUserActivity}
       >
         <div className={`mx-auto ${isMobile ? 'px-3' :
@@ -659,18 +699,27 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
           </div>
         </div>
 
-        {/* ✅ MOBILE & TABLET MENU */}
+        {/* ✅ MOBILE & TABLET MENU - VERSIÓN CORREGIDA */}
         {shouldUseMobileMenu && (
-          <div className={`fixed top-${getNavbarHeight().split('-')[1]} left-0 right-0 bottom-0 bg-gray-900 transform transition-transform duration-300 ease-in-out z-40 overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}>
-            <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6'
-              } space-y-${isMobile ? '3' : '4'}`}>
-
+          <div 
+            ref={mobileMenuRef}
+            className={`fixed top-${getNavbarHeight().split('-')[1]} left-0 right-0 bottom-0 bg-gray-900 transform transition-transform duration-300 ease-in-out z-40 overflow-y-auto ${
+              mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}
+            style={{
+              WebkitOverflowScrolling: 'touch',
+              overscrollBehavior: 'contain',
+              height: `calc(100vh - ${isMobile ? '3.5rem' : '4rem'})`, // Restar altura del navbar
+              top: isMobile ? '3.5rem' : '4rem',
+            }}
+          >
+            <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6'} space-y-${isMobile ? '3' : '4'} pb-8`}>
               {/* Inicio */}
               <a
                 href="/"
                 onClick={(e) => {
                   handleInicioClick(e);
+                  setMobileMenuOpen(false);
                   handleUserActivity();
                 }}
                 className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 cursor-pointer"

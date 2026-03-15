@@ -18,6 +18,7 @@ import CierreCaja from "./Pages/CierreCaja";
 import EstadoResultados from "./Pages/EstadoResultados";
 import BalanceGeneral from "./Pages/BalanceGeneral";
 import FlujoEfectivo from "./Pages/FlujoEfectivo";
+import GestionArticulos from "./Pages/GestionArticulos";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -126,7 +127,7 @@ function App() {
         <Route path="/dashboard/comisiones" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard Comisiones</h1><p>Estadísticas de comisiones</p></div></ProtectedRoute>} />
         <Route path="/dashboard/citas" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard Citas</h1><p>Estadísticas de citas</p></div></ProtectedRoute>} />
         <Route path="/ventas/productos" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Ventas Productos</h1><p>Gestión de productos</p></div></ProtectedRoute>} />
-        <Route path="/ventas/servicios" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Ventas Servicios</h1><p>Gestión de servicios</p></div></ProtectedRoute>} />
+        <Route path="/ventas/servicios" element={<ProtectedRoute><GestionArticulos /></ProtectedRoute>} />
         <Route path="/inventario/stock" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Inventario Stock</h1><p>Gestión de stock</p></div></ProtectedRoute>} />
         <Route path="/inventario/proveedores" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Inventario Proveedores</h1><p>Gestión de proveedores</p></div></ProtectedRoute>} />
         
