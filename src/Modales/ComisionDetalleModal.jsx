@@ -73,7 +73,7 @@ export default function ComisionDetalleModal({ empleado, onClose, fechaInicio, f
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-fadeIn">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl flex flex-col" style={{ maxHeight: 'calc(100vh - 2rem)' }}>
         {/* Header del Modal - Fijo */}
         <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 sm:px-6 py-4 flex justify-between items-center flex-shrink-0">
