@@ -12,6 +12,7 @@ import {
   LogOut,
   BarChart3,
   History,
+  Wallet,
   ChevronDown,
   PanelLeft // <-- AÑADIDO
 } from "lucide-react";
@@ -116,7 +117,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
     if (mobileMenuOpen) {
       // Guardar el scroll actual
       const scrollY = window.scrollY;
-      
+
       // Prevenir scroll del body
       document.body.style.position = 'fixed';
       document.body.style.top = `-${scrollY}px`;
@@ -133,7 +134,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
       document.body.style.right = '';
       document.body.style.overflow = '';
       document.body.style.width = '';
-      
+
       if (scrollY) {
         window.scrollTo(0, parseInt(scrollY || '0') * -1);
       }
@@ -482,12 +483,17 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                             <SubmenuItem
                               to="/Ventas/CierreCaja"
                               onClick={() => setVentasOpen(false)}
-                              icon={DollarSign}
+                              icon={Wallet}
                               iconBg="bg-yellow-500/10"
                               iconColor="text-yellow-400"
                               title="Cierre de Caja"
                               description="Cierre de Caja Diario"
                             />
+                          </HideIfUnauthorized>
+                          <HideIfUnauthorized
+                            userRole={userRole}
+                            allowedRoles={[ROLES.GERENTE]}
+                          >
                             <SubmenuItem
                               to="/Ventas/EstadoResultados"
                               onClick={() => setVentasOpen(false)}
@@ -701,11 +707,10 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
 
         {/* ✅ MOBILE & TABLET MENU - VERSIÓN CORREGIDA */}
         {shouldUseMobileMenu && (
-          <div 
+          <div
             ref={mobileMenuRef}
-            className={`fixed top-${getNavbarHeight().split('-')[1]} left-0 right-0 bottom-0 bg-gray-900 transform transition-transform duration-300 ease-in-out z-40 overflow-y-auto ${
-              mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-            }`}
+            className={`fixed top-${getNavbarHeight().split('-')[1]} left-0 right-0 bottom-0 bg-gray-900 transform transition-transform duration-300 ease-in-out z-40 overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+              }`}
             style={{
               WebkitOverflowScrolling: 'touch',
               overscrollBehavior: 'contain',
