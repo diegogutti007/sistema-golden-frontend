@@ -148,63 +148,6 @@ export default function AgendaCitas() {
   };
 
 
-  const handleDesbloquearCita = async () => {
-    if (!form.CitaID) return;
-
-    if (window.confirm("¿Estás seguro de desbloquear esta cita? Podrás editarla nuevamente.")) {
-      try {
-        // Opción 1: Si tienes un endpoint específico para desbloquear
-        const response = await fetch(`/api/citas/${form.CitaID}/desbloquear`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ Estado: "Programada" }),
-        });
-
-        if (response.ok) {
-          // Actualizar el estado local
-          setForm(prev => ({
-            ...prev,
-            Estado: "Programada",
-            EstadoOriginal: "Programada"
-          }));
-
-          // Recargar la lista de citas
-          await cargarCitas();
-
-          // Opcional: Cerrar el modal después de desbloquear
-          // setModalCita(false);
-
-          alert("✅ Cita desbloqueada exitosamente");
-        } else {
-          alert("❌ Error al desbloquear la cita");
-        }
-
-        // Opción 2: Si usas la misma función de guardar (alternativa más simple)
-        /*
-        const citaActualizada = { 
-          ...form, 
-          Estado: "Programada",
-          EstadoOriginal: "Programada" 
-        };
-        
-        // Llamar a tu función guardarCita existente
-        await guardarCita(citaActualizada);
-        alert("✅ Cita desbloqueada exitosamente");
-        */
-
-      } catch (error) {
-        console.error("Error al desbloquear cita:", error);
-        alert("❌ Error al desbloquear la cita");
-      }
-    }
-  };
-
-
-
-
-
-
-
   // Inicializar fechas al cargar
   useEffect(() => {
     //const hoy = new Date();
@@ -697,7 +640,7 @@ export default function AgendaCitas() {
     setModalCita(true);
   };
 
-  /* const guardarCita = async (e) => {
+  const guardarCita = async (e) => {
     e.preventDefault();
     console.log("💾 Guardando cita:", form);
 
@@ -751,78 +694,7 @@ export default function AgendaCitas() {
       console.error("❌ Error al guardar cita:", error);
       alert("❌ No se pudo registrar la cita.");
     }
-  }; */
-
-
-  // En AgendaCitas.js - Reemplaza la función guardarCita existente
-
-// En AgendaCitas.js
-const guardarCita = async (formData, e) => {
-  // e puede ser undefined cuando viene del ModalCita sin evento
-  if (e && e.preventDefault) {
-    e.preventDefault();
-  }
-  
-  console.log("💾 Guardando cita:", formData);
-
-  try {
-    if (!formData.Titulo || !formData.FechaInicio || !formData.ClienteID) {
-      alert("⚠️ Completa el título, la fecha y el cliente.");
-      return;
-    }
-
-    // 🔹 NUEVA LÓGICA: Detectar si es una cita completada que debe abrir venta
-    const esCitaNueva = !formData.CitaID;
-    const estabaCompletada = formData.EstadoOriginal === "Completada";
-    
-    if (formData.Estado === "Completada" && (esCitaNueva || !estabaCompletada)) {
-      console.log("🛒 Abriendo ModalVenta para nueva cita completada");
-      setIsVentaModalOpen(true);
-      return;
-    }
-
-    const metodo = formData.CitaID ? "PUT" : "POST";
-    const url = formData.CitaID
-      ? `${BACKEND_URL}/api/citas/${formData.CitaID}`
-      : `${BACKEND_URL}/api/citas`;
-
-    const cuerpoCita = {
-      ...formData,
-      title: formData.Titulo,
-      descripcion: formData.Descripcion,
-      start: formData.FechaInicio,
-      end: formData.FechaFin,
-      extendedProps: {
-        clienteID: formData.ClienteID,
-        EmpId: formData.EmpId,
-        estado: formData.Estado
-      }
-    };
-
-    console.log("📤 Enviando datos:", cuerpoCita);
-
-    const respuesta = await fetch(url, {
-      method: metodo,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(cuerpoCita),
-    });
-
-    if (!respuesta.ok) throw new Error("Error al guardar cita");
-
-    const resultado = await respuesta.json();
-    console.log("✅ Respuesta del servidor:", resultado);
-
-    alert(formData.CitaID ? "✅ Cita actualizada." : "✅ Cita registrada.");
-    setModalCita(false);
-    cargarCitas();
-    cargarEstadisticasVentas();
-  } catch (error) {
-    console.error("❌ Error al guardar cita:", error);
-    alert("❌ No se pudo registrar la cita.");
-  }
-};
-
-
+  };
 
   const eliminarCita = async () => {
     if (!form.CitaID) return;
