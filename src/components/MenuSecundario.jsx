@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { 
-  ChevronRight, 
-  BarChart3, 
-  ShoppingCart, 
+import {
+  ChevronRight,
+  BarChart3,
+  ShoppingCart,
   Package,
   TrendingUp,
   Users,
@@ -61,39 +61,45 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
       titulo: "Dashboard",
       icon: BarChart3,
       sub: [
-        { 
-          nombre: "Ventas", 
-          ruta: "/dashboard/ventas", 
+        {
+          nombre: "Ventas",
+          ruta: "/dashboard/ventas",
           icon: TrendingUp,
           allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
         },
-        { 
-          nombre: "Comisiones", 
-          ruta: "/dashboard/comisiones", 
+        {
+          nombre: "Comisiones",
+          ruta: "/dashboard/comisiones",
           icon: Users,
           allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR] // Solo admin, gerente y supervisor
         },
-        { 
-          nombre: "Citas", 
-          ruta: "/dashboard/citas", 
+        {
+          nombre: "Citas",
+          ruta: "/dashboard/citas",
           icon: Calendar,
           allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
         },
       ],
     },
     {
-      titulo: "Ventas",
+      titulo: "Maestro",
       icon: ShoppingCart,
       sub: [
-        { 
-          nombre: "Productos", 
-          ruta: "/ventas/productos", 
+        {
+          nombre: "Productos",
+          ruta: "/maestro/productos",
           icon: Package,
           allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
         },
-        { 
-          nombre: "Servicios", 
-          ruta: "/ventas/servicios", 
+        {
+          nombre: "Servicios",
+          ruta: "/maestro/servicios",
+          icon: Users,
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
+        },
+        {
+          nombre: "Clientes",
+          ruta: "/maestro/clientes",
           icon: ShoppingCart,
           allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
         },
@@ -103,15 +109,15 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
       titulo: "Inventario",
       icon: Package,
       sub: [
-        { 
-          nombre: "Stock", 
-          ruta: "/inventario/stock", 
+        {
+          nombre: "Stock",
+          ruta: "/inventario/stock",
           icon: Box,
           allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR] // Solo admin, gerente y supervisor
         },
-        { 
-          nombre: "Proveedores", 
-          ruta: "/inventario/proveedores", 
+        {
+          nombre: "Proveedores",
+          ruta: "/inventario/proveedores",
           icon: Truck,
           allowedRoles: [ROLES.ADMIN, ROLES.GERENTE] // Solo admin y gerente
         },
@@ -140,10 +146,10 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
     <>
       {/* Overlay para móvil/tablet cuando el menú está abierto - SOLO PARA CERRAR */}
       {isMobile && isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-20"
           onClick={onClose}
-          style={{ 
+          style={{
             backdropFilter: 'blur(2px)',
             WebkitBackdropFilter: 'blur(2px)'
           }}
@@ -152,19 +158,19 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
 
       {/* Contenido del menú */}
       <aside className={`
-        ${isDesktop 
-          ? 'w-64 fixed top-16 left-0 h-[calc(100vh-64px)] z-30' 
-          : shouldShow 
-            ? 'w-64 fixed top-16 left-0 h-[calc(100vh-64px)] z-30 translate-x-0' 
+        ${isDesktop
+          ? 'w-64 fixed top-16 left-0 h-[calc(100vh-64px)] z-30'
+          : shouldShow
+            ? 'w-64 fixed top-16 left-0 h-[calc(100vh-64px)] z-30 translate-x-0'
             : 'w-64 fixed top-16 left-0 h-[calc(100vh-64px)] z-30 -translate-x-full'
         }
         bg-gradient-to-b from-gray-900 to-black border-r border-yellow-500/20
         transition-transform duration-300 ease-in-out shadow-2xl
         overflow-y-auto
       `}
-      style={{
-        WebkitOverflowScrolling: 'touch', // Scroll suave en iOS
-      }}>
+        style={{
+          WebkitOverflowScrolling: 'touch', // Scroll suave en iOS
+        }}>
         {/* Header */}
         <div className="p-4 border-b border-yellow-500/20">
           <div className="flex items-center justify-between">
@@ -183,7 +189,7 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
                 )}
               </div>
             </div>
-            
+
             {/* Botón de cerrar solo en mobile/tablet */}
             {isMobile && shouldShow && (
               <button
@@ -200,7 +206,7 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
         <nav className="p-4 space-y-4 overflow-y-auto" style={{ height: 'calc(100% - 140px)' }}>
           {menuItems.map((section, sectionIndex) => {
             // Filtrar los items del submenú según el rol
-            const filteredSubItems = section.sub.filter(item => 
+            const filteredSubItems = section.sub.filter(item =>
               item.allowedRoles.includes(userRole)
             );
 
@@ -211,20 +217,18 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
               <div key={sectionIndex} className="space-y-2">
                 <button
                   onClick={() => handleSectionClick(section.titulo)}
-                  className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-all duration-200 ${
-                    activeSection === section.titulo
+                  className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-all duration-200 ${activeSection === section.titulo
                       ? "bg-yellow-500/20 border border-yellow-500/30 text-yellow-400"
                       : "text-gray-400 hover:text-yellow-400 hover:bg-gray-800/50 border border-transparent"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center space-x-2">
                     <section.icon className="w-4 h-4" />
                     <span className="font-medium text-sm">{section.titulo}</span>
                   </div>
-                  <ChevronRight 
-                    className={`w-3 h-3 transition-transform duration-200 ${
-                      activeSection === section.titulo ? "rotate-90 text-yellow-400" : "text-gray-600"
-                    }`} 
+                  <ChevronRight
+                    className={`w-3 h-3 transition-transform duration-200 ${activeSection === section.titulo ? "rotate-90 text-yellow-400" : "text-gray-600"
+                      }`}
                   />
                 </button>
 
@@ -235,22 +239,19 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
                         key={itemIndex}
                         to={item.ruta}
                         onClick={handleLinkClick}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-all duration-200 group ${
-                          isLinkActive(item.ruta)
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-all duration-200 group ${isLinkActive(item.ruta)
                             ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
                             : "text-gray-300 hover:text-yellow-400 hover:bg-gray-800/30 border border-transparent"
-                        }`}
+                          }`}
                       >
-                        <div className={`w-6 h-6 rounded flex items-center justify-center transition-colors duration-200 ${
-                          isLinkActive(item.ruta)
+                        <div className={`w-6 h-6 rounded flex items-center justify-center transition-colors duration-200 ${isLinkActive(item.ruta)
                             ? "bg-yellow-500/20"
                             : "bg-gray-800 group-hover:bg-yellow-500/10"
-                        }`}>
-                          <item.icon className={`w-3 h-3 ${
-                            isLinkActive(item.ruta)
+                          }`}>
+                          <item.icon className={`w-3 h-3 ${isLinkActive(item.ruta)
                               ? "text-yellow-400"
                               : "text-gray-400 group-hover:text-yellow-400"
-                          }`} />
+                            }`} />
                         </div>
                         <span className="font-medium">{item.nombre}</span>
                       </Link>

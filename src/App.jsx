@@ -19,6 +19,7 @@ import EstadoResultados from "./Pages/EstadoResultados";
 import BalanceGeneral from "./Pages/BalanceGeneral";
 import FlujoEfectivo from "./Pages/FlujoEfectivo";
 import GestionArticulos from "./Pages/GestionArticulos";
+import GestionClientes from "./Pages/GestionClientes";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -126,11 +127,11 @@ function App() {
         <Route path="/dashboard/ventas" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard Ventas</h1><p>Estadísticas de ventas</p></div></ProtectedRoute>} />
         <Route path="/dashboard/comisiones" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard Comisiones</h1><p>Estadísticas de comisiones</p></div></ProtectedRoute>} />
         <Route path="/dashboard/citas" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard Citas</h1><p>Estadísticas de citas</p></div></ProtectedRoute>} />
-        <Route path="/ventas/productos" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Ventas Productos</h1><p>Gestión de productos</p></div></ProtectedRoute>} />
-        <Route path="/ventas/servicios" element={<ProtectedRoute><GestionArticulos /></ProtectedRoute>} />
+        <Route path="/maestro/productos" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Ventas Productos</h1><p>Gestión de productos</p></div></ProtectedRoute>} />
+        <Route path="/maestro/servicios" element={<ProtectedRoute><GestionArticulos /></ProtectedRoute>} />
+        <Route path="/maestro/clientes" element={<ProtectedRoute><GestionClientes /></ProtectedRoute>} />
         <Route path="/inventario/stock" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Inventario Stock</h1><p>Gestión de stock</p></div></ProtectedRoute>} />
         <Route path="/inventario/proveedores" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Inventario Proveedores</h1><p>Gestión de proveedores</p></div></ProtectedRoute>} />
-        
         <Route path="*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       </Routes>
     </LayoutPrincipal>
