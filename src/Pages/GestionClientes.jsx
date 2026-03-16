@@ -13,7 +13,10 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  UserCircle,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { BACKEND_URL } from '../config';
 
@@ -41,6 +44,14 @@ const Clientes = () => {
   // Estado para búsqueda
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [clientesFiltrados, setClientesFiltrados] = useState([]);
+  
+  // Estado para paginación
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [clientesPorPagina] = useState(8);
+  
+  // Estado para ordenamiento
+  const [ordenarPor, setOrdenarPor] = useState('Nombre');
+  const [ordenAscendente, setOrdenAscendente] = useState(true);
 
   // Función para obtener headers con autenticación
   const obtenerHeaders = () => {
@@ -81,21 +92,55 @@ const Clientes = () => {
     cargarClientes();
   }, []);
 
-  // Filtrar clientes por búsqueda
+  // Filtrar y ordenar clientes
   useEffect(() => {
-    if (terminoBusqueda.trim() === '') {
-      setClientesFiltrados(clientes);
-    } else {
-      const filtrados = clientes.filter(cliente => 
+    let resultado = [...clientes];
+    
+    // Filtrar por búsqueda
+    if (terminoBusqueda.trim() !== '') {
+      resultado = resultado.filter(cliente => 
         cliente.Nombre.toLowerCase().includes(terminoBusqueda.toLowerCase()) ||
         cliente.Apellido.toLowerCase().includes(terminoBusqueda.toLowerCase()) ||
         `${cliente.Nombre} ${cliente.Apellido}`.toLowerCase().includes(terminoBusqueda.toLowerCase()) ||
         (cliente.Telefono && cliente.Telefono.includes(terminoBusqueda)) ||
         (cliente.Email && cliente.Email.toLowerCase().includes(terminoBusqueda.toLowerCase()))
       );
-      setClientesFiltrados(filtrados);
     }
-  }, [terminoBusqueda, clientes]);
+    
+    // Ordenar
+    resultado.sort((a, b) => {
+      let valorA, valorB;
+      
+      if (ordenarPor === 'Nombre') {
+        valorA = `${a.Nombre} ${a.Apellido}`.toLowerCase();
+        valorB = `${b.Nombre} ${b.Apellido}`.toLowerCase();
+      } else if (ordenarPor === 'ID') {
+        valorA = a.ClienteID;
+        valorB = b.ClienteID;
+      } else if (ordenarPor === 'Telefono') {
+        valorA = a.Telefono || '';
+        valorB = b.Telefono || '';
+      } else {
+        valorA = a.Email || '';
+        valorB = b.Email || '';
+      }
+      
+      if (ordenAscendente) {
+        return valorA > valorB ? 1 : -1;
+      } else {
+        return valorA < valorB ? 1 : -1;
+      }
+    });
+    
+    setClientesFiltrados(resultado);
+    setPaginaActual(1);
+  }, [terminoBusqueda, clientes, ordenarPor, ordenAscendente]);
+
+  // Obtener clientes de la página actual
+  const indiceUltimoCliente = paginaActual * clientesPorPagina;
+  const indicePrimerCliente = indiceUltimoCliente - clientesPorPagina;
+  const clientesPaginaActual = clientesFiltrados.slice(indicePrimerCliente, indiceUltimoCliente);
+  const totalPaginas = Math.ceil(clientesFiltrados.length / clientesPorPagina);
 
   // Abrir modal para nuevo cliente
   const abrirNuevoCliente = () => {
@@ -188,225 +233,348 @@ const Clientes = () => {
   };
 
   // Eliminar cliente
-  const eliminarCliente = async () => {
-    if (!clienteSeleccionado) return;
+  // Eliminar cliente
+const eliminarCliente = async () => {
+  if (!clienteSeleccionado) return;
+  
+  setLoadingAccion(true);
+  setError(null);
+  
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/clientes/${clienteSeleccionado.ClienteID}`, {
+      method: 'DELETE',
+      headers: obtenerHeaders()
+    });
     
-    setLoadingAccion(true);
-    setError(null);
+    const responseData = await response.json();
     
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/clientes/${clienteSeleccionado.ClienteID}`, {
-        method: 'DELETE',
-        headers: obtenerHeaders()
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al eliminar cliente');
+    if (!response.ok) {
+      // Si el error es por citas asociadas
+      if (response.status === 400 && responseData.citasCount) {
+        throw new Error(`No se puede eliminar el cliente porque tiene ${responseData.citasCount} cita(s) asociada(s). Debes eliminar o reasignar las citas primero.`);
       }
-      
-      await cargarClientes();
-      
-      setMensajeExito('Cliente eliminado correctamente');
-      setTimeout(() => setMensajeExito(''), 3000);
-      
-      setModalEliminar(false);
-      setClienteSeleccionado(null);
-    } catch (error) {
-      console.error('Error:', error);
-      setError(error.message);
-    } finally {
-      setLoadingAccion(false);
+      throw new Error(responseData.error || 'Error al eliminar cliente');
     }
-  };
+    
+    await cargarClientes();
+    
+    setMensajeExito('Cliente eliminado correctamente');
+    setTimeout(() => setMensajeExito(''), 3000);
+    
+    setModalEliminar(false);
+    setClienteSeleccionado(null);
+  } catch (error) {
+    console.error('Error:', error);
+    setError(error.message);
+  } finally {
+    setLoadingAccion(false);
+  }
+};
 
   // Formatear nombre completo
   const nombreCompleto = (cliente) => {
     return `${cliente.Nombre || ''} ${cliente.Apellido || ''}`.trim() || 'Sin nombre';
   };
 
+  // Obtener iniciales para avatar
+  const obtenerIniciales = (cliente) => {
+    const nombre = cliente.Nombre || '';
+    const apellido = cliente.Apellido || '';
+    return (nombre.charAt(0) + apellido.charAt(0)).toUpperCase() || '?';
+  };
+
+  // Cambiar página
+  const irPaginaAnterior = () => {
+    if (paginaActual > 1) setPaginaActual(paginaActual - 1);
+  };
+
+  const irPaginaSiguiente = () => {
+    if (paginaActual < totalPaginas) setPaginaActual(paginaActual + 1);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6 lg:p-8">
+    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header - Estilo similar a CierreCaja */}
-        <div className="mb-6 md:mb-8">
+        {/* Header con estilo corporativo */}
+        <div className="mb-8 bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent flex items-center gap-2">
-                <Users className="w-8 h-8 text-blue-600" />
-                Gestión de Clientes
-              </h1>
-              <p className="text-gray-600 mt-1">Administra tus clientes de manera fácil y rápida</p>
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 p-4 rounded-2xl shadow-lg">
+                <Users className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800">
+                  Gestión de Clientes
+                </h1>
+                <p className="text-gray-600 mt-1 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+                  {clientes.length} clientes registrados
+                </p>
+              </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3 w-full lg:w-auto">
               <button
                 onClick={cargarClientes}
                 disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-all border border-blue-200 disabled:opacity-50"
+                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-3 bg-gray-100 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-200 transition-all shadow-sm"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                <span>Actualizar</span>
+                <span className="font-medium">Actualizar</span>
               </button>
               
               <button
                 onClick={abrirNuevoCliente}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md"
+                className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-xl hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium"
               >
-                <Plus className="w-4 h-4" />
-                <span>Nuevo Cliente</span>
+                <Plus className="w-5 h-5" />
+                <span className="font-medium">Nuevo Cliente</span>
               </button>
             </div>
           </div>
 
-          {/* Barra de búsqueda */}
-          <div className="mt-4 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Buscar por nombre, apellido, teléfono o email..."
-              value={terminoBusqueda}
-              onChange={(e) => setTerminoBusqueda(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            />
+          {/* Barra de búsqueda y filtros */}
+          <div className="mt-6 flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre, apellido, teléfono o email..."
+                value={terminoBusqueda}
+                onChange={(e) => setTerminoBusqueda(e.target.value)}
+                className="w-full pl-12 pr-4 py-3.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent bg-white text-base text-gray-700"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <select
+                value={ordenarPor}
+                onChange={(e) => setOrdenarPor(e.target.value)}
+                className="px-4 py-3.5 border-2 border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-yellow-500 font-medium text-gray-700"
+              >
+                <option value="Nombre">Ordenar por Nombre</option>
+                <option value="ID">Ordenar por ID</option>
+                <option value="Email">Ordenar por Email</option>
+                <option value="Telefono">Ordenar por Teléfono</option>
+              </select>
+              
+              <button
+                onClick={() => setOrdenAscendente(!ordenAscendente)}
+                className="px-4 py-3.5 border-2 border-gray-200 rounded-xl bg-white hover:bg-gray-50 transition-colors font-medium text-gray-700"
+                title={ordenAscendente ? "Orden descendente" : "Orden ascendente"}
+              >
+                {ordenAscendente ? '↑' : '↓'}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Mensajes */}
         {mensajeExito && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
-            <p className="text-green-700">{mensajeExito}</p>
+          <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded-lg flex items-center gap-3 animate-slideDown shadow-md">
+            <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0" />
+            <p className="text-green-800 font-medium">{mensajeExito}</p>
           </div>
         )}
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-red-600" />
-            <p className="text-red-700">{error}</p>
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg flex items-center gap-3 animate-slideDown shadow-md">
+            <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
+            <p className="text-red-800 font-medium">{error}</p>
           </div>
         )}
 
-        {/* Tabla de clientes */}
+        {/* Grid de clientes */}
         {loading ? (
-          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-            <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
-            <p className="text-gray-600">Cargando clientes...</p>
+          <div className="bg-white rounded-2xl shadow-xl p-16 text-center border border-gray-200">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-20 h-20 border-4 border-yellow-200 border-t-yellow-500 rounded-full animate-spin"></div>
+              </div>
+              <Loader2 className="w-20 h-20 text-yellow-500 mx-auto mb-4 opacity-0" />
+            </div>
+            <p className="text-gray-600 text-lg font-medium mt-8">Cargando clientes...</p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-blue-50 to-purple-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">ID</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Nombre Completo</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Teléfono</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Email</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {clientesFiltrados.length > 0 ? (
-                    clientesFiltrados.map((cliente) => (
-                      <tr key={cliente.ClienteID} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 text-sm text-gray-600">{cliente.ClienteID}</td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-800">
-                          {nombreCompleto(cliente)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {cliente.Telefono || '-'}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {cliente.Email || '-'}
-                        </td>
-                        <td className="px-6 py-4 text-right space-x-2">
-                          <button
-                            onClick={() => abrirEditarCliente(cliente)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors text-sm"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                            <span>Editar</span>
-                          </button>
-                          <button
-                            onClick={() => abrirEliminarCliente(cliente)}
-                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            <span>Eliminar</span>
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
-                        {terminoBusqueda ? (
-                          <div>
-                            <Search className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                            <p>No se encontraron clientes para "{terminoBusqueda}"</p>
-                          </div>
-                        ) : (
-                          <div>
-                            <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                            <p>No hay clientes registrados</p>
-                            <button
-                              onClick={abrirNuevoCliente}
-                              className="mt-3 text-blue-600 hover:text-blue-700 font-medium"
-                            >
-                              + Agregar primer cliente
-                            </button>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {clientesPaginaActual.length > 0 ? (
+                clientesPaginaActual.map((cliente) => (
+                  <div
+                    key={cliente.ClienteID}
+                    className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-yellow-500 transform hover:-translate-y-1"
+                  >
+                    {/* Cabecera con gradiente dorado */}
+                    <div className="h-20 bg-gradient-to-r from-yellow-500 to-yellow-600 relative">
+                      <div className="absolute -bottom-10 left-5">
+                        <div className="w-20 h-20 rounded-2xl bg-white shadow-xl flex items-center justify-center border-4 border-yellow-500">
+                          <span className="text-2xl font-bold text-yellow-600">
+                            {obtenerIniciales(cliente)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Contenido */}
+                    <div className="pt-12 p-5">
+                      <h3 className="text-xl font-bold text-gray-800 mb-1 group-hover:text-yellow-600 transition-colors">
+                        {nombreCompleto(cliente)}
+                      </h3>
+                      <p className="text-sm text-gray-500 mb-4">ID: #{cliente.ClienteID}</p>
+                      
+                      <div className="space-y-3">
+                        {cliente.Telefono && (
+                          <div className="flex items-center gap-3 text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-200">
+                            <Phone className="w-4 h-4 text-yellow-600" />
+                            <span className="text-sm">{cliente.Telefono}</span>
                           </div>
                         )}
-                      </td>
-                    </tr>
+                        
+                        {cliente.Email && (
+                          <div className="flex items-center gap-3 text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-200">
+                            <Mail className="w-4 h-4 text-yellow-600" />
+                            <span className="text-sm truncate">{cliente.Email}</span>
+                          </div>
+                        )}
+                        
+                        {!cliente.Telefono && !cliente.Email && (
+                          <div className="text-center py-3 text-gray-400 italic text-sm">
+                            Sin información de contacto
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Acciones */}
+                      <div className="mt-5 flex gap-2 pt-4 border-t border-gray-200">
+                        <button
+                          onClick={() => abrirEditarCliente(cliente)}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-xl hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-md hover:shadow-lg transform hover:scale-105 font-medium"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          <span className="font-medium">Editar</span>
+                        </button>
+                        <button
+                          onClick={() => abrirEliminarCliente(cliente)}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg transform hover:scale-105 font-medium"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span className="font-medium">Eliminar</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full bg-white rounded-2xl shadow-xl p-16 text-center border border-gray-200">
+                  <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-gray-300">
+                    <Users className="w-12 h-12 text-gray-400" />
+                  </div>
+                  <p className="text-gray-700 text-xl font-medium mb-2">
+                    {terminoBusqueda ? 'No se encontraron clientes' : 'No hay clientes registrados'}
+                  </p>
+                  <p className="text-gray-500 mb-6">
+                    {terminoBusqueda 
+                      ? `No hay resultados para "${terminoBusqueda}"` 
+                      : 'Comienza agregando tu primer cliente'}
+                  </p>
+                  {!terminoBusqueda && (
+                    <button
+                      onClick={abrirNuevoCliente}
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-xl hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-lg font-medium"
+                    >
+                      <Plus className="w-5 h-5" />
+                      <span>Agregar Cliente</span>
+                    </button>
                   )}
-                </tbody>
-              </table>
+                </div>
+              )}
             </div>
-          </div>
+
+            {/* Paginación */}
+            {clientesFiltrados.length > 0 && (
+              <div className="mt-8 flex items-center justify-between bg-white rounded-xl p-4 shadow-lg border border-gray-200">
+                <p className="text-gray-600 font-medium">
+                  Mostrando <span className="text-yellow-600 font-bold">{indicePrimerCliente + 1}</span> -{' '}
+                  <span className="text-yellow-600 font-bold">{Math.min(indiceUltimoCliente, clientesFiltrados.length)}</span> de{' '}
+                  <span className="text-yellow-600 font-bold">{clientesFiltrados.length}</span> clientes
+                </p>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={irPaginaAnterior}
+                    disabled={paginaActual === 1}
+                    className="p-2.5 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-gray-200"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  
+                  {[...Array(totalPaginas)].map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => setPaginaActual(i + 1)}
+                      className={`w-10 h-10 rounded-xl font-medium transition-all ${
+                        paginaActual === i + 1
+                          ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  
+                  <button
+                    onClick={irPaginaSiguiente}
+                    disabled={paginaActual === totalPaginas}
+                    className="p-2.5 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all border border-gray-200"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
       {/* MODAL DE CLIENTE (Crear/Editar) */}
       {modalAbierto && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-4 rounded-t-xl">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform transition-all animate-slideUp">
+            <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 p-6 rounded-t-2xl">
               <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                  <User className="w-5 h-5" />
+                <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <UserCircle className="w-6 h-6" />
                   {form.ClienteID ? 'Editar Cliente' : 'Nuevo Cliente'}
                 </h3>
                 <button
                   onClick={() => setModalAbierto(false)}
-                  className="text-white hover:bg-white hover:bg-opacity-20 p-1 rounded"
+                  className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-xl transition-all"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            <form onSubmit={guardarCliente} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={guardarCliente} className="p-6 space-y-5">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Nombre *</label>
                   <input
                     type="text"
                     value={form.Nombre}
                     onChange={(e) => setForm({...form, Nombre: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all text-gray-700"
                     placeholder="Ej: Juan"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Apellido *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Apellido *</label>
                   <input
                     type="text"
                     value={form.Apellido}
                     onChange={(e) => setForm({...form, Apellido: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all text-gray-700"
                     placeholder="Ej: Pérez"
                     required
                   />
@@ -414,28 +582,28 @@ const Clientes = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Teléfono</label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Phone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="tel"
                     value={form.Telefono}
                     onChange={(e) => setForm({...form, Telefono: e.target.value})}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all text-gray-700"
                     placeholder="Ej: 987654321"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <input
                     type="email"
                     value={form.Email}
                     onChange={(e) => setForm({...form, Email: e.target.value})}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all text-gray-700"
                     placeholder="Ej: juan@email.com"
                   />
                 </div>
@@ -445,19 +613,19 @@ const Clientes = () => {
                 <button
                   type="submit"
                   disabled={loadingAccion}
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 text-white py-2 rounded-lg font-medium hover:from-blue-600 hover:to-blue-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white py-3.5 rounded-xl font-semibold hover:from-yellow-600 hover:to-yellow-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
                 >
                   {loadingAccion ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    <Save className="w-4 h-4" />
+                    <Save className="w-5 h-5" />
                   )}
                   {form.ClienteID ? 'Actualizar' : 'Guardar'}
                 </button>
                 <button
                   type="button"
                   onClick={() => setModalAbierto(false)}
-                  className="flex-1 bg-gray-200 text-gray-800 py-2 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                  className="flex-1 bg-gray-100 text-gray-700 py-3.5 rounded-xl font-semibold hover:bg-gray-200 transition-all border-2 border-gray-200"
                 >
                   Cancelar
                 </button>
@@ -470,34 +638,34 @@ const Clientes = () => {
       {/* MODAL DE CONFIRMACIÓN PARA ELIMINAR */}
       {modalEliminar && clienteSeleccionado && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all animate-slideUp">
             <div className="text-center">
-              <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <AlertCircle className="w-8 h-8 text-red-600" />
+              <div className="mx-auto w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center mb-4 border-2 border-red-200">
+                <AlertCircle className="w-10 h-10 text-red-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">¿Eliminar cliente?</h3>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">¿Eliminar cliente?</h3>
               <p className="text-gray-600 mb-4">
-                ¿Estás seguro de eliminar a <strong>{nombreCompleto(clienteSeleccionado)}</strong>?
+                ¿Estás seguro de eliminar a <span className="font-bold text-yellow-600">{nombreCompleto(clienteSeleccionado)}</span>?
               </p>
-              <p className="text-sm text-red-600 mb-6">
+              <p className="text-sm text-red-600 bg-red-50 p-3 rounded-xl mb-6 border border-red-200">
                 Esta acción no se puede deshacer.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={eliminarCliente}
                   disabled={loadingAccion}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white py-3.5 rounded-xl font-semibold hover:from-red-600 hover:to-red-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg"
                 >
                   {loadingAccion ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-5 h-5" />
                   )}
                   Sí, eliminar
                 </button>
                 <button
                   onClick={() => setModalEliminar(false)}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-medium transition-colors"
+                  className="flex-1 bg-gray-100 text-gray-700 py-3.5 rounded-xl font-semibold hover:bg-gray-200 transition-all border-2 border-gray-200"
                 >
                   Cancelar
                 </button>
@@ -506,6 +674,39 @@ const Clientes = () => {
           </div>
         </div>
       )}
+
+      {/* Estilos para animaciones */}
+      <style jsx>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-slideDown {
+          animation: slideDown 0.3s ease-out;
+        }
+        
+        .animate-slideUp {
+          animation: slideUp 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
