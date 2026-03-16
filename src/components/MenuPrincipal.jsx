@@ -343,7 +343,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                           <div className="p-2">
                             <HideIfUnauthorized
                               userRole={userRole}
-                              allowedRoles={[ROLES.ADMIN, ROLES.GERENTE]}
+                              allowedRoles={[ROLES.GERENTE]}
                             >
                               <SubmenuItem
                                 to="/NuevoEmpleados"
@@ -737,7 +737,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                   <div className="px-4 py-2 text-gray-400 text-sm font-medium">Empleados</div>
                   <HideIfUnauthorized
                     userRole={userRole}
-                    allowedRoles={[ROLES.ADMIN, ROLES.GERENTE]}
+                    allowedRoles={[ROLES.GERENTE]}
                   >
                     <Link
                       to="/NuevoEmpleados"
