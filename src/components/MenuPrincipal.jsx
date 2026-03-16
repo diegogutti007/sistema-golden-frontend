@@ -839,9 +839,14 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                   >
-                    <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                    <Wallet className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
                     <span>Cierre de Caja</span>
                   </Link>
+                </HideIfUnauthorized>
+                <HideIfUnauthorized
+                  userRole={userRole}
+                  allowedRoles={[ROLES.GERENTE]}
+                >
                   <Link
                     to="/Ventas/EstadoResultados"
                     onClick={() => setMobileMenuOpen(false)}
