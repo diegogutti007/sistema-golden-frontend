@@ -234,7 +234,7 @@ export default function AgendaCitas() {
       const diaConsulta = fechaDia || fechasConsulta.diaSeleccionado;
       const inicioSemana = fechaInicioSemana || fechasConsulta.semanaInicio;
       const finSemana = fechaFinSemana || fechasConsulta.semanaFin;
-
+      
       // Formatear fechas para la API
       const formatearFechas = (fecha) => {
         return fecha.toISOString().split('T')[0]; // YYYY-MM-DD
@@ -245,6 +245,9 @@ export default function AgendaCitas() {
         inicioSemana: formatearFechas(inicioSemana),
         finSemana: formatearFechas(finSemana)
       });
+
+      console.log('log inicio', formatearFechas(inicioSemana));
+      console.log('log fin', formatearFechas(finSemana));
 
       const res = await fetch(`${BACKEND_URL}/api/estadisticas-ventas?${params}`);
       if (!res.ok) {
