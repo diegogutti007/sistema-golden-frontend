@@ -442,6 +442,7 @@ function ModalCita({
               <option value="En progreso">🔄 En progreso</option>
               <option value="Completada">✅ Completada</option>
               <option value="Cancelada">❌ Cancelada</option>
+              <option value="Pendiente de retoque">🔧 Pendiente de Retoque</option>
             </select>
 
             {bloqueado ? (

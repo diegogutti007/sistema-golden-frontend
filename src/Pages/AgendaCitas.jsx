@@ -91,7 +91,8 @@ export default function AgendaCitas() {
     { estado: "Programada", color: "#00aae4", icono: "⏰" },
     { estado: "En progreso", color: "#f59e0b", icono: "🔄" },
     { estado: "Completada", color: "#16a34a", icono: "✅" },
-    { estado: "Cancelada", color: "#dc2626", icono: "❌" }
+    { estado: "Cancelada", color: "#dc2626", icono: "❌" },
+    { estado: "Pendiente de retoque", color: "#ff5722", icono: "🔧" } // Nueva opción
   ];
 
   // Detectar si es móvil
@@ -585,6 +586,7 @@ export default function AgendaCitas() {
         else if (cita.extendedProps.estado === "En progreso") backgroundColor = "#f59e0b";
         else if (cita.extendedProps.estado === "Completada") backgroundColor = "#16a34a";
         else if (cita.extendedProps.estado === "Cancelada") backgroundColor = "#dc2626";
+        else if (cita.extendedProps.estado === "Pendiente de retoque") backgroundColor = "#ff5722";
         console.log('Veamos ', cita.extendedProps.Monto);
         return {
           id: cita.id,
@@ -983,7 +985,8 @@ const guardarCita = async (formData, e) => {
                   <span className="sm:hidden">
                     {item.estado === "Programada" ? "Prog." :
                       item.estado === "En progreso" ? "Progreso" :
-                        item.estado === "Completada" ? "Comp." : "Canc."}
+                      item.estado === "Completada" ? "Comp." :
+                      item.estado === "Cancelada" ? "Canc." : "Retoque"}
                   </span>
                 </span>
               </div>
@@ -1249,7 +1252,8 @@ const guardarCita = async (formData, e) => {
                 'Programada': '⏰',
                 'En progreso': '🔄',
                 'Completada': '✅',
-                'Cancelada': '❌'
+                'Cancelada': '❌',
+                'Pendiente de retoque': '🔧'
               }[estado] || '📅';
 
               return (
