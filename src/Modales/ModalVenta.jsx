@@ -108,7 +108,7 @@ export default function ModalVenta({
             console.log("🔄 Inicializando form con cita:", citaInfo);
             
             // Usar la fecha de la cita o la fecha actual si no hay cita
-            const fechaVenta = obtenerFechaLocal(); //citaInfo.FechaFin 
+            const fechaVenta = citaInfo.FechaFin;
 /*                 ? citaInfo.FechaFin
                 : obtenerFechaLocal(); */
             
