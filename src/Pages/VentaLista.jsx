@@ -15,7 +15,8 @@ import {
   DollarSign,
   FileText,
   Filter,
-  X
+  X,
+  FileText as FileTextIcon
 } from "lucide-react";
 import { BACKEND_URL } from '../config';
 
@@ -36,7 +37,7 @@ export default function VentaLista() {
     ventasAnuladas: 0
   });
   const [cargandoEstadisticas, setCargandoEstadisticas] = useState(false);
-  const [primeraCarga, setPrimeraCarga] = useState(true); // ← NUEVO ESTADO
+  const [primeraCarga, setPrimeraCarga] = useState(true);
 
   const LIMITE = 8;
 
@@ -231,12 +232,32 @@ export default function VentaLista() {
   };
 
   // Funciones de formato
-  const formatearFecha = (f) =>
-    new Date(f).toLocaleDateString("es-PE", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    });
+  const formatearFecha = (fechaStr) => {
+    if (!fechaStr) return '';
+
+    // Extraer solo la parte de la fecha (YYYY-MM-DD)
+    let fechaParte = fechaStr;
+
+    // Si viene con T (formato ISO: 2026-03-16T05:00:00.000Z)
+    if (fechaStr.includes('T')) {
+      fechaParte = fechaStr.split('T')[0]; // Tomar solo lo que está antes de T
+    }
+
+    // Ahora fechaParte debe ser "2026-03-16"
+    if (fechaParte.includes('-')) {
+      const partes = fechaParte.split('-');
+      if (partes.length === 3) {
+        const año = partes[0];
+        const mes = partes[1];
+        const dia = partes[2];
+
+        // Reordenar a DD-MM-YYYY
+        return `${dia}-${mes}-${año}`;
+      }
+    }
+
+    return fechaStr; // Si no tiene el formato esperado, devolver original
+  };
 
   const formatearMoneda = (n) =>
     `S/ ${Number(n || 0).toFixed(2)}`;
@@ -468,39 +489,6 @@ export default function VentaLista() {
         </div>
       </div>
 
-      {/* Indicador de filtros activos */}
-     {/*  {tieneFiltros() && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 text-sm text-blue-700">
-              <Filter className="w-4 h-4" />
-              <span>Filtros activos:</span>
-              {fechaInicio && (
-                <span className="bg-blue-100 px-2 py-1 rounded-md">
-                  Desde: {new Date(fechaInicio).toLocaleDateString('es-PE')}
-                </span>
-              )}
-              {fechaFin && (
-                <span className="bg-blue-100 px-2 py-1 rounded-md">
-                  Hasta: {new Date(fechaFin).toLocaleDateString('es-PE')}
-                </span>
-              )}
-              {busqueda && (
-                <span className="bg-blue-100 px-2 py-1 rounded-md">
-                  Búsqueda: "{busqueda}"
-                </span>
-              )}
-            </div>
-            <button
-              onClick={limpiarFiltros}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-            >
-              Limpiar todo
-            </button>
-          </div>
-        </div>
-      )} */}
-
       {/* Tabla - Versión Desktop */}
       <div className="hidden lg:block bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
         {cargando ? (
@@ -519,6 +507,13 @@ export default function VentaLista() {
                     <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Cliente
                     </th>
+                    {/* 🔹 NUEVA COLUMNA DETALLE */}
+                    <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <div className="flex items-center gap-1">
+                        <FileTextIcon className="w-3 h-3" />
+                        Detalle
+                      </div>
+                    </th>
                     <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Fecha
                     </th>
@@ -536,7 +531,7 @@ export default function VentaLista() {
                 <tbody className="divide-y divide-gray-200">
                   {ventas.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="py-12 text-center">
+                      <td colSpan="7" className="py-12 text-center">
                         <div className="flex flex-col items-center text-gray-500">
                           <ShoppingCart className="w-16 h-16 mb-4 text-gray-300" />
                           <p className="text-lg font-medium">No se encontraron ventas</p>
@@ -565,6 +560,15 @@ export default function VentaLista() {
                             <User className="w-4 h-4 text-gray-400 mr-2" />
                             <span className="font-medium text-gray-900">
                               {v.ClienteNombre || "—"}
+                            </span>
+                          </div>
+                        </td>
+                        {/* 🔹 NUEVA CELDA DETALLE */}
+                        <td className="py-4 px-6">
+                          <div className="flex items-start">
+                            <FileTextIcon className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm text-gray-700 max-w-xs truncate" title={v.Detalle || ''}>
+                              {v.detalle || "—"}
                             </span>
                           </div>
                         </td>
@@ -658,6 +662,14 @@ export default function VentaLista() {
 
               {/* Información detallada */}
               <div className="grid grid-cols-2 gap-3 text-xs">
+                {/* 🔹 NUEVA FILA DETALLE - OCUPA TODAS LAS COLUMNAS */}
+                <div className="col-span-2 flex items-start space-x-2 bg-gray-50 p-2 rounded-lg mb-1">
+                  <FileTextIcon className="w-3 h-3 text-gray-500 mt-0.5 flex-shrink-0" />
+                  <span className="text-gray-600 flex-1 break-words">
+                    <span className="font-medium">Detalle:</span> {v.Detalle || "Sin detalle"}
+                  </span>
+                </div>
+
                 <div className="flex items-center space-x-2">
                   <Calendar className="w-3 h-3 text-gray-400" />
                   <span className="text-gray-600">Fecha:</span>
@@ -708,34 +720,6 @@ export default function VentaLista() {
           </div>
         )}
       </div>
-
-      {/* Paginación */}
-{/*       {ventas.length > 0 && (
-        <div className="flex flex-col sm:flex-row justify-between items-center mt-6 p-4 bg-gray-50 rounded-xl border border-gray-200">
-          <div className="text-sm text-gray-600 mb-2 sm:mb-0">
-            Mostrando {ventas.length} ventas de {totalPaginas} páginas
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              disabled={pagina <= 1}
-              onClick={() => setPagina(pagina - 1)}
-              className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <span className="px-3 py-1 bg-white border border-gray-300 rounded-lg text-sm font-semibold text-gray-700">
-              Página {pagina} de {totalPaginas}
-            </span>
-            <button
-              disabled={pagina >= totalPaginas}
-              onClick={() => setPagina(pagina + 1)}
-              className="p-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )} */}
 
       {/* Modal de detalle */}
       {ventaSeleccionada && !modo && (
