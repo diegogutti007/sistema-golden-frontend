@@ -567,8 +567,11 @@ export default function VentaLista() {
                         <td className="py-4 px-6">
                           <div className="flex items-start">
                             <FileTextIcon className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                            <span className="text-sm text-gray-700 max-w-xs truncate" title={v.Detalle || ''}>
-                              {v.detalle || "—"}
+                            <span
+                              className={`text-sm max-w-xs truncate ${v.Detalle ? 'text-gray-700' : 'text-red-500 font-medium'}`}
+                              title={v.Detalle || ''}
+                            >
+                              {v.Detalle || "No se encontró la cita"}
                             </span>
                           </div>
                         </td>
