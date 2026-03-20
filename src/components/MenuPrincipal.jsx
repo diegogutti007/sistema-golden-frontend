@@ -354,7 +354,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                                 description="Registrar nuevo staff"
                               />
                               <SubmenuItem
-                                to="/GestionEmpleados"
+                                to="/ListaEmpleado"
                                 onClick={() => setEmpleadosOpen(false)}
                                 icon={Users}
                                 iconBg="bg-blue-500/10"
@@ -753,7 +753,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                       <span>Nuevo Empleado</span>
                     </Link>
                     <Link
-                      to="/GestionEmpleados"
+                      to="/ListaEmpleado"
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                     >

@@ -21,6 +21,9 @@ import FlujoEfectivo from "./Pages/FlujoEfectivo";
 import GestionProductos from "./Pages/GestionProductos";
 import GestionServicios from "./Pages/GestionServicios";
 import GestionClientes from "./Pages/GestionClientes";
+import GestionEmpleados from "./Pages/GestionEmpleados";
+import PanelAsistencia from "./Pages/PanelAsistencia";
+import MarcacionEmpleados from "./Pages/MarcacionEmpleados";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -37,7 +40,7 @@ function App() {
       try {
         const user = JSON.parse(usuarioGuardado);
         setUsuario(user);
-        
+
         // Si estamos en login, redirigir al dashboard
         if (location.pathname === '/login') {
           navigate('/', { replace: true });
@@ -50,13 +53,13 @@ function App() {
       }
     } else {
       setUsuario(null);
-      
+
       // Si no estamos en login y no hay usuario, redirigir a login
       if (location.pathname !== '/login') {
         navigate('/login', { replace: true });
       }
     }
-    
+
     setCargando(false);
   }, []);
 
@@ -108,7 +111,7 @@ function App() {
       <Routes>
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/NuevoEmpleados" element={<ProtectedRoute><FormEmpleado /></ProtectedRoute>} />
-        <Route path="/GestionEmpleados" element={<ProtectedRoute><ListaEmpleado /></ProtectedRoute>} />
+        <Route path="/ListaEmpleado" element={<ProtectedRoute><ListaEmpleado /></ProtectedRoute>} />
         <Route path="/ComisionDetalles" element={<ProtectedRoute><ListaComisiones /></ProtectedRoute>} />
         <Route path="/Asistencias" element={<ProtectedRoute><div className="p-6">Página de Asistencias - En desarrollo</div></ProtectedRoute>} />
         <Route path="/citas" element={<ProtectedRoute><AgendaCitas /></ProtectedRoute>} />
@@ -123,7 +126,7 @@ function App() {
         <Route path="/Ventas/BalanceGeneral" element={<ProtectedRoute><BalanceGeneral /></ProtectedRoute>} />
         <Route path="/Ventas/FlujoEfectivo" element={<ProtectedRoute><FlujoEfectivo /></ProtectedRoute>} />
         <Route path="/configuracion" element={<ProtectedRoute><div className="p-6">Configuración - En desarrollo</div></ProtectedRoute>} />
-        
+
         {/* Rutas del menú secundario */}
         <Route path="/dashboard/ventas" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard Ventas</h1><p>Estadísticas de ventas</p></div></ProtectedRoute>} />
         <Route path="/dashboard/comisiones" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard Comisiones</h1><p>Estadísticas de comisiones</p></div></ProtectedRoute>} />
@@ -131,6 +134,9 @@ function App() {
         <Route path="/maestro/productos" element={<ProtectedRoute><GestionProductos /></ProtectedRoute>} />
         <Route path="/maestro/servicios" element={<ProtectedRoute><GestionServicios /></ProtectedRoute>} />
         <Route path="/maestro/clientes" element={<ProtectedRoute><GestionClientes /></ProtectedRoute>} />
+        <Route path="/empleado/MarcacionEmpleados" element={<ProtectedRoute><MarcacionEmpleados /></ProtectedRoute>} />
+        <Route path="/empleado/PanelAsistencia" element={<ProtectedRoute><PanelAsistencia /></ProtectedRoute>} />
+        <Route path="/empleado/GestionEmpleados" element={<ProtectedRoute><GestionEmpleados /></ProtectedRoute>} />
         <Route path="/inventario/stock" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Inventario Stock</h1><p>Gestión de stock</p></div></ProtectedRoute>} />
         <Route path="/inventario/proveedores" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Inventario Proveedores</h1><p>Gestión de proveedores</p></div></ProtectedRoute>} />
         <Route path="*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

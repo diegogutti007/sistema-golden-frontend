@@ -105,6 +105,32 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
         },
       ],
     },
+
+    {
+      titulo: "Empleado",
+      icon: ShoppingCart,
+      sub: [
+        {
+          nombre: "Marcación",
+          ruta: "/empleado/MarcacionEmpleados",
+          icon: Package,
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
+        },
+        {
+          nombre: "Asistencia",
+          ruta: "/empleado/PanelAsistencia",
+          icon: Users,
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
+        },
+        {
+          nombre: "Gestion Empleados",
+          ruta: "/empleado/GestionEmpleados",
+          icon: ShoppingCart,
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
+        },
+      ],
+    },
+
     {
       titulo: "Inventario",
       icon: Package,
@@ -218,8 +244,8 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
                 <button
                   onClick={() => handleSectionClick(section.titulo)}
                   className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-all duration-200 ${activeSection === section.titulo
-                      ? "bg-yellow-500/20 border border-yellow-500/30 text-yellow-400"
-                      : "text-gray-400 hover:text-yellow-400 hover:bg-gray-800/50 border border-transparent"
+                    ? "bg-yellow-500/20 border border-yellow-500/30 text-yellow-400"
+                    : "text-gray-400 hover:text-yellow-400 hover:bg-gray-800/50 border border-transparent"
                     }`}
                 >
                   <div className="flex items-center space-x-2">
@@ -240,17 +266,17 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
                         to={item.ruta}
                         onClick={handleLinkClick}
                         className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-all duration-200 group ${isLinkActive(item.ruta)
-                            ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
-                            : "text-gray-300 hover:text-yellow-400 hover:bg-gray-800/30 border border-transparent"
+                          ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
+                          : "text-gray-300 hover:text-yellow-400 hover:bg-gray-800/30 border border-transparent"
                           }`}
                       >
                         <div className={`w-6 h-6 rounded flex items-center justify-center transition-colors duration-200 ${isLinkActive(item.ruta)
-                            ? "bg-yellow-500/20"
-                            : "bg-gray-800 group-hover:bg-yellow-500/10"
+                          ? "bg-yellow-500/20"
+                          : "bg-gray-800 group-hover:bg-yellow-500/10"
                           }`}>
                           <item.icon className={`w-3 h-3 ${isLinkActive(item.ruta)
-                              ? "text-yellow-400"
-                              : "text-gray-400 group-hover:text-yellow-400"
+                            ? "text-yellow-400"
+                            : "text-gray-400 group-hover:text-yellow-400"
                             }`} />
                         </div>
                         <span className="font-medium">{item.nombre}</span>

@@ -201,11 +201,6 @@ export default function AgendaCitas() {
   };
 
 
-
-
-
-
-
   // Inicializar fechas al cargar
   useEffect(() => {
     //const hoy = new Date();
