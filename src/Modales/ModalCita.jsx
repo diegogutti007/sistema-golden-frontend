@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import ComboMin from "../util/ComboMin";
 import Modal from "react-modal";
 import {
   FaEdit,
@@ -18,6 +19,55 @@ import {
 
 Modal.setAppElement("#root");
 
+// Custom styles for ComboMin (copiado del ModalVenta que funciona)
+const customStyles = {
+  control: (base) => ({
+    ...base,
+    border: '1px solid #D1D5DB',
+    borderRadius: '0.5rem',
+    padding: '2px 4px',
+    fontSize: '0.875rem',
+    minHeight: '38px',
+    boxShadow: 'none',
+    '&:hover': {
+      borderColor: '#3B82F6'
+    }
+  }),
+  menu: (base) => ({
+    ...base,
+    borderRadius: '0.5rem',
+    border: '1px solid #E5E7EB',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    zIndex: 10000,
+    fontSize: '0.875rem'
+  }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 10000
+  }),
+  option: (base, state) => ({
+    ...base,
+    backgroundColor: state.isSelected ? '#3B82F6' : state.isFocused ? '#EFF6FF' : 'white',
+    color: state.isSelected ? 'white' : '#374151',
+    fontSize: '0.875rem',
+    padding: '8px 12px',
+    '&:active': {
+      backgroundColor: '#3B82F6',
+      color: 'white'
+    }
+  }),
+  placeholder: (base) => ({
+    ...base,
+    color: '#9CA3AF',
+    fontSize: '0.875rem'
+  }),
+  singleValue: (base) => ({
+    ...base,
+    color: '#374151',
+    fontSize: '0.875rem'
+  })
+};
+
 function ModalCita({
   modalCita,
   setModalCita,
@@ -31,8 +81,7 @@ function ModalCita({
   handleEstadoChange,
 }) {
 
-  // 🔹 CORREGIDO: Estado local para controlar el bloqueo/desbloqueo
-  // Inicializar como false para que no empiece bloqueado
+  // Estado local para controlar el bloqueo/desbloqueo
   const [bloqueado, setBloqueado] = useState(false);
   const [estadoSeleccionado, setEstadoSeleccionado] = useState(form.Estado);
   
@@ -87,7 +136,7 @@ function ModalCita({
     }
   };
 
-  // 🔹 FUNCIÓN: Actualizar fecha fin automáticamente (+1 hora)
+  // FUNCIÓN: Actualizar fecha fin automáticamente (+1 hora)
   const actualizarFechaFin = (fechaInicio) => {
     if (!fechaInicio) return "";
 
@@ -131,7 +180,7 @@ function ModalCita({
     }
   };
 
-  // 🔹 EFFECT: Para NUEVAS CITAS
+  // EFFECT: Para NUEVAS CITAS
   useEffect(() => {
     if (modalCita && esNuevaCita) {
       if (form.FechaInicio) {
@@ -141,7 +190,7 @@ function ModalCita({
     }
   }, [modalCita, esNuevaCita, form.FechaInicio]);
 
-  // 🔹 MANEJADOR: Cambio en fecha inicio
+  // MANEJADOR: Cambio en fecha inicio
   const handleFechaInicioChange = (e) => {
     if (bloqueado) return;
 
@@ -156,13 +205,13 @@ function ModalCita({
     });
   };
 
-  // 🔹 MANEJADOR: Cambio manual en fecha fin
+  // MANEJADOR: Cambio manual en fecha fin
   const handleFechaFinChange = (e) => {
     if (bloqueado) return;
     setForm({ ...form, FechaFin: e.target.value.replace("T", " ") });
   };
 
-  // 🔹 MANEJADOR: Guardar cita
+  // MANEJADOR: Guardar cita
   const handleGuardarCita = async (e) => {
     e.preventDefault();
     
@@ -219,7 +268,7 @@ function ModalCita({
       </div>
 
       <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-        {/* 🔹 TOGGLE SWITCH - SOLO PARA CITAS QUE YA ESTABAN COMPLETADAS EN BD */}
+        {/* TOGGLE SWITCH - SOLO PARA CITAS QUE YA ESTABAN COMPLETADAS EN BD */}
         {form.CitaID && form.EstadoOriginal === "Completada" && (
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
             <div className="flex items-center justify-between">
@@ -356,30 +405,32 @@ function ModalCita({
             </div>
           </div>
 
-          {/* Cliente */}
+          {/* Cliente con ComboMin - CORREGIDO USANDO EL PATRÓN DE MODALVENTA */}
           <div className="space-y-1 sm:space-y-2">
             <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
               <FaUser className="text-gray-400 flex-shrink-0" />
               Cliente
             </label>
             <div className="flex gap-2">
-              <select
-                className={`w-full border rounded-lg px-3 sm:px-4 py-2 sm:py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base ${
-                  bloqueado
-                    ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-300"
-                    : "border-gray-300"
-                }`}
-                value={form.ClienteID}
-                onChange={(e) => !bloqueado && setForm({ ...form, ClienteID: e.target.value })}
-                disabled={bloqueado}
-              >
-                <option value="">-- Seleccionar Cliente --</option>
-                {clientes.map((c) => (
-                  <option key={c.ClienteID} value={c.ClienteID}>
-                    {c.Nombre} {c.Apellido}
-                  </option>
-                ))}
-              </select>
+              <div className="flex-1 relative z-[10001]">
+                <ComboMin
+                  opciones={clientes.map((c) => ({
+                    value: c.ClienteID, 
+                    label: `${c.Nombre} ${c.Apellido}`
+                  }))}
+                  valorActual={
+                    clientes
+                      .map((c) => ({ value: c.ClienteID, label: `${c.Nombre} ${c.Apellido}` }))
+                      .find((op) => op.value === form.ClienteID) || null
+                  }
+                  onSeleccionar={(op) => !bloqueado && setForm({ ...form, ClienteID: op ? op.value : "" })}
+                  placeholder="Seleccionar Cliente..."
+                  className="text-sm"
+                  menuPortalTarget={document.body}
+                  styles={customStyles}
+                  isDisabled={bloqueado}
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => !bloqueado && setModalCliente(true)}
@@ -396,29 +447,31 @@ function ModalCita({
             </div>
           </div>
 
-          {/* Empleado */}
+          {/* Empleado con ComboMin - CORREGIDO USANDO EL PATRÓN DE MODALVENTA */}
           <div className="space-y-1 sm:space-y-2">
             <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
               <FaUserTie className="text-gray-400 flex-shrink-0" />
               Empleado
             </label>
-            <select
-              className={`w-full border rounded-lg px-3 sm:px-4 py-2 sm:py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm sm:text-base ${
-                bloqueado
-                  ? "bg-gray-100 text-gray-500 cursor-not-allowed border-gray-300"
-                  : "border-gray-300"
-              }`}
-              value={form.EmpId}
-              onChange={(e) => !bloqueado && setForm({ ...form, EmpId: e.target.value })}
-              disabled={bloqueado}
-            >
-              <option value="">-- Seleccionar Empleado --</option>
-              {Empleados.map((emp) => (
-                <option key={emp.EmpId} value={emp.EmpId}>
-                  {emp.Nombres} {emp.Apellidos}
-                </option>
-              ))}
-            </select>
+            <div className="relative z-[10001]">
+              <ComboMin
+                opciones={Empleados.map((emp) => ({
+                  value: emp.EmpId, 
+                  label: `${emp.Nombres} ${emp.Apellidos}`
+                }))}
+                valorActual={
+                  Empleados
+                    .map((emp) => ({ value: emp.EmpId, label: `${emp.Nombres} ${emp.Apellidos}` }))
+                    .find((op) => op.value === form.EmpId) || null
+                }
+                onSeleccionar={(op) => !bloqueado && setForm({ ...form, EmpId: op ? op.value : "" })}
+                placeholder="Seleccionar Empleado..."
+                className="text-sm"
+                menuPortalTarget={document.body}
+                styles={customStyles}
+                isDisabled={bloqueado}
+              />
+            </div>
           </div>
 
           {/* Estado */}
