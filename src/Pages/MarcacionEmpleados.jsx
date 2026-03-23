@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BACKEND_URL } from '../config';
 import {
     Clock,
     Coffee,
@@ -15,6 +16,7 @@ import {
     Home
 } from 'lucide-react';
 
+
 const MarcacionEmpleados = () => {
     const [codigo, setCodigo] = useState('');
     const [empleado, setEmpleado] = useState(null);
@@ -29,7 +31,7 @@ const MarcacionEmpleados = () => {
     const [paso, setPaso] = useState('codigo'); // codigo, marcacion, confirmacion
     const [metodoDeteccion, setMetodoDeteccion] = useState('');
 
-    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+    
 
     // Cargar configuración al iniciar
     useEffect(() => {

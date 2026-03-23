@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BACKEND_URL } from '../config';
 import {
     Calendar,
     Users,
@@ -37,8 +38,6 @@ const PanelAsistencia = () => {
     });
     const [paginaActual, setPaginaActual] = useState(1);
     const [itemsPorPagina] = useState(15);
-
-    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
 
     useEffect(() => {
         cargarEmpleados();
@@ -107,7 +106,7 @@ const PanelAsistencia = () => {
         }
     };
 
-    
+
     const cargarReporte = async () => {
         setCargando(true);
         try {
