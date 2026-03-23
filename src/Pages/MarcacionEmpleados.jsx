@@ -113,6 +113,7 @@ const MarcacionEmpleados = () => {
                 console.log('Velocidad:', connection.downlink, 'Mbps');
 
                 // Si es WiFi, asumimos que es la red de la empresa
+
                 if (connection.type === 'wifi') {
                     // No podemos obtener el SSID real por seguridad del navegador
                     return 'wifi_detectado';
@@ -234,15 +235,49 @@ const MarcacionEmpleados = () => {
 
 
 
+    /*     const buscarEmpleado = async () => {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/empleados/documento/${codigo}`);
+                const data = await response.json();
+    
+                if (response.ok) {
+                    setEmpleado(data);
+                    // Luego buscar el registro del día
+                    const registroResponse = await fetch(`${BACKEND_URL}/api/marcaciones/hoy/${codigo}`);
+                    const registroData = await registroResponse.json();
+                    setRegistroHoy(registroData);
+                    setPaso('marcacion');
+                } else {
+                    setMensaje({ texto: data.error || 'Empleado no encontrado', tipo: 'error' });
+                }
+            } catch (error) {
+                setMensaje({ texto: 'Error de conexión', tipo: 'error' });
+            }
+        }; */
+
     const buscarEmpleado = async () => {
         try {
-            const response = await fetch(`${BACKEND_URL}/api/empleados/documento/${codigo}`);
+            // Obtener el token almacenado (ej. después del login)
+            const token = localStorage.getItem('token');
+
+            // Opción A: Si el endpoint /empleados/documento necesita autenticación
+            const response = await fetch(`${BACKEND_URL}/api/empleados/documento/${codigo}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
             const data = await response.json();
 
             if (response.ok) {
                 setEmpleado(data);
-                // Luego buscar el registro del día
-                const registroResponse = await fetch(`${BACKEND_URL}/api/marcaciones/hoy/${codigo}`);
+                // Luego buscar el registro del día - también con token
+                const registroResponse = await fetch(`${BACKEND_URL}/api/marcaciones/hoy/${codigo}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
                 const registroData = await registroResponse.json();
                 setRegistroHoy(registroData);
                 setPaso('marcacion');

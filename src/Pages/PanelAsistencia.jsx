@@ -48,16 +48,66 @@ const PanelAsistencia = () => {
         cargarReporte();
     }, [fechaInicio, fechaFin, empleadoFiltro]);
 
+    /*     const cargarEmpleados = async () => {
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/empleados`);
+                const data = await response.json();
+                setEmpleados(data);
+            } catch (error) {
+                console.error('Error cargando empleados:', error);
+            }
+        }; */
     const cargarEmpleados = async () => {
         try {
-            const response = await fetch(`${BACKEND_URL}/api/empleados`);
+            // Obtener el token almacenado (después del login)
+            const token = localStorage.getItem('token');
+
+            // Si no hay token, podrías redirigir al login o mostrar error
+            if (!token) {
+                console.warn('No hay token de autenticación');
+                // Opcional: redirigir al login
+                // window.location.href = '/login';
+                return;
+            }
+
+            const response = await fetch(`${BACKEND_URL}/api/empleados`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            // Verificar si la respuesta es exitosa
+            if (!response.ok) {
+                if (response.status === 401) {
+                    // Token expirado o inválido
+                    console.error('Token inválido o expirado');
+                    localStorage.removeItem('token'); // Limpiar token inválido
+                    // Redirigir al login
+                    // window.location.href = '/login';
+                    return;
+                }
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+
             const data = await response.json();
-            setEmpleados(data);
+
+            // Verificar que data es un array
+            if (Array.isArray(data)) {
+                setEmpleados(data);
+            } else {
+                console.error('La respuesta no es un array:', data);
+                setEmpleados([]);
+            }
+
         } catch (error) {
             console.error('Error cargando empleados:', error);
+            setEmpleados([]); // Establecer array vacío en caso de error
         }
     };
 
+    
     const cargarReporte = async () => {
         setCargando(true);
         try {
@@ -142,7 +192,7 @@ const PanelAsistencia = () => {
     };
 
     const getMetodoIcono = (metodo) => {
-        switch(metodo) {
+        switch (metodo) {
             case 'wifi': return <Wifi className="w-4 h-4 text-blue-600" />;
             case 'gps': return <MapPin className="w-4 h-4 text-green-600" />;
             case 'ip_local': return <Smartphone className="w-4 h-4 text-purple-600" />;
@@ -151,7 +201,7 @@ const PanelAsistencia = () => {
     };
 
     const getEstadoColor = (estado) => {
-        switch(estado) {
+        switch (estado) {
             case 'Completo':
                 return 'bg-green-100 text-green-800 border-green-200';
             case 'Incompleto':
@@ -164,7 +214,7 @@ const PanelAsistencia = () => {
     };
 
     const getEstadoIcono = (estado) => {
-        switch(estado) {
+        switch (estado) {
             case 'Completo':
                 return <CheckCircle className="w-4 h-4" />;
             case 'Incompleto':
@@ -397,11 +447,10 @@ const PanelAsistencia = () => {
                                             <button
                                                 key={i}
                                                 onClick={() => setPaginaActual(i + 1)}
-                                                className={`w-8 h-8 rounded-xl font-medium transition-colors ${
-                                                    paginaActual === i + 1
+                                                className={`w-8 h-8 rounded-xl font-medium transition-colors ${paginaActual === i + 1
                                                         ? 'bg-blue-600 text-white'
                                                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                }`}
+                                                    }`}
                                             >
                                                 {i + 1}
                                             </button>

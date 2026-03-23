@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import Modal from "react-modal";
 import { BACKEND_URL } from '../config';
-import { FaPlus, FaTimes, FaUser, FaPhone, FaEnvelope, FaSave } from "react-icons/fa";
+import { FaPlus, FaTimes, FaUser, FaPhone, FaEnvelope, FaSave, FaExclamationTriangle } from "react-icons/fa";
 
-export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
+export default function ModalCliente({ isOpen, onClose, recargarClientes, clientesExistentes = [] }) {
   const [form, setForm] = useState({
     Nombre: "",
     Apellido: "",
@@ -13,6 +13,48 @@ export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [duplicateError, setDuplicateError] = useState("");
+
+  // 🔹 Función para verificar duplicados
+  const checkDuplicates = () => {
+    const errors = {};
+    
+    // Verificar por nombre y apellido combinados
+    const nombreCompleto = `${form.Nombre.trim()} ${form.Apellido.trim()}`.toLowerCase();
+    const existingByName = clientesExistentes.find(cliente => 
+      `${cliente.Nombre} ${cliente.Apellido}`.toLowerCase() === nombreCompleto
+    );
+    
+    if (existingByName) {
+      errors.nombreApellido = `Ya existe un cliente con el nombre "${existingByName.Nombre} ${existingByName.Apellido}"`;
+    }
+    
+    // Verificar por teléfono
+    const telefonoLimpio = form.Telefono.replace(/\D/g, '');
+    if (telefonoLimpio) {
+      const existingByPhone = clientesExistentes.find(cliente => {
+        const telefonoClienteLimpio = cliente.Telefono?.replace(/\D/g, '') || '';
+        return telefonoClienteLimpio === telefonoLimpio;
+      });
+      
+      if (existingByPhone) {
+        errors.telefono = `El teléfono ${form.Telefono} ya está registrado a nombre de ${existingByPhone.Nombre} ${existingByPhone.Apellido}`;
+      }
+    }
+    
+    // Verificar por email
+    if (form.Email) {
+      const existingByEmail = clientesExistentes.find(cliente => 
+        cliente.Email?.toLowerCase() === form.Email.toLowerCase()
+      );
+      
+      if (existingByEmail) {
+        errors.email = `El email ${form.Email} ya está registrado a nombre de ${existingByEmail.Nombre} ${existingByEmail.Apellido}`;
+      }
+    }
+    
+    return errors;
+  };
 
   // 🔹 Validar formulario
   const validateForm = () => {
@@ -22,16 +64,25 @@ export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
       newErrors.Nombre = "El nombre es obligatorio";
     } else if (form.Nombre.length < 2) {
       newErrors.Nombre = "El nombre debe tener al menos 2 caracteres";
+    } else if (!/^[a-zA-ZáéíóúñÑÁÉÍÓÚ\s]+$/.test(form.Nombre)) {
+      newErrors.Nombre = "El nombre solo puede contener letras";
     }
 
     if (!form.Apellido.trim()) {
       newErrors.Apellido = "El apellido es obligatorio";
     } else if (form.Apellido.length < 2) {
       newErrors.Apellido = "El apellido debe tener al menos 2 caracteres";
+    } else if (!/^[a-zA-ZáéíóúñÑÁÉÍÓÚ\s]+$/.test(form.Apellido)) {
+      newErrors.Apellido = "El apellido solo puede contener letras";
     }
 
-    if (form.Telefono && form.Telefono.replace(/\D/g, '').length < 9) {
-      newErrors.Telefono = "El teléfono debe tener al menos 9 dígitos";
+    if (form.Telefono) {
+      const telefonoLimpio = form.Telefono.replace(/\D/g, '');
+      if (telefonoLimpio.length < 9) {
+        newErrors.Telefono = "El teléfono debe tener al menos 9 dígitos";
+      } else if (telefonoLimpio.length > 12) {
+        newErrors.Telefono = "El teléfono no puede tener más de 12 dígitos";
+      }
     }
 
     if (form.Email && !/\S+@\S+\.\S+/.test(form.Email)) {
@@ -61,6 +112,7 @@ export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
     const formatted = formatTelefono(e.target.value);
     setForm({ ...form, Telefono: formatted });
     if (errors.Telefono) setErrors({ ...errors, Telefono: '' });
+    setDuplicateError(""); // Limpiar error de duplicado
   };
 
   const guardarCliente = async (e) => {
@@ -68,7 +120,16 @@ export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
 
     if (!validateForm()) return;
 
+    // Verificar duplicados antes de enviar
+    const duplicateErrors = checkDuplicates();
+    if (Object.keys(duplicateErrors).length > 0) {
+      setDuplicateError("⚠️ Ya existe un cliente con información similar:");
+      setErrors(prev => ({ ...prev, ...duplicateErrors }));
+      return;
+    }
+
     setIsLoading(true);
+    setDuplicateError("");
 
     try {
       const res = await fetch(`${BACKEND_URL}/api/clientes`, {
@@ -77,17 +138,33 @@ export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
         body: JSON.stringify(form),
       });
 
+      const data = await res.json();
+
       if (res.ok) {
         alert("✅ Cliente registrado correctamente");
         setForm({ Nombre: "", Apellido: "", Telefono: "", Email: "" });
         setErrors({});
+        setDuplicateError("");
         recargarClientes();
         onClose();
       } else {
-        alert("❌ Error al registrar cliente");
+        // Manejar errores específicos del servidor
+        if (data.error === "DUPLICATE_PHONE") {
+          setDuplicateError("❌ El número de teléfono ya está registrado en el sistema");
+          setErrors({ ...errors, Telefono: "Este teléfono ya existe" });
+        } else if (data.error === "DUPLICATE_EMAIL") {
+          setDuplicateError("❌ El correo electrónico ya está registrado en el sistema");
+          setErrors({ ...errors, Email: "Este email ya existe" });
+        } else if (data.error === "DUPLICATE_NAME") {
+          setDuplicateError("❌ Ya existe un cliente con el mismo nombre y apellido");
+          setErrors({ ...errors, Nombre: "Nombre y apellido ya registrados", Apellido: "Nombre y apellido ya registrados" });
+        } else {
+          alert(data.message || "❌ Error al registrar cliente");
+        }
       }
     } catch (error) {
-      alert("❌ Error de conexión");
+      console.error("Error:", error);
+      alert("❌ Error de conexión con el servidor");
     } finally {
       setIsLoading(false);
     }
@@ -96,6 +173,7 @@ export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
   const handleClose = () => {
     setForm({ Nombre: "", Apellido: "", Telefono: "", Email: "" });
     setErrors({});
+    setDuplicateError("");
     onClose();
   };
 
@@ -139,6 +217,16 @@ export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
 
       {/* Formulario */}
       <form onSubmit={guardarCliente} className="p-6 space-y-4">
+        {/* Error de duplicado general */}
+        {duplicateError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+            <FaExclamationTriangle className="text-red-500 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-red-700">
+              {duplicateError}
+            </div>
+          </div>
+        )}
+
         {/* Nombre y Apellido en misma línea */}
         <div className="grid grid-cols-2 gap-4">
           {/* Nombre */}
@@ -159,6 +247,8 @@ export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
                 onChange={(e) => {
                   setForm({ ...form, Nombre: e.target.value });
                   if (errors.Nombre) setErrors({ ...errors, Nombre: '' });
+                  if (errors.nombreApellido) setErrors({ ...errors, nombreApellido: '' });
+                  setDuplicateError("");
                 }}
               />
             </div>
@@ -183,6 +273,8 @@ export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
               onChange={(e) => {
                 setForm({ ...form, Apellido: e.target.value });
                 if (errors.Apellido) setErrors({ ...errors, Apellido: '' });
+                if (errors.nombreApellido) setErrors({ ...errors, nombreApellido: '' });
+                setDuplicateError("");
               }}
             />
             {errors.Apellido && (
@@ -192,6 +284,13 @@ export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
             )}
           </div>
         </div>
+
+        {/* Error combinado de nombre y apellido */}
+        {errors.nombreApellido && (
+          <p className="text-red-500 text-xs flex items-center gap-1 -mt-2">
+            ⚠️ {errors.nombreApellido}
+          </p>
+        )}
 
         {/* Teléfono */}
         <div className="space-y-2">
@@ -241,6 +340,7 @@ export default function ModalCliente({ isOpen, onClose, recargarClientes }) {
               onChange={(e) => {
                 setForm({ ...form, Email: e.target.value });
                 if (errors.Email) setErrors({ ...errors, Email: '' });
+                setDuplicateError("");
               }}
             />
           </div>
