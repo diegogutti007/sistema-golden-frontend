@@ -13,7 +13,9 @@ import {
     Fingerprint,
     Home,
     Smartphone,
-    WifiOff
+    WifiOff,
+    RefreshCw,  // 🔴 IMPORTANTE: Asegurar que este icono está importado
+    Shield
 } from 'lucide-react';
 
 const MarcacionEmpleados = () => {
@@ -29,6 +31,8 @@ const MarcacionEmpleados = () => {
     const [paso, setPaso] = useState('codigo');
     const [metodoDeteccion, setMetodoDeteccion] = useState('');
     const [viewport, setViewport] = useState('mobile');
+    const [ultimaVerificacion, setUltimaVerificacion] = useState(null);
+    const [verificacionManual, setVerificacionManual] = useState(false);
 
     // Detectar tamaño de pantalla
     useEffect(() => {
@@ -57,15 +61,6 @@ const MarcacionEmpleados = () => {
         }, 1000);
         return () => clearInterval(timer);
     }, []);
-
-    // Verificar ubicación periódicamente si hay empleado
-    useEffect(() => {
-        if (empleado) {
-            verificarUbicacion();
-            const intervalo = setInterval(verificarUbicacion, 30000);
-            return () => clearInterval(intervalo);
-        }
-    }, [empleado]);
 
     const verificarSoporteNavegador = () => {
         const soporte = {
@@ -168,8 +163,12 @@ const MarcacionEmpleados = () => {
         });
     };
 
-    const verificarUbicacion = async () => {
+    const verificarUbicacion = async (esManual = false) => {
         setVerificandoUbicacion(true);
+        
+        if (esManual) {
+            setMensaje({ texto: '🔍 Verificando ubicación...', tipo: 'info' });
+        }
         
         try {
             const wifiDetectado = detectarWifi();
@@ -207,6 +206,15 @@ const MarcacionEmpleados = () => {
 
             if (response.ok) {
                 setUbicacionValida({ valida: true, metodo: data.metodo });
+                setUltimaVerificacion(new Date());
+                
+                if (esManual) {
+                    setMensaje({ 
+                        texto: `✅ Ubicación verificada vía ${data.metodo === 'wifi' ? 'WiFi' : 'GPS'}`,
+                        tipo: 'exito'
+                    });
+                    setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
+                }
             } else {
                 setUbicacionValida({ valida: false });
                 setMensaje({
@@ -251,6 +259,14 @@ const MarcacionEmpleados = () => {
                 const registroData = await registroResponse.json();
                 setRegistroHoy(registroData);
                 setPaso('marcacion');
+                setVerificacionManual(true);
+                
+                // Mostrar mensaje para que el usuario sepa que debe verificar
+                setMensaje({
+                    texto: '⚠️ Por favor, verifica tu ubicación antes de marcar',
+                    tipo: 'info'
+                });
+                setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
             } else {
                 setMensaje({ texto: data.error || 'Empleado no encontrado', tipo: 'error' });
                 setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
@@ -266,11 +282,23 @@ const MarcacionEmpleados = () => {
     const marcar = async (tipo) => {
         if (!ubicacionValida?.valida) {
             setMensaje({
-                texto: 'No puedes marcar desde esta ubicación',
+                texto: '❌ Primero verifica tu ubicación con el botón "Verificar"',
                 tipo: 'error'
             });
-            setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
+            setTimeout(() => setMensaje({ texto: '', tipo: '' }), 4000);
             return;
+        }
+
+        if (ultimaVerificacion) {
+            const minutosDesdeVerificacion = (new Date() - ultimaVerificacion) / 1000 / 60;
+            if (minutosDesdeVerificacion > 5) {
+                setMensaje({
+                    texto: '⚠️ Han pasado más de 5 minutos. Verifica tu ubicación nuevamente.',
+                    tipo: 'error'
+                });
+                setTimeout(() => setMensaje({ texto: '', tipo: '' }), 4000);
+                return;
+            }
         }
 
         setCargando(true);
@@ -344,12 +372,15 @@ const MarcacionEmpleados = () => {
     };
 
     const estados = getEstadoBotones();
+    
     const resetear = () => {
         setCodigo('');
         setEmpleado(null);
         setRegistroHoy(null);
         setPaso('codigo');
         setUbicacionValida(null);
+        setUltimaVerificacion(null);
+        setVerificacionManual(false);
         setMensaje({ texto: '', tipo: '' });
     };
 
@@ -381,40 +412,6 @@ const MarcacionEmpleados = () => {
                         {formatearFecha(horaActual)}
                     </p>
                 </div>
-
-                {/* Estado de ubicación */}
-                {configuracion && (
-                    <div className="bg-white/10 backdrop-blur-lg rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4 border border-white/20">
-                        <div className="flex items-center gap-2 sm:gap-3 text-white text-sm sm:text-base">
-                            {ubicacionValida?.valida ? (
-                                <>
-                                    <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-400 rounded-full animate-pulse"></div>
-                                    <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
-                                    <span className="flex-1">Ubicación verificada</span>
-                                    <span className="text-xs bg-green-500/30 px-2 py-1 rounded-full">
-                                        {ubicacionValida.metodo}
-                                    </span>
-                                </>
-                            ) : ubicacionValida === null ? (
-                                <>
-                                    <div className="w-2 h-2 sm:w-3 sm:h-3 bg-yellow-400 rounded-full animate-pulse"></div>
-                                    <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
-                                    <span className="flex-1 text-xs sm:text-sm">Verificando ubicación...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <div className="w-2 h-2 sm:w-3 sm:h-3 bg-red-400 rounded-full"></div>
-                                    <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
-                                    <span className="flex-1 text-xs sm:text-sm">Fuera del área permitida</span>
-                                </>
-                            )}
-                        </div>
-                        <div className="mt-2 text-xs text-white/60 flex items-center gap-2">
-                            <MapPin className="w-3 h-3" />
-                            <span className="line-clamp-1">{configuracion.direccion}</span>
-                        </div>
-                    </div>
-                )}
 
                 {/* Paso 1: Ingreso de código */}
                 {paso === 'codigo' && (
@@ -467,7 +464,7 @@ const MarcacionEmpleados = () => {
                     </div>
                 )}
 
-                {/* Paso 2: Panel de marcación */}
+                {/* Paso 2: Panel de marcación - AQUÍ ESTÁ EL BOTÓN DE VERIFICACIÓN */}
                 {paso === 'marcacion' && empleado && (
                     <div className="space-y-4">
                         {/* Tarjeta de empleado */}
@@ -488,7 +485,63 @@ const MarcacionEmpleados = () => {
                             </div>
                         </div>
 
-                        {/* Estado del día - Responsive grid */}
+                        {/* 🔴 SECCIÓN DE VERIFICACIÓN DE UBICACIÓN CON BOTÓN 🔴 */}
+                        {configuracion && (
+                            <div className="bg-white/10 backdrop-blur-lg rounded-xl sm:rounded-2xl p-4 border border-white/20">
+                                <div className="flex items-center justify-between text-white">
+                                    <div className="flex items-center gap-2">
+                                        {ubicacionValida?.valida ? (
+                                            <>
+                                                <CheckCircle className="w-5 h-5 text-green-400" />
+                                                <span className="text-sm">Ubicación verificada</span>
+                                                <span className="text-xs bg-green-500/30 px-2 py-1 rounded-full">
+                                                    {ubicacionValida.metodo}
+                                                </span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <AlertCircle className="w-5 h-5 text-yellow-400" />
+                                                <span className="text-sm">
+                                                    {ubicacionValida === null ? 'No verificada' : 'Fuera del área'}
+                                                </span>
+                                            </>
+                                        )}
+                                    </div>
+                                    
+                                    {/* 🔴 BOTÓN DE VERIFICACIÓN - ESTÁ AQUÍ 🔴 */}
+                                    <button
+                                        onClick={() => verificarUbicacion(true)}
+                                        disabled={verificandoUbicacion}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-all text-sm disabled:opacity-50"
+                                    >
+                                        {verificandoUbicacion ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                <span>Verificando...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <RefreshCw className="w-4 h-4" />
+                                                <span>Verificar ubicación</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                                
+                                <div className="mt-2 text-xs text-white/60 flex items-center gap-2">
+                                    <MapPin className="w-3 h-3" />
+                                    <span className="line-clamp-1">{configuracion.direccion}</span>
+                                </div>
+                                
+                                {ultimaVerificacion && ubicacionValida?.valida && (
+                                    <div className="mt-1 text-[10px] text-white/40 text-right">
+                                        Verificado: {ultimaVerificacion.toLocaleTimeString('es-PE')}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Estado del día */}
                         <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6">
                             <h3 className="font-semibold text-gray-800 mb-3 sm:mb-4 text-sm sm:text-base">
                                 Registro de hoy
@@ -531,7 +584,17 @@ const MarcacionEmpleados = () => {
                             </div>
                         </div>
 
-                        {/* Botones de marcación - Grid responsive */}
+                        {/* Indicador de requisito de verificación */}
+                        {!ubicacionValida?.valida && (
+                            <div className="bg-yellow-100 border border-yellow-300 rounded-xl p-3">
+                                <div className="flex items-center gap-2 text-yellow-800 text-xs sm:text-sm">
+                                    <Shield className="w-4 h-4" />
+                                    <span>⚠️ Debes verificar tu ubicación antes de marcar</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Botones de marcación */}
                         <div className={`grid gap-3 ${
                             viewport === 'desktop' ? 'grid-cols-4' : 'grid-cols-2'
                         }`}>
@@ -635,7 +698,7 @@ const MarcacionEmpleados = () => {
                 )}
 
                 {/* Footer con info de ubicación */}
-                {configuracion && (
+                {configuracion && paso === 'codigo' && (
                     <div className="mt-4 text-center text-white/60 text-xs">
                         <p>📍 Radio permitido: {configuracion.radioPermitido} metros</p>
                         <p className="hidden sm:block">📡 Redes WiFi: {configuracion.wifiPermitidos.join(' • ')}</p>
