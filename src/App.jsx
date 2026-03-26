@@ -22,8 +22,10 @@ import GestionProductos from "./Pages/GestionProductos";
 import GestionServicios from "./Pages/GestionServicios";
 import GestionClientes from "./Pages/GestionClientes";
 import GestionEmpleados from "./Pages/GestionEmpleados";
-import PanelAsistencia from "./Pages/PanelAsistencia";
+import Asistencia from "./Pages/PanelAsistencia";
+
 import MarcacionEmpleados from "./Pages/MarcacionEmpleados";
+import GestionHorarios from "./Pages/GestionHorarios";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -109,15 +111,21 @@ function App() {
   return (
     <LayoutPrincipal usuario={usuario} onLogout={handleLogout}>
       <Routes>
+        {/* Empleados */}
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/NuevoEmpleados" element={<ProtectedRoute><FormEmpleado /></ProtectedRoute>} />
         <Route path="/ListaEmpleado" element={<ProtectedRoute><ListaEmpleado /></ProtectedRoute>} />
         <Route path="/ComisionDetalles" element={<ProtectedRoute><ListaComisiones /></ProtectedRoute>} />
-        <Route path="/Asistencias" element={<ProtectedRoute><div className="p-6">Página de Asistencias - En desarrollo</div></ProtectedRoute>} />
+        <Route path="/MarcacionEmpleados" element={<ProtectedRoute><MarcacionEmpleados /></ProtectedRoute>} />
+        <Route path="/Asistencias" element={<ProtectedRoute><Asistencia /></ProtectedRoute>} />
+        <Route path="/Horarios" element={<ProtectedRoute><GestionHorarios /></ProtectedRoute>} />
+        {/* Citas */}
         <Route path="/citas" element={<ProtectedRoute><AgendaCitas /></ProtectedRoute>} />
         <Route path="/citas/Historial" element={<ProtectedRoute><HistorialCitas /></ProtectedRoute>} />
+        {/* gastos */}
         <Route path="/gastos" element={<ProtectedRoute><FormularioGasto /></ProtectedRoute>} />
-        <Route path="/gastos/GestionGastos" element={<ProtectedRoute><ListaGastos /></ProtectedRoute>} />
+        <Route path="/gastos/GestionGastos" element={<ProtectedRoute><ListaGastos /></ProtectedRoute>} />.
+        {/* ventas */}
         <Route path="/Ventas" element={<ProtectedRoute><VentaFormulario /></ProtectedRoute>} />
         <Route path="/Ventas/GestionVentas" element={<ProtectedRoute><VentaLista /></ProtectedRoute>} />
         <Route path="/Ventas/CierreCaja" element={<ProtectedRoute><CierreCaja /></ProtectedRoute>} />
@@ -125,6 +133,7 @@ function App() {
         <Route path="/Ventas/EstadoResultados" element={<ProtectedRoute><EstadoResultados /></ProtectedRoute>} />
         <Route path="/Ventas/BalanceGeneral" element={<ProtectedRoute><BalanceGeneral /></ProtectedRoute>} />
         <Route path="/Ventas/FlujoEfectivo" element={<ProtectedRoute><FlujoEfectivo /></ProtectedRoute>} />
+
         <Route path="/configuracion" element={<ProtectedRoute><div className="p-6">Configuración - En desarrollo</div></ProtectedRoute>} />
 
         {/* Rutas del menú secundario */}
@@ -134,8 +143,8 @@ function App() {
         <Route path="/maestro/productos" element={<ProtectedRoute><GestionProductos /></ProtectedRoute>} />
         <Route path="/maestro/servicios" element={<ProtectedRoute><GestionServicios /></ProtectedRoute>} />
         <Route path="/maestro/clientes" element={<ProtectedRoute><GestionClientes /></ProtectedRoute>} />
-        <Route path="/empleado/MarcacionEmpleados" element={<ProtectedRoute><MarcacionEmpleados /></ProtectedRoute>} />
-        <Route path="/empleado/PanelAsistencia" element={<ProtectedRoute><PanelAsistencia /></ProtectedRoute>} />
+{/*         <Route path="/empleado/MarcacionEmpleados" element={<ProtectedRoute><MarcacionEmpleados /></ProtectedRoute>} />
+        <Route path="/empleado/PanelAsistencia" element={<ProtectedRoute><PanelAsistencia /></ProtectedRoute>} /> */}
         <Route path="/empleado/GestionEmpleados" element={<ProtectedRoute><GestionEmpleados /></ProtectedRoute>} />
         <Route path="/inventario/stock" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Inventario Stock</h1><p>Gestión de stock</p></div></ProtectedRoute>} />
         <Route path="/inventario/proveedores" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Inventario Proveedores</h1><p>Gestión de proveedores</p></div></ProtectedRoute>} />

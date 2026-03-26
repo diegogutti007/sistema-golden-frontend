@@ -277,7 +277,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                   <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent pointer-events-none" />
                 </div>
 
-                {isMobile && windowWidth < 400 && (
+{/*                 {isMobile && windowWidth < 400 && (
                   <div className="flex flex-col ml-2">
                     <span className="text-xs font-bold font-bodoni bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">
                       GOLDEN NAILS
@@ -286,7 +286,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                       Tu mejor versión
                     </span>
                   </div>
-                )}
+                )} */}
               </a>
             </div>
 
@@ -383,6 +383,24 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                                 iconBg="bg-purple-500/10"
                                 iconColor="text-purple-400"
                                 title="Asistencias"
+                                description="Control horario"
+                              />
+                              <SubmenuItem
+                                to="/MarcacionEmpleados"
+                                onClick={() => setEmpleadosOpen(false)}
+                                icon={Calendar}
+                                iconBg="bg-purple-500/10"
+                                iconColor="text-purple-400"
+                                title="Marcación Empleados"
+                                description="Control Marcación"
+                              />
+                              <SubmenuItem
+                                to="/Horarios"
+                                onClick={() => setEmpleadosOpen(false)}
+                                icon={Calendar}
+                                iconBg="bg-purple-500/10"
+                                iconColor="text-purple-400"
+                                title="Horarios"
                                 description="Control horario"
                               />
                             </HideIfUnauthorized>
@@ -611,16 +629,20 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                     <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center border border-blue-500/30">
                       <User className="w-4 h-4 text-blue-400" />
                     </div>
-                    <div className="text-left">
+                    <div className="flex items-center gap-2 text-left">
                       <div className="font-medium text-sm truncate max-w-[120px]">
-                        {usuario?.nombre || usuario?.usuario || "Usuario"}
+                        {(() => {
+                          const nombreCompleto = `${usuario?.nombre || ''} ${usuario?.apellido || ''}`.trim();
+                          const texto = nombreCompleto || usuario?.usuario || "Usuario";
+                          return texto.charAt(0).toUpperCase() + texto.slice(1);
+                        })()}
                       </div>
-                      <div className={`text-xs px-2 py-0.5 rounded-full ${userRole === ROLES.ADMIN ? 'bg-purple-500/20 text-purple-400' :
-                        userRole === ROLES.GERENTE ? 'bg-blue-500/20 text-blue-400' :
-                          userRole === ROLES.SUPERVISOR ? 'bg-green-500/20 text-green-400' :
-                            'bg-gray-500/20 text-gray-400'
+                      <div className={`text-xs px-2 py-0.5 rounded-full capitalize ${userRole === ROLES.ADMIN ? 'bg-purple-500/20 text-purple-400' :
+                          userRole === ROLES.GERENTE ? 'bg-blue-500/20 text-blue-400' :
+                            userRole === ROLES.SUPERVISOR ? 'bg-green-500/20 text-green-400' :
+                              'bg-gray-500/20 text-gray-400'
                         }`}>
-                        {userRole}
+                        {userRole?.charAt(0).toUpperCase() + userRole?.slice(1).toLowerCase()}
                       </div>
                     </div>
                     <ChevronDown className={`w-4 h-4 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
@@ -667,20 +689,20 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
               {shouldUseMobileMenu && (
                 <div className="flex items-center space-x-2 text-gray-400">
                   <div className="flex items-center space-x-1">
-                    <User className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'
-                      } text-blue-400`} />
-                    <span className={`${isMobile ? 'text-xs' : 'text-sm'
-                      } truncate max-w-[100px]`}>
-                      {usuario?.nombre || usuario?.usuario || "Usuario"}
+                    <User className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-blue-400`} />
+                    <span className={`${isMobile ? 'text-xs' : 'text-sm'} truncate max-w-[100px]`}>
+                      {(() => {
+                        const text = usuario?.nombre + ' ' + usuario?.apellido || usuario?.usuario || "Usuario";
+                        return text.charAt(0).toUpperCase() + text.slice(1);
+                      })()}
                     </span>
                   </div>
-                  <span className={`${isMobile ? 'text-[10px]' : 'text-xs'
-                    } px-1.5 py-0.5 rounded-full ${userRole === ROLES.ADMIN ? 'bg-purple-500/20 text-purple-400' :
-                      userRole === ROLES.GERENTE ? 'bg-blue-500/20 text-blue-400' :
-                        userRole === ROLES.SUPERVISOR ? 'bg-green-500/20 text-green-400' :
-                          'bg-gray-500/20 text-gray-400'
+                  <span className={`${isMobile ? 'text-[10px]' : 'text-xs'} px-1.5 py-0.5 rounded-full capitalize ${userRole === ROLES.ADMIN ? 'bg-purple-500/20 text-purple-400' :
+                    userRole === ROLES.GERENTE ? 'bg-blue-500/20 text-blue-400' :
+                      userRole === ROLES.SUPERVISOR ? 'bg-green-500/20 text-green-400' :
+                        'bg-gray-500/20 text-gray-400'
                     }`}>
-                    {userRole}
+                    {userRole?.charAt(0).toUpperCase() + userRole?.slice(1).toLowerCase()}
                   </span>
                 </div>
               )}
@@ -780,6 +802,22 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                     >
                       <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
                       <span>Asistencias</span>
+                    </Link>
+                    <Link
+                      to="/MarcacionEmpleados"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                      <span>Marcación Empleados</span>
+                    </Link>
+                    <Link
+                      to="/Horarios"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                      <span>Horarios</span>
                     </Link>
                   </HideIfUnauthorized>
                 </div>

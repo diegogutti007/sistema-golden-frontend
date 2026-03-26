@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import ModalModificarEmpleado from "../Modales/ModalModificarEmpleado";
+import Swal from 'sweetalert2';
 import {
   FaEdit,
   FaTrash,
@@ -8,7 +9,13 @@ import {
   FaUsers,
   FaMoneyBillWave,
   FaCalendarAlt,
-  FaIdCard
+  FaIdCard,
+  FaWhatsapp,
+  FaEnvelope,
+  FaMapMarkerAlt,
+  FaBirthdayCake,
+  FaBriefcase,
+  FaUserCheck
 } from "react-icons/fa";
 import {
   Users,
@@ -26,7 +33,11 @@ import {
   Phone,
   Mail,
   LogOut,
-  X
+  X,
+  UserCircle,
+  CreditCard,
+  Clock,
+  Award
 } from "lucide-react";
 import Modal from "react-modal";
 import { BACKEND_URL } from '../config';
@@ -51,25 +62,67 @@ function ListaEmpleado() {
     fetch(`${BACKEND_URL}/api/listaempleado`)
       .then((res) => res.json())
       .then((data) => setEmpleados(Array.isArray(data) ? data : []))
-      .catch((err) => console.error("❌ Error al obtener empleados:", err))
+      .catch((err) => {
+        console.error("❌ Error al obtener empleados:", err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudieron cargar los empleados',
+          confirmButtonColor: '#3085d6',
+          confirmButtonText: 'OK'
+        });
+      })
       .finally(() => setLoading(false));
   };
 
-  const eliminarEmpleado = (id) => {
-    if (window.confirm("¿Seguro que deseas eliminar este empleado?")) {
-      fetch(`${BACKEND_URL}/api/empleado/${id}`, {
-        method: "DELETE",
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          alert(data.mensaje);
-          cargarEmpleados();
+  const eliminarEmpleado = (id, nombreCompleto) => {
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: `¿Deseas eliminar a ${nombreCompleto}? Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        fetch(`${BACKEND_URL}/api/empleado/${id}`, {
+          method: "DELETE",
         })
-        .catch((err) => {
-          console.error("❌ Error al eliminar empleado:", err);
-          alert("Error al eliminar empleado");
-        });
-    }
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.mensaje) {
+              Swal.fire({
+                icon: 'success',
+                title: '¡Eliminado!',
+                text: data.mensaje,
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'OK',
+                timer: 2000,
+                timerProgressBar: true
+              });
+              cargarEmpleados();
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se pudo eliminar el empleado',
+                confirmButtonColor: '#3085d6'
+              });
+            }
+          })
+          .catch((err) => {
+            console.error("❌ Error al eliminar empleado:", err);
+            Swal.fire({
+              icon: 'error',
+              title: 'Error',
+              text: 'Ocurrió un error al eliminar el empleado',
+              confirmButtonColor: '#3085d6'
+            });
+          });
+      }
+    });
   };
 
   const abrirModalModificar = (emp) => {
@@ -85,7 +138,15 @@ function ListaEmpleado() {
 
   const handleEmpleadoActualizado = (empleadoActualizado) => {
     cargarEmpleados();
-    console.log('Empleado actualizado:', empleadoActualizado);
+    Swal.fire({
+      icon: 'success',
+      title: '¡Actualizado!',
+      text: 'Los datos del empleado han sido actualizados correctamente',
+      confirmButtonColor: '#3085d6',
+      timer: 2000,
+      timerProgressBar: true,
+      showConfirmButton: true
+    });
   };
 
   const verDetalle = (emp) => {
@@ -109,8 +170,35 @@ function ListaEmpleado() {
     comision: empleados.filter(emp => emp.Comision > 0).length
   };
 
+  // Función para formatear fechas
+  const formatearFecha = (fecha) => {
+    if (!fecha) return "No registrada";
+    const date = new Date(fecha);
+    return date.toLocaleDateString('es-PE', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  // Mostrar mensaje de éxito al cargar datos
+  const mostrarMensajeCarga = () => {
+    if (!loading && empleados.length > 0) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Datos cargados',
+        text: `Se han cargado ${empleados.length} empleados correctamente`,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+    }
+  };
+
   return (
-    <div className="p-4 sm:p-6">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header con Estadísticas */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center space-x-3 mb-4 sm:mb-6">
@@ -290,7 +378,7 @@ function ListaEmpleado() {
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => eliminarEmpleado(emp.EmpId)}
+                              onClick={() => eliminarEmpleado(emp.EmpId, `${emp.Nombres} ${emp.Apellidos}`)}
                               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
                               title="Eliminar"
                             >
@@ -318,14 +406,14 @@ function ListaEmpleado() {
         )}
       </div>
 
-      {/* Lista - Versión Móvil */}
+      {/* Lista - Versión Móvil y Tablet */}
       <div className="lg:hidden space-y-4">
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
           </div>
         ) : empleadosFiltrados.length > 0 ? (
-          empleadosFiltrados.map((emp, index) => (
+          empleadosFiltrados.map((emp) => (
             <div key={emp.EmpId} className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
               {/* Header de la tarjeta */}
               <div className="flex items-center justify-between mb-3">
@@ -356,7 +444,7 @@ function ListaEmpleado() {
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => eliminarEmpleado(emp.EmpId)}
+                    onClick={() => eliminarEmpleado(emp.EmpId, `${emp.Nombres} ${emp.Apellidos}`)}
                     className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
                     title="Eliminar"
                   >
@@ -424,168 +512,227 @@ function ListaEmpleado() {
         onUpdate={handleEmpleadoActualizado}
       />
 
-      {/* Modal Detalle - Mejorado para Móvil */}
+      {/* Modal Detalle Mejorado con Scroll - Responsive */}
       <Modal
         isOpen={detalleModalOpen}
         onRequestClose={() => setDetalleModalOpen(false)}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-2 sm:mx-4 relative max-h-[95vh] overflow-hidden"
-        overlayClassName="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 relative flex flex-col"
+        overlayClassName="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+        style={{
+          overlay: {
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(4px)'
+          },
+          content: {
+            position: 'relative',
+            top: 'auto',
+            left: 'auto',
+            right: 'auto',
+            bottom: 'auto',
+            maxHeight: '90vh',
+            padding: 0,
+            overflow: 'hidden'
+          }
+        }}
       >
-        <div className="flex flex-col h-full">
-          {/* Header del Modal */}
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center flex-shrink-0">
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                <User className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        {/* Header fijo */}
+        <div className="relative bg-gradient-to-r from-blue-600 to-blue-700 px-4 sm:px-6 py-4 sm:py-5 flex-shrink-0 rounded-t-2xl">
+          <div className="flex justify-between items-start">
+            <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm shadow-lg flex-shrink-0">
+                <UserCircle className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
               </div>
-              <div className="max-w-[200px] sm:max-w-none">
-                <h2 className="text-base sm:text-lg font-bold text-white truncate">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg sm:text-xl font-bold text-white truncate">
                   {empleadoDetalle?.Nombres} {empleadoDetalle?.Apellidos}
                 </h2>
-                <p className="text-blue-100 text-xs truncate">
-                  {empleadoDetalle?.Descripcion || "Sin cargo"}
+                <p className="text-blue-100 text-xs sm:text-sm truncate flex items-center gap-1">
+                  <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                  <span className="truncate">{empleadoDetalle?.Descripcion || "Sin cargo asignado"}</span>
                 </p>
               </div>
             </div>
             <button
               onClick={() => setDetalleModalOpen(false)}
-              className="text-white hover:bg-white/20 p-1 sm:p-2 rounded-xl transition-colors duration-200 flex-shrink-0"
+              className="text-white hover:bg-white/20 p-2 rounded-xl transition-all duration-200 flex-shrink-0 ml-2"
             >
               <X className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           </div>
+        </div>
 
-          {/* Contenido del Modal */}
-          <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-            {empleadoDetalle && (
-              <div className="space-y-4">
-                {/* Información Principal Compacta */}
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 border border-gray-200">
+        {/* Contenido con scroll */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 bg-gradient-to-b from-gray-50 to-white">
+          {empleadoDetalle && (
+            <>
+              {/* Tarjeta de Identificación */}
+              <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-2xl flex items-center justify-center text-white font-bold text-lg sm:text-xl flex-shrink-0">
-                      {empleadoDetalle.Nombres.charAt(0)}{empleadoDetalle.Apellidos.charAt(0)}
+                    <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <FaIdCard className="w-5 h-5 text-white" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap gap-2">
-                        <div className="flex items-center space-x-1 bg-white px-2 py-1 rounded-full shadow-sm text-xs">
-                          <FaIdCard className="w-3 h-3 text-gray-500" />
-                          <span className="font-medium text-gray-700 truncate">{empleadoDetalle.DocID}</span>
-                        </div>
-                        <div className="flex items-center space-x-1 bg-white px-2 py-1 rounded-full shadow-sm text-xs">
-                          <FileText className="w-3 h-3 text-gray-500" />
-                          <span className="font-medium text-gray-700">{empleadoDetalle.TipoEmpleado}</span>
-                        </div>
-                      </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-500 uppercase tracking-wider">Documento de Identidad</p>
+                      <p className="font-mono font-bold text-gray-800 text-sm sm:text-base break-all">{empleadoDetalle.DocID}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-purple-400 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-500 uppercase tracking-wider">Tipo de Empleado</p>
+                      <p className="font-semibold text-purple-600 text-sm sm:text-base break-words">{empleadoDetalle.TipoEmpleado}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid de Información Principal */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Información Económica */}
+                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <DollarSign className="w-4 h-4 text-green-600" />
+                    </div>
+                    <h3 className="font-semibold text-gray-800 text-sm">Información Económica</h3>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                      <span className="text-xs text-gray-600">Sueldo Base</span>
+                      <span className="font-bold text-green-600 text-sm">S/ {parseFloat(empleadoDetalle.Sueldo).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-xs text-gray-600">Comisión</span>
+                      <span className="font-semibold text-blue-600 text-sm">
+                        {empleadoDetalle.Comision ? `${empleadoDetalle.Comision}%` : "No aplica"}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Grid de Información Adaptativo */}
-                <div className="grid grid-cols-1 gap-4">
-                  {/* Información Económica */}
-                  <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
-                    <h4 className="text-base font-semibold text-gray-800 mb-3 flex items-center space-x-2">
-                      <DollarSign className="w-4 h-4 text-green-500" />
-                      <span>Información Económica</span>
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-sm text-gray-600">Sueldo Base</span>
-                        <span className="font-bold text-green-600 text-base">S/ {parseFloat(empleadoDetalle.Sueldo).toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-sm text-gray-600">Comisión</span>
-                        <span className="font-semibold text-blue-600">
-                          {empleadoDetalle.Comision ? `${empleadoDetalle.Comision}%` : "No aplica"}
-                        </span>
-                      </div>
+                {/* Información Laboral */}
+                <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Briefcase className="w-4 h-4 text-blue-600" />
                     </div>
+                    <h3 className="font-semibold text-gray-800 text-sm">Información Laboral</h3>
                   </div>
-
-                  {/* Fechas Importantes */}
-                  <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
-                    <h4 className="text-base font-semibold text-gray-800 mb-3 flex items-center space-x-2">
-                      <Calendar className="w-4 h-4 text-purple-500" />
-                      <span>Fechas Importantes</span>
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-sm text-gray-600">Ingreso</span>
-                        <span className="text-sm font-medium text-gray-900">{empleadoDetalle.fecha_ingreso?.slice(0, 10) || "No registrada"}</span>
-                      </div>
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-sm text-gray-600">Nacimiento</span>
-                        <span className="text-sm font-medium text-gray-900">{empleadoDetalle.FechaNacimiento?.slice(0, 10) || "No registrada"}</span>
-                      </div>
-                      <div className="flex justify-between items-center py-1">
-                        <span className="text-sm text-gray-600">Renuncia</span>
-                        <span className={empleadoDetalle.fecha_renuncia ? "text-sm font-medium text-red-600" : "text-sm font-medium text-green-600"}>
-                          {empleadoDetalle.fecha_renuncia?.slice(0, 10) || "Activo"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Información Personal */}
-                  <div className="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
-                    <h4 className="text-base font-semibold text-gray-800 mb-3 flex items-center space-x-2">
-                      <MapPin className="w-4 h-4 text-orange-500" />
-                      <span>Información Personal</span>
-                    </h4>
-                    <div className="space-y-2">
-                      <div className="flex items-start space-x-2 py-1">
-                        <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-600">Dirección</p>
-                          <p className="text-sm font-medium text-gray-900 break-words">{empleadoDetalle.Direccion || "No registrada"}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Estado del Empleado */}
-                  <div className={`rounded-2xl p-4 border shadow-sm ${empleadoDetalle.fecha_renuncia ?
-                      "bg-gradient-to-r from-red-50 to-red-100 border-red-200" :
-                      "bg-gradient-to-r from-green-50 to-green-100 border-green-200"
-                    }`}>
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${empleadoDetalle.fecha_renuncia ? "bg-red-500" : "bg-green-500"
-                        }`}>
-                        {empleadoDetalle.fecha_renuncia ? (
-                          <LogOut className="w-5 h-5 text-white" />
-                        ) : (
-                          <User className="w-5 h-5 text-white" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-800 text-sm">
-                          {empleadoDetalle.fecha_renuncia ? "Empleado Inactivo" : "Empleado Activo"}
-                        </h4>
-                        <p className="text-xs text-gray-600">
-                          {empleadoDetalle.fecha_renuncia ?
-                            `Renunció el ${empleadoDetalle.fecha_renuncia?.slice(0, 10)}` :
-                            "Actualmente trabajando en la empresa"
-                          }
+                  <div className="space-y-2">
+                    <div className="flex items-start space-x-2 py-1">
+                      <Award className="w-3 h-3 text-gray-400 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-500">Cargo / Puesto</p>
+                        <p className="text-sm font-medium text-gray-800 break-words">
+                          {empleadoDetalle.Descripcion || "Sin cargo asignado"}
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
 
-          {/* Footer del Modal */}
-          <div className="border-t border-gray-200 px-4 py-3 flex-shrink-0 bg-gray-50">
-            <div className="flex justify-end">
-              <button
-                onClick={() => setDetalleModalOpen(false)}
-                className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-200 font-semibold text-sm sm:text-base w-full sm:w-auto text-center"
-              >
-                Cerrar Detalle
-              </button>
-            </div>
-          </div>
+              {/* Fechas Importantes */}
+              <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800 text-sm">Fechas Importantes</h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-gray-500 mb-1">Fecha de Ingreso</p>
+                    <p className="text-sm font-semibold text-gray-800 break-words">
+                      {formatearFecha(empleadoDetalle.fecha_ingreso)}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                    <p className="text-xs text-gray-500 mb-1">Fecha de Nacimiento</p>
+                    <p className="text-sm font-semibold text-gray-800 break-words">
+                      {formatearFecha(empleadoDetalle.FechaNacimiento)}
+                    </p>
+                  </div>
+                  <div className={`rounded-lg p-3 text-center ${empleadoDetalle.fecha_renuncia ? 'bg-red-50' : 'bg-green-50'}`}>
+                    <p className="text-xs text-gray-500 mb-1">Estado / Renuncia</p>
+                    {empleadoDetalle.fecha_renuncia ? (
+                      <>
+                        <p className="text-sm font-semibold text-red-600 break-words">
+                          {formatearFecha(empleadoDetalle.fecha_renuncia)}
+                        </p>
+                        <p className="text-xs text-red-500 mt-1">Fecha de renuncia</p>
+                      </>
+                    ) : (
+                      <p className="text-sm font-semibold text-green-600">
+                        Activo en la empresa
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Información Personal */}
+              <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <MapPin className="w-4 h-4 text-orange-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800 text-sm">Información Personal</h3>
+                </div>
+                <div className="flex items-start space-x-3">
+                  <MapPin className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-500 mb-1">Dirección</p>
+                    <p className="text-sm text-gray-800 leading-relaxed break-words">
+                      {empleadoDetalle.Direccion || "No registrada"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Estado del Empleado con diseño mejorado */}
+              <div className={`rounded-xl p-4 border shadow-lg ${empleadoDetalle.fecha_renuncia ?
+                  "bg-gradient-to-r from-red-50 to-red-100 border-red-200" :
+                  "bg-gradient-to-r from-green-50 to-green-100 border-green-200"
+                }`}>
+                <div className="flex items-center space-x-3">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${empleadoDetalle.fecha_renuncia ? "bg-red-500" : "bg-green-500"
+                    } shadow-md`}>
+                    {empleadoDetalle.fecha_renuncia ? (
+                      <LogOut className="w-6 h-6 text-white" />
+                    ) : (
+                      <FaUserCheck className="w-6 h-6 text-white" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-bold text-gray-800 text-sm sm:text-base">
+                      {empleadoDetalle.fecha_renuncia ? "Empleado Inactivo" : "Empleado Activo"}
+                    </h4>
+                    <p className="text-xs sm:text-sm text-gray-600 mt-1 break-words">
+                      {empleadoDetalle.fecha_renuncia ?
+                        `Fecha de renuncia: ${formatearFecha(empleadoDetalle.fecha_renuncia)}` :
+                        "Actualmente trabajando en la empresa"
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Footer fijo */}
+        <div className="border-t border-gray-200 px-4 sm:px-6 py-4 flex-shrink-0 bg-gray-50 rounded-b-2xl">
+          <button
+            onClick={() => setDetalleModalOpen(false)}
+            className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-200 font-semibold text-sm sm:text-base flex items-center justify-center space-x-2"
+          >
+            <X className="w-4 h-4" />
+            <span>Cerrar Detalle</span>
+          </button>
         </div>
       </Modal>
     </div>

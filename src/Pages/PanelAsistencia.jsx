@@ -17,7 +17,10 @@ import {
     CheckCircle,
     XCircle,
     Menu,
-    X
+    X,
+    TrendingUp,
+    Sun,
+    Moon
 } from 'lucide-react';
 
 const PanelAsistencia = () => {
@@ -30,13 +33,17 @@ const PanelAsistencia = () => {
     const [registros, setRegistros] = useState([]);
     const [empleados, setEmpleados] = useState([]);
     const [empleadoFiltro, setEmpleadoFiltro] = useState('');
+    const [tipoHorarioFiltro, setTipoHorarioFiltro] = useState('');
+    const [tiposHorario, setTiposHorario] = useState([]);
     const [cargando, setCargando] = useState(false);
     const [estadisticas, setEstadisticas] = useState({
         total: 0,
         presentes: 0,
         ausentes: 0,
         tardanzas: 0,
-        horasPromedio: 0
+        horasPromedio: 0,
+        minutosTardanzaPromedio: 0,
+        porcentajeTardanzas: 0
     });
     const [paginaActual, setPaginaActual] = useState(1);
     const [itemsPorPagina, setItemsPorPagina] = useState(10);
@@ -66,34 +73,24 @@ const PanelAsistencia = () => {
 
     useEffect(() => {
         cargarEmpleados();
+        cargarTiposHorario();
     }, []);
 
     useEffect(() => {
         cargarReporte();
-    }, [fechaInicio, fechaFin, empleadoFiltro]);
+    }, [fechaInicio, fechaFin, empleadoFiltro, tipoHorarioFiltro]);
 
     const cargarEmpleados = async () => {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                console.warn('No hay token de autenticación');
-                return;
-            }
-
+            // Eliminamos el token - endpoint público
             const response = await fetch(`${BACKEND_URL}/api/empleados`, {
                 method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
 
             if (!response.ok) {
-                if (response.status === 401) {
-                    console.error('Token inválido o expirado');
-                    localStorage.removeItem('token');
-                    return;
-                }
                 throw new Error(`Error ${response.status}: ${response.statusText}`);
             }
 
@@ -110,6 +107,19 @@ const PanelAsistencia = () => {
         }
     };
 
+    const cargarTiposHorario = async () => {
+        try {
+            // Endpoint público sin token
+            const response = await fetch(`${BACKEND_URL}/api/tipos-empleado`);
+            if (response.ok) {
+                const data = await response.json();
+                setTiposHorario(data);
+            }
+        } catch (error) {
+            console.error('Error cargando tipos de horario:', error);
+        }
+    };
+
     const cargarReporte = async () => {
         setCargando(true);
         try {
@@ -117,7 +127,11 @@ const PanelAsistencia = () => {
             if (empleadoFiltro) {
                 url += `&empId=${empleadoFiltro}`;
             }
+            if (tipoHorarioFiltro) {
+                url += `&tipo_empleado=${tipoHorarioFiltro}`;
+            }
 
+            // Endpoint público sin token
             const response = await fetch(url);
             const data = await response.json();
             setRegistros(data);
@@ -132,25 +146,31 @@ const PanelAsistencia = () => {
 
     const calcularEstadisticas = (data) => {
         const total = data.length;
-        const presentes = data.filter(r => r.Estado === 'Completo').length;
+        const presentes = data.filter(r => r.Estado === 'Completo' || r.Estado === 'Tardanza').length;
         const ausentes = data.filter(r => r.Estado === 'Ausente').length;
-        const tardanzas = data.filter(r => {
-            if (!r.HoraEntrada) return false;
-            const horaEntrada = r.HoraEntrada.split(':');
-            const hora = parseInt(horaEntrada[0]);
-            const minutos = parseInt(horaEntrada[1]);
-            return hora > 9 || (hora === 9 && minutos > 0);
-        }).length;
-
+        
+        // Calcular tardanzas (ahora usando el campo EsTardanza)
+        const tardanzas = data.filter(r => r.EsTardanza === 1 || r.EsTardanza === true).length;
+        
+        // Calcular minutos totales de tardanza
+        const minutosTardanzaTotal = data.reduce((sum, r) => sum + (parseInt(r.MinutosTardanza) || 0), 0);
+        const minutosTardanzaPromedio = tardanzas > 0 ? (minutosTardanzaTotal / tardanzas).toFixed(0) : 0;
+        
+        // Calcular horas totales
         const horasTotales = data.reduce((sum, r) => sum + (parseFloat(r.HorasTrabajadas) || 0), 0);
         const horasPromedio = presentes > 0 ? (horasTotales / presentes).toFixed(2) : 0;
+        
+        // Porcentaje de tardanzas
+        const porcentajeTardanzas = total > 0 ? ((tardanzas / total) * 100).toFixed(1) : 0;
 
         setEstadisticas({
             total,
             presentes,
             ausentes,
             tardanzas,
-            horasPromedio
+            horasPromedio,
+            minutosTardanzaPromedio,
+            porcentajeTardanzas
         });
     };
 
@@ -159,12 +179,15 @@ const PanelAsistencia = () => {
             'Fecha',
             'Empleado',
             'Documento',
+            'Horario',
             'Entrada',
             'Salida Almuerzo',
             'Regreso Almuerzo',
             'Salida',
             'Horas',
             'Estado',
+            'Tardanza',
+            'Minutos Tardanza',
             'Método'
         ];
 
@@ -172,12 +195,15 @@ const PanelAsistencia = () => {
             new Date(r.Fecha).toLocaleDateString('es-PE'),
             `${r.Nombres} ${r.Apellidos}`,
             r.Codigo,
+            r.HorarioNombre || '',
             r.HoraEntrada || '',
             r.HoraSalidaAlmuerzo || '',
             r.HoraRegresoAlmuerzo || '',
             r.HoraSalida || '',
             r.HorasTrabajadas || '',
             r.Estado,
+            r.EsTardanza ? 'Sí' : 'No',
+            r.MinutosTardanza || '',
             r.MetodoValidacion || ''
         ]);
 
@@ -203,7 +229,8 @@ const PanelAsistencia = () => {
         }
     };
 
-    const getEstadoColor = (estado) => {
+    const getEstadoColor = (estado, esTardanza) => {
+        if (esTardanza) return 'bg-orange-100 text-orange-800 border-orange-200';
         switch (estado) {
             case 'Completo':
                 return 'bg-green-100 text-green-800 border-green-200';
@@ -216,7 +243,8 @@ const PanelAsistencia = () => {
         }
     };
 
-    const getEstadoIcono = (estado) => {
+    const getEstadoIcono = (estado, esTardanza) => {
+        if (esTardanza) return <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />;
         switch (estado) {
             case 'Completo':
                 return <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />;
@@ -227,6 +255,14 @@ const PanelAsistencia = () => {
             default:
                 return null;
         }
+    };
+
+    const formatearHoraPeru = (horaStr) => {
+        if (!horaStr) return '—';
+        if (typeof horaStr === 'string' && /^\d{2}:\d{2}:\d{2}$/.test(horaStr)) {
+            return horaStr.substring(0, 5);
+        }
+        return horaStr;
     };
 
     const indiceUltimo = paginaActual * itemsPorPagina;
@@ -241,7 +277,7 @@ const PanelAsistencia = () => {
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
                     <div>
                         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Panel de Asistencia</h1>
-                        <p className="text-sm sm:text-base text-gray-600">Monitoreo de marcaciones y control horario</p>
+                        <p className="text-sm sm:text-base text-gray-600">Monitoreo de marcaciones y control de tardanzas</p>
                     </div>
                     <button
                         onClick={exportarExcel}
@@ -256,7 +292,6 @@ const PanelAsistencia = () => {
 
                 {/* Filtros - Responsive con toggle en móvil */}
                 <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg mb-4 sm:mb-6">
-                    {/* Botón toggle para móvil */}
                     {viewport === 'mobile' && (
                         <button
                             onClick={() => setFiltrosAbiertos(!filtrosAbiertos)}
@@ -271,7 +306,7 @@ const PanelAsistencia = () => {
                     )}
                     
                     <div className={`${viewport === 'mobile' && !filtrosAbiertos ? 'hidden' : 'block'} p-4 sm:p-6`}>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                             <div>
                                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                                     Fecha Inicio
@@ -311,6 +346,23 @@ const PanelAsistencia = () => {
                                     ))}
                                 </select>
                             </div>
+                            <div>
+                                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                                    Tipo de Horario
+                                </label>
+                                <select
+                                    value={tipoHorarioFiltro}
+                                    onChange={(e) => setTipoHorarioFiltro(e.target.value)}
+                                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                                    <option value="">Todos los horarios</option>
+                                    {tiposHorario.map(tipo => (
+                                        <option key={tipo.Tipo_EmpId} value={tipo.Tipo_EmpId}>
+                                            {tipo.Nombre}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                             <div className="flex items-end">
                                 <button
                                     onClick={cargarReporte}
@@ -324,8 +376,8 @@ const PanelAsistencia = () => {
                     </div>
                 </div>
 
-                {/* Tarjetas de estadísticas - Grid responsive */}
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+                {/* Tarjetas de estadísticas - Grid responsive con nuevas métricas */}
+                <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 mb-6">
                     <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white">
                         <div className="flex items-center justify-between">
                             <div>
@@ -346,11 +398,23 @@ const PanelAsistencia = () => {
                         </div>
                     </div>
 
+                    <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-orange-100 text-xs sm:text-sm">Tardanzas</p>
+                                <p className="text-xl sm:text-2xl font-bold">{estadisticas.tardanzas}</p>
+                                <p className="text-xs text-orange-200">{estadisticas.porcentajeTardanzas}%</p>
+                            </div>
+                            <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-orange-200" />
+                        </div>
+                    </div>
+
                     <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-yellow-100 text-xs sm:text-sm">Tardanzas</p>
-                                <p className="text-xl sm:text-2xl font-bold">{estadisticas.tardanzas}</p>
+                                <p className="text-yellow-100 text-xs sm:text-sm">Min. Tardanza</p>
+                                <p className="text-xl sm:text-2xl font-bold">{estadisticas.minutosTardanzaPromedio}</p>
+                                <p className="text-xs text-yellow-200">min promedio</p>
                             </div>
                             <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-200" />
                         </div>
@@ -391,6 +455,7 @@ const PanelAsistencia = () => {
                                         <tr>
                                             <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
                                             <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Empleado</th>
+                                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Horario</th>
                                             {viewport !== 'mobile' && (
                                                 <>
                                                     <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Entrada</th>
@@ -401,6 +466,7 @@ const PanelAsistencia = () => {
                                             )}
                                             <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Horas</th>
                                             <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
+                                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Tardanza</th>
                                             {viewport !== 'mobile' && (
                                                 <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Método</th>
                                             )}
@@ -415,27 +481,42 @@ const PanelAsistencia = () => {
                                                 <td className="px-3 sm:px-6 py-3 sm:py-4">
                                                     <div className="font-medium text-gray-900 text-xs sm:text-sm">
                                                         {viewport === 'mobile' 
-                                                            ? `${reg.Nombres.split(' ')[0]} ${reg.Apellidos.split(' ')[0]}`
-                                                            : `${reg.Nombres} ${reg.Apellidos}`
+                                                            ? `${reg.Nombres?.split(' ')[0] || ''} ${reg.Apellidos?.split(' ')[0] || ''}`
+                                                            : `${reg.Nombres || ''} ${reg.Apellidos || ''}`
                                                         }
                                                     </div>
                                                     <div className="text-xs text-gray-500">
                                                         {reg.Codigo}
                                                     </div>
                                                 </td>
+                                                <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">
+                                                    <div className="flex items-center gap-1">
+                                                        {reg.HorarioNombre ? (
+                                                            <>
+                                                                {reg.EsTurnoNoche ? 
+                                                                    <Moon className="w-3 h-3 text-indigo-500" /> : 
+                                                                    <Sun className="w-3 h-3 text-yellow-500" />
+                                                                }
+                                                                <span className="text-xs">{reg.HorarioNombre}</span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-gray-400">—</span>
+                                                        )}
+                                                    </div>
+                                                </td>
                                                 {viewport !== 'mobile' && (
                                                     <>
                                                         <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-xs sm:text-sm">
-                                                            {reg.HoraEntrada || '—'}
+                                                            {formatearHoraPeru(reg.HoraEntrada) || '—'}
                                                         </td>
                                                         <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-xs sm:text-sm">
-                                                            {reg.HoraSalidaAlmuerzo || '—'}
+                                                            {formatearHoraPeru(reg.HoraSalidaAlmuerzo) || '—'}
                                                         </td>
                                                         <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-xs sm:text-sm">
-                                                            {reg.HoraRegresoAlmuerzo || '—'}
+                                                            {formatearHoraPeru(reg.HoraRegresoAlmuerzo) || '—'}
                                                         </td>
                                                         <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-xs sm:text-sm">
-                                                            {reg.HoraSalida || '—'}
+                                                            {formatearHoraPeru(reg.HoraSalida) || '—'}
                                                         </td>
                                                     </>
                                                 )}
@@ -443,10 +524,22 @@ const PanelAsistencia = () => {
                                                     {reg.HorasTrabajadas || '—'}
                                                 </td>
                                                 <td className="px-3 sm:px-6 py-3 sm:py-4">
-                                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(reg.Estado)}`}>
-                                                        {getEstadoIcono(reg.Estado)}
-                                                        <span className="hidden sm:inline">{reg.Estado}</span>
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(reg.Estado, reg.EsTardanza)}`}>
+                                                        {getEstadoIcono(reg.Estado, reg.EsTardanza)}
+                                                        <span className="hidden sm:inline">
+                                                            {reg.EsTardanza ? 'Tardanza' : reg.Estado}
+                                                        </span>
                                                     </span>
+                                                </td>
+                                                <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">
+                                                    {reg.EsTardanza ? (
+                                                        <span className="inline-flex items-center gap-1 text-orange-600 font-medium">
+                                                            <AlertCircle className="w-3 h-3" />
+                                                            {reg.MinutosTardanza} min
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-green-600">Puntual</span>
+                                                    )}
                                                 </td>
                                                 {viewport !== 'mobile' && (
                                                     <td className="px-3 sm:px-6 py-3 sm:py-4">

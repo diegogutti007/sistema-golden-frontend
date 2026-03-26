@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { User, UserPlus, Calendar, MapPin, DollarSign, IdCard, X, Save, LogOut, Briefcase } from "lucide-react";
+import Swal from 'sweetalert2';
 import { BACKEND_URL } from '../config';
 
 function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
@@ -20,47 +21,182 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
   // Cargar tipos de empleado, cargos y datos del empleado cuando el modal se abre
   useEffect(() => {
     if (isOpen && empleado) {
-      // Cargar tipos de empleado
-      fetch(`${BACKEND_URL}/api/tipo-empleado`)
-        .then((res) => res.json())
-        .then((data) => setTipos(data))
-        .catch((err) => console.error("❌ Error al obtener tipos:", err));
+      // Mostrar loading mientras se cargan los datos
+      Swal.fire({
+        title: 'Cargando datos...',
+        text: 'Por favor espere',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
 
-      // Cargar cargos de empleado
-      fetch(`${BACKEND_URL}/api/cargo-empleado`)
-        .then((res) => res.json())
-        .then((data) => setCargos(data))
-        .catch((err) => console.error("❌ Error al obtener cargos:", err)); 
-      
-      console.log('Datos del empleado recibidos:', empleado);
-      
-      // Cargar datos del empleado seleccionado
-      setNombres(empleado.Nombres || "");
-      setApellidos(empleado.Apellidos || "");
-      setDocId(empleado.DocID || "");
-      setTipoSeleccionado(empleado.Tipo_EmpId || "");
-      setCargoSeleccionado(empleado.Cargo_EmpId || "");
-      setFechaNacimiento(empleado.FechaNacimiento ? empleado.FechaNacimiento.split('T')[0] : "");
-      setFechaIngreso(empleado.fecha_ingreso ? empleado.fecha_ingreso.split('T')[0] : "");
-      setFechaRenuncia(empleado.fecha_renuncia ? empleado.fecha_renuncia.split('T')[0] : "");
-      setDireccion(empleado.Direccion || "");
-      setSueldo(empleado.Sueldo || "");
+      // Cargar tipos de empleado
+      Promise.all([
+        fetch(`${BACKEND_URL}/api/tipos-empleado`).then(res => res.json()),
+        fetch(`${BACKEND_URL}/api/cargos-empleado`).then(res => res.json())
+      ])
+        .then(([tiposData, cargosData]) => {
+          setTipos(tiposData);
+          setCargos(cargosData);
+          
+          // Cargar datos del empleado seleccionado
+          setNombres(empleado.Nombres || "");
+          setApellidos(empleado.Apellidos || "");
+          setDocId(empleado.DocID || "");
+          setTipoSeleccionado(empleado.Tipo_EmpId || "");
+          setCargoSeleccionado(empleado.Cargo_EmpId || "");
+          setFechaNacimiento(empleado.FechaNacimiento ? empleado.FechaNacimiento.split('T')[0] : "");
+          setFechaIngreso(empleado.fecha_ingreso ? empleado.fecha_ingreso.split('T')[0] : "");
+          setFechaRenuncia(empleado.fecha_renuncia ? empleado.fecha_renuncia.split('T')[0] : "");
+          setDireccion(empleado.Direccion || "");
+          setSueldo(empleado.Sueldo || "");
+          
+          Swal.close();
+        })
+        .catch((err) => {
+          console.error("❌ Error al obtener datos:", err);
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudieron cargar los datos necesarios',
+            confirmButtonColor: '#3085d6',
+            confirmButtonText: 'OK'
+          });
+        });
     }
   }, [isOpen, empleado]);
 
   const handleTipoChange = (e) => setTipoSeleccionado(e.target.value);
   const handleCargoChange = (e) => setCargoSeleccionado(e.target.value);
 
+  const validarFormulario = () => {
+    if (!nombres.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campo requerido',
+        text: 'Por favor ingrese los nombres del empleado',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+      });
+      return false;
+    }
+    
+    if (!apellidos.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campo requerido',
+        text: 'Por favor ingrese los apellidos del empleado',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+      });
+      return false;
+    }
+    
+    if (!docId.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campo requerido',
+        text: 'Por favor ingrese el documento de identidad',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+      });
+      return false;
+    }
+    
+    if (!tipoSeleccionado) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campo requerido',
+        text: 'Por favor seleccione el tipo de empleado',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+      });
+      return false;
+    }
+    
+    if (!cargoSeleccionado) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campo requerido',
+        text: 'Por favor seleccione el cargo del empleado',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+      });
+      return false;
+    }
+    
+    if (!fechaNacimiento) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campo requerido',
+        text: 'Por favor ingrese la fecha de nacimiento',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+      });
+      return false;
+    }
+    
+    if (!fechaIngreso) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campo requerido',
+        text: 'Por favor ingrese la fecha de ingreso',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+      });
+      return false;
+    }
+    
+    if (!sueldo || parseFloat(sueldo) <= 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Campo requerido',
+        text: 'Por favor ingrese un sueldo válido mayor a 0',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+      });
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!empleado) return;
-    console.log('Datos a enviar:', {
-      empleado,
-      tipoSeleccionado,
-      cargoSeleccionado
+    
+    if (!validarFormulario()) {
+      return;
+    }
+    
+    // Solo UNA confirmación antes de actualizar
+    const result = await Swal.fire({
+      title: '¿Confirmar actualización?',
+      text: `¿Estás seguro de actualizar los datos de ${nombres} ${apellidos}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, actualizar',
+      cancelButtonText: 'Cancelar'
     });
     
+    if (!result.isConfirmed) {
+      return;
+    }
+    
     setLoading(true);
+    
+    // Mostrar loading mientras se procesa la actualización
+    Swal.fire({
+      title: 'Actualizando empleado...',
+      text: 'Por favor espere',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
 
     const empleadoActualizado = {
       empleadoId: empleado.EmpId,
@@ -84,26 +220,84 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
       });
 
       const data = await response.json();
-      console.log('Respuesta del servidor:', data);
-      console.log('Datos enviados:', empleadoActualizado);
       
       if (response.ok) {
-        alert("✅ Empleado actualizado correctamente");
-        onUpdate(empleadoActualizado);
-        onClose();
+        // Cerrar el loading y mostrar éxito
+        Swal.fire({
+          icon: 'success',
+          title: '¡Actualizado!',
+          text: data.mensaje || 'Empleado actualizado correctamente',
+          confirmButtonColor: '#3085d6',
+          confirmButtonText: 'OK',
+          timer: 2000,
+          timerProgressBar: true
+        }).then(() => {
+          onUpdate(empleadoActualizado);
+          onClose();
+        });
       } else {
-        alert(`❌ Error: ${data.mensaje || "No se pudo actualizar el empleado"}`);
+        Swal.close();
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: data.mensaje || "No se pudo actualizar el empleado",
+          confirmButtonColor: '#3085d6',
+          confirmButtonText: 'OK'
+        });
       }
     } catch (err) {
       console.error("❌ Error al actualizar empleado:", err);
-      alert("Error al actualizar empleado");
+      Swal.close();
+      Swal.fire({
+        icon: 'error',
+        title: 'Error de conexión',
+        text: 'Ocurrió un error al actualizar el empleado. Por favor, verifica tu conexión a internet.',
+        confirmButtonColor: '#3085d6',
+        confirmButtonText: 'OK'
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleClose = () => {
-    // Limpiar formulario al cerrar
+    // Si hay cambios sin guardar, preguntar
+    const hayCambios = 
+      nombres !== (empleado?.Nombres || "") ||
+      apellidos !== (empleado?.Apellidos || "") ||
+      docId !== (empleado?.DocID || "") ||
+      tipoSeleccionado !== (empleado?.Tipo_EmpId || "") ||
+      cargoSeleccionado !== (empleado?.Cargo_EmpId || "") ||
+      fechaNacimiento !== (empleado?.FechaNacimiento?.split('T')[0] || "") ||
+      fechaIngreso !== (empleado?.fecha_ingreso?.split('T')[0] || "") ||
+      fechaRenuncia !== (empleado?.fecha_renuncia?.split('T')[0] || "") ||
+      direccion !== (empleado?.Direccion || "") ||
+      sueldo !== (empleado?.Sueldo || "");
+    
+    if (hayCambios) {
+      Swal.fire({
+        title: '¿Descartar cambios?',
+        text: 'Tienes cambios sin guardar. ¿Estás seguro de que quieres cerrar?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, descartar',
+        cancelButtonText: 'Cancelar'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Limpiar formulario al cerrar
+          limpiarFormulario();
+          onClose();
+        }
+      });
+    } else {
+      limpiarFormulario();
+      onClose();
+    }
+  };
+
+  const limpiarFormulario = () => {
     setNombres("");
     setApellidos("");
     setDocId("");
@@ -115,12 +309,34 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
     setDireccion("");
     setSueldo("");
     setLoading(false);
-    onClose();
   };
 
   // Función para limpiar fecha de renuncia
-  const limpiarFechaRenuncia = () => {
-    setFechaRenuncia("");
+  const limpiarFechaRenuncia = async () => {
+    const result = await Swal.fire({
+      title: '¿Limpiar fecha de renuncia?',
+      text: 'Esto marcará al empleado como activo nuevamente si la fecha estaba establecida.',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, limpiar',
+      cancelButtonText: 'Cancelar'
+    });
+    
+    if (result.isConfirmed) {
+      setFechaRenuncia("");
+      Swal.fire({
+        icon: 'success',
+        title: 'Fecha limpiada',
+        text: 'La fecha de renuncia ha sido eliminada',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true
+      });
+    }
   };
 
   const inputClass = "w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 outline-none transition-all duration-200 bg-white";
@@ -164,7 +380,7 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
                   <label className={labelClass}>
                     <div className="flex items-center space-x-2">
                       <User className={`w-4 h-4 ${iconClass}`} />
-                      <span>Nombres</span>
+                      <span>Nombres *</span>
                     </div>
                   </label>
                   <input
@@ -182,7 +398,7 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
                   <label className={labelClass}>
                     <div className="flex items-center space-x-2">
                       <User className={`w-4 h-4 ${iconClass}`} />
-                      <span>Apellidos</span>
+                      <span>Apellidos *</span>
                     </div>
                   </label>
                   <input
@@ -200,7 +416,7 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
                   <label className={labelClass}>
                     <div className="flex items-center space-x-2">
                       <IdCard className={`w-4 h-4 ${iconClass}`} />
-                      <span>Documento de Identidad</span>
+                      <span>Documento de Identidad *</span>
                     </div>
                   </label>
                   <input
@@ -218,7 +434,7 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
                   <label className={labelClass}>
                     <div className="flex items-center space-x-2">
                       <User className={`w-4 h-4 ${iconClass}`} />
-                      <span>Tipo de Empleado</span>
+                      <span>Tipo de Empleado *</span>
                     </div>
                   </label>
                   <select
@@ -236,12 +452,12 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
                   </select>
                 </div>
 
-                {/* Cargo del Empleado - NUEVO CAMPO */}
+                {/* Cargo del Empleado */}
                 <div>
                   <label className={labelClass}>
                     <div className="flex items-center space-x-2">
                       <Briefcase className={`w-4 h-4 ${iconClass}`} />
-                      <span>Cargo del Empleado</span>
+                      <span>Cargo del Empleado *</span>
                     </div>
                   </label>
                   <select
@@ -267,7 +483,7 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
                   <label className={labelClass}>
                     <div className="flex items-center space-x-2">
                       <Calendar className={`w-4 h-4 ${iconClass}`} />
-                      <span>Fecha de Nacimiento</span>
+                      <span>Fecha de Nacimiento *</span>
                     </div>
                   </label>
                   <input
@@ -284,7 +500,7 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
                   <label className={labelClass}>
                     <div className="flex items-center space-x-2">
                       <Calendar className={`w-4 h-4 ${iconClass}`} />
-                      <span>Fecha de Ingreso</span>
+                      <span>Fecha de Ingreso *</span>
                     </div>
                   </label>
                   <input
@@ -324,7 +540,7 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
                     )}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                    {fechaRenuncia ? "Empleado dado de baja" : "Dejar vacío si sigue activo"}
+                    {fechaRenuncia ? "⚠️ Empleado dado de baja" : "✅ Dejar vacío si sigue activo"}
                   </p>
                 </div>
 
@@ -350,7 +566,7 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
                   <label className={labelClass}>
                     <div className="flex items-center space-x-2">
                       <DollarSign className={`w-4 h-4 ${iconClass}`} />
-                      <span>Sueldo Base</span>
+                      <span>Sueldo Base *</span>
                     </div>
                   </label>
                   <input
@@ -372,6 +588,7 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
                 type="button"
                 onClick={handleClose}
                 className="flex-1 bg-gray-300 text-gray-700 font-semibold px-6 py-4 rounded-xl hover:bg-gray-400 transition-all duration-200 flex items-center justify-center space-x-2"
+                disabled={loading}
               >
                 <X className="w-5 h-5" />
                 <span>Cancelar</span>

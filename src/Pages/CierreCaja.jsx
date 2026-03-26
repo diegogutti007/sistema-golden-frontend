@@ -30,26 +30,26 @@ const CierreCaja = () => {
   const [fechaCierre, setFechaCierre] = useState(new Date().toISOString().split('T')[0]);
   const [horaCierre, setHoraCierre] = useState(() => {
     const ahora = new Date();
-    return ahora.toLocaleTimeString('es-PE', { 
-      hour: '2-digit', 
+    return ahora.toLocaleTimeString('es-PE', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: false 
+      hour12: false
     });
   });
-  
+
   // Función para obtener token del localStorage
   const obtenerToken = () => {
     try {
       let token = localStorage.getItem('token');
       if (token) return token;
-      
+
       const usuarioData = localStorage.getItem('usuario');
       if (usuarioData) {
         const usuario = JSON.parse(usuarioData);
         token = usuario.token || null;
         if (token) return token;
       }
-      
+
       return null;
     } catch (error) {
       console.error("Error obteniendo token:", error);
@@ -61,16 +61,16 @@ const CierreCaja = () => {
   const crearHeadersConAuth = () => {
     const token = obtenerToken();
     console.log("🔑 Token encontrado:", token ? "Sí" : "No");
-    
+
     const headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     };
-    
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     return headers;
   };
 
@@ -158,7 +158,7 @@ const CierreCaja = () => {
   const diagnosticarEndpoints = async () => {
     console.log("🔍 Diagnosticando endpoints disponibles...");
     setErrorEndpoint(null);
-    
+
     const endpoints = [
       { metodo: 'GET', url: '/api/cierre-caja/verificar', desc: 'Verificar cierre' },
       { metodo: 'POST', url: '/api/cierre-caja', desc: 'Crear cierre' },
@@ -166,19 +166,19 @@ const CierreCaja = () => {
       { metodo: 'GET', url: '/api/gastos/resumen-dia', desc: 'Gastos' },
       { metodo: 'GET', url: '/api/caja/dinero-inicial', desc: 'Dinero inicial' }
     ];
-    
+
     for (const ep of endpoints) {
       try {
         const url = `${BACKEND_URL}${ep.url}?fecha=${fechaCierre}`;
         console.log(`Probando ${ep.metodo} ${url}`);
-        
+
         const response = await fetch(url, {
           method: ep.metodo,
           headers: crearHeadersConAuth()
         });
-        
+
         console.log(`✅ ${ep.desc}: ${response.status} ${response.statusText}`);
-        
+
         if (response.status === 404) {
           setErrorEndpoint(`El endpoint ${ep.url} no existe en el backend`);
         }
@@ -192,21 +192,21 @@ const CierreCaja = () => {
   const convertirHora24Horas = (hora12h) => {
     if (!hora12h) return "00:00";
     if (/^\d{2}:\d{2}$/.test(hora12h)) return hora12h;
-    
+
     try {
       const match = hora12h.match(/(\d{1,2}):(\d{2})\s*(a\.?\s*m\.?|p\.?\s*m\.?)?/i);
       if (!match) return "00:00";
-      
+
       let horas = parseInt(match[1]);
       const minutos = match[2];
       const periodo = match[3] || '';
-      
+
       if (periodo.toLowerCase().includes('p') && horas < 12) {
         horas += 12;
       } else if (periodo.toLowerCase().includes('a') && horas === 12) {
         horas = 0;
       }
-      
+
       return `${horas.toString().padStart(2, '0')}:${minutos}`;
     } catch (error) {
       console.error("Error convirtiendo hora:", error);
@@ -248,26 +248,26 @@ const CierreCaja = () => {
     try {
       const fechaFormateada = fecha.split('T')[0] || fecha;
       console.log(`🔍 Verificando cierre para fecha: ${fechaFormateada}`);
-      
+
       const url = `${BACKEND_URL}/api/cierre-caja/verificar?fecha=${fechaFormateada}`;
       console.log(`📡 GET ${url}`);
-      
+
       const response = await fetch(url, {
         headers: crearHeadersConAuth()
       });
-      
+
       if (response.status === 404) {
         console.error("❌ Endpoint /api/cierre-caja/verificar no encontrado");
         return { fecha, existe: false, cierre: null };
       }
-      
+
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       console.log(`📊 Resultado verificación:`, data);
-      
+
       return {
         fecha: fechaFormateada,
         existe: data.existe || false,
@@ -286,7 +286,7 @@ const CierreCaja = () => {
       setErrorVentas(null);
       const fechaFormateada = fecha.split('T')[0] || fecha;
       console.log(`💰 Buscando ventas para: ${fechaFormateada}`);
-      
+
       const url = `${BACKEND_URL}/api/ventas/resumen-dia?fecha=${fechaFormateada}`;
       const response = await fetch(url, {
         headers: crearHeadersConAuth()
@@ -303,7 +303,7 @@ const CierreCaja = () => {
 
       if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
       const data = await response.json();
-      
+
       console.log(`✅ Ventas encontradas:`, data);
 
       setVentasEfectivo(parseFloat(data.efectivo) || 0);
@@ -319,7 +319,7 @@ const CierreCaja = () => {
     }
   };
 
-  // Función para obtener gastos del día
+  /* // Función para obtener gastos del día
   const obtenerGastosDelDia = async (fecha) => {
     try {
       setCargandoGastos(true);
@@ -350,6 +350,41 @@ const CierreCaja = () => {
     } finally {
       setCargandoGastos(false);
     }
+  }; */
+
+  // Función para obtener gastos del día
+  const obtenerGastosDelDia = async (fecha) => {
+    try {
+      setCargandoGastos(true);
+      setErrorGastos(null);
+      const fechaFormateada = fecha.split('T')[0] || fecha;
+      console.log(`💰 Buscando gastos para: ${fechaFormateada}`);
+
+      const url = `${BACKEND_URL}/api/gastos/resumen-dia?fecha=${fechaFormateada}`;
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (response.status === 404) {
+        console.warn("⚠️ Endpoint de gastos no encontrado, usando lista vacía");
+        setGastos([]);
+        return;
+      }
+
+      if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
+      const data = await response.json();
+
+      console.log(`✅ ${data.length} gastos encontrados para ${fechaFormateada}`);
+      setGastos(data || []);
+
+    } catch (error) {
+      console.error("Error obteniendo gastos:", error);
+      setErrorGastos(error.message);
+    } finally {
+      setCargandoGastos(false);
+    }
   };
 
   // Función para obtener dinero inicial
@@ -357,7 +392,7 @@ const CierreCaja = () => {
     try {
       const fechaFormateada = fecha.split('T')[0] || fecha;
       console.log(`💵 Buscando dinero inicial para: ${fechaFormateada}`);
-      
+
       const url = `${BACKEND_URL}/api/caja/dinero-inicial?fecha=${fechaFormateada}`;
       const response = await fetch(url, {
         headers: crearHeadersConAuth()
@@ -388,13 +423,13 @@ const CierreCaja = () => {
     setErrorVentas(null);
     setErrorGastos(null);
     setMensajeExito('');
-    
+
     try {
       const fechaFormateada = fecha.split('T')[0] || fecha;
-      
+
       // Verificar cierre para esta fecha
       const resultado = await verificarCierrePorFecha(fechaFormateada);
-      
+
       if (resultado.existe && resultado.cierre) {
         console.log(`✅ Cargando cierre existente para ${fechaFormateada}:`, resultado.cierre);
         setCierreExistente(resultado.cierre);
@@ -406,20 +441,20 @@ const CierreCaja = () => {
         setVentasTarjeta(parseFloat(resultado.cierre.ventas_tarjeta) || 0);
         setTotalVentas(parseFloat(resultado.cierre.ventas_total) || 0);
         setTotalGastos(parseFloat(resultado.cierre.total_gastos) || 0);
-        
+
         setGastos([]);
         setModoEdicion(false);
       } else {
         console.log(`📭 No hay cierre para ${fechaFormateada}, cargando datos del día`);
         setCierreExistente(null);
         setModoEdicion(false);
-        
+
         await Promise.all([
           obtenerVentasDelDia(fechaFormateada),
           obtenerGastosDelDia(fechaFormateada),
           obtenerDineroInicial(fechaFormateada)
         ]);
-        
+
         setDineroFinalCaja(0);
       }
     } catch (error) {
@@ -463,7 +498,7 @@ const CierreCaja = () => {
       setMostrarPasswordModal(false);
       setPasswordAdmin('');
       setErrorPassword('');
-      
+
       const fechaFormateada = fechaCierre.split('T')[0] || fechaCierre;
       await Promise.all([
         obtenerVentasDelDia(fechaFormateada),
@@ -485,11 +520,11 @@ const CierreCaja = () => {
     try {
       setCargandoActualizacion(true);
       setErrorGuardado(null);
-      
+
       const ventasTotal = totalVentas;
       const efectivoEsperadoCalc = ventasTotal - totalGastos;
       const horaFormateada = convertirHora24Horas(horaCierre);
-      
+
       const datosCierre = {
         fecha: fechaCierre,
         hora: horaFormateada,
@@ -534,9 +569,9 @@ const CierreCaja = () => {
 
       const result = await response.json();
       console.log(`✅ Cierre actualizado:`, result);
-      
+
       await cargarDatosPorFecha(fechaCierre);
-      
+
       setMensajeExito("Cierre de caja actualizado correctamente");
       setTimeout(() => setMensajeExito(''), 3000);
 
@@ -553,11 +588,11 @@ const CierreCaja = () => {
     try {
       setCargandoActualizacion(true);
       setErrorGuardado(null);
-      
+
       const ventasTotal = totalVentas;
       const efectivoEsperadoCalc = ventasTotal - totalGastos;
       const horaFormateada = convertirHora24Horas(horaCierre);
-      
+
       const datosCierre = {
         fecha: fechaCierre,
         hora: horaFormateada,
@@ -602,9 +637,9 @@ const CierreCaja = () => {
 
       const result = await response.json();
       console.log(`✅ Cierre guardado:`, result);
-      
+
       await cargarDatosPorFecha(fechaCierre);
-      
+
       setMensajeExito("Cierre de caja guardado correctamente");
       setTimeout(() => setMensajeExito(''), 3000);
 
@@ -699,7 +734,7 @@ ${modoEdicion ? "✳️ MODO EDICIÓN ACTIVO" : ""}
             <Shield className="w-8 h-8 text-purple-600" />
             <h3 className="text-xl font-bold text-gray-800">Desbloquear Cierre</h3>
           </div>
-          
+
           <p className="text-gray-600 mb-4">
             Ya existe un cierre registrado para esta fecha. Como administrador, puedes desbloquearlo para realizar modificaciones.
           </p>
@@ -756,7 +791,7 @@ ${modoEdicion ? "✳️ MODO EDICIÓN ACTIVO" : ""}
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-3 md:p-4 lg:p-6">
       {renderPasswordModal()}
-      
+
       <div className="max-w-7xl mx-auto">
         {/* Header con título y acciones */}
         <div className="mb-6 md:mb-8">
@@ -806,7 +841,7 @@ ${modoEdicion ? "✳️ MODO EDICIÓN ACTIVO" : ""}
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm p-1">
                 <button
                   onClick={() => cambiarFecha(-1)}
@@ -815,21 +850,21 @@ ${modoEdicion ? "✳️ MODO EDICIÓN ACTIVO" : ""}
                 >
                   <ChevronLeft className="w-5 h-5 text-gray-600" />
                 </button>
-                
+
                 <button
                   onClick={irAHoy}
                   className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium text-sm"
                 >
                   Hoy
                 </button>
-                
+
                 <input
                   type="date"
                   value={fechaCierre}
                   onChange={(e) => setFechaCierre(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
-                
+
                 <button
                   onClick={() => cambiarFecha(1)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -839,25 +874,23 @@ ${modoEdicion ? "✳️ MODO EDICIÓN ACTIVO" : ""}
                 </button>
               </div>
             </div>
-            
+
             {/* Indicador de estado de la fecha seleccionada */}
             <div className="mt-3 flex items-center gap-2">
-              <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                cierreExistente 
-                  ? 'bg-yellow-200 text-yellow-800' 
+              <div className={`px-3 py-1 rounded-full text-xs font-medium ${cierreExistente
+                  ? 'bg-yellow-200 text-yellow-800'
                   : 'bg-green-200 text-green-800'
-              }`}>
-                {cierreExistente 
-                  ? '🔒 Cierre ya registrado' 
+                }`}>
+                {cierreExistente
+                  ? '🔒 Cierre ya registrado'
                   : '✅ Sin cierre registrado'}
               </div>
-              
+
               {cierreExistente && cierreExistente.estado && (
-                <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  cierreExistente.estado === 'CORRECTO' 
-                    ? 'bg-green-200 text-green-800' 
+                <div className={`px-3 py-1 rounded-full text-xs font-medium ${cierreExistente.estado === 'CORRECTO'
+                    ? 'bg-green-200 text-green-800'
                     : 'bg-red-200 text-red-800'
-                }`}>
+                  }`}>
                   {cierreExistente.estado}
                 </div>
               )}
@@ -882,7 +915,7 @@ ${modoEdicion ? "✳️ MODO EDICIÓN ACTIVO" : ""}
                     )}
                   </div>
                 </div>
-                
+
                 {isAdmin && (
                   <button
                     onClick={() => setMostrarPasswordModal(true)}
@@ -938,7 +971,7 @@ ${modoEdicion ? "✳️ MODO EDICIÓN ACTIVO" : ""}
             <div className="text-xs text-gray-500 mb-1">Responsable</div>
             <div className="font-semibold text-gray-800 truncate">{responsable}</div>
           </div>
-          
+
           <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
             <div className="text-xs text-gray-500 mb-1">Hora Cierre</div>
             <input
@@ -949,7 +982,7 @@ ${modoEdicion ? "✳️ MODO EDICIÓN ACTIVO" : ""}
               className={`w-full bg-transparent font-semibold text-gray-800 focus:outline-none ${(fechaActualBloqueada && !modoEdicion) ? 'opacity-50 cursor-not-allowed' : ''}`}
             />
           </div>
-          
+
           <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
             <div className="text-xs text-gray-500 mb-1">Dinero Inicial</div>
             <div className="relative">
@@ -964,7 +997,7 @@ ${modoEdicion ? "✳️ MODO EDICIÓN ACTIVO" : ""}
               />
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
             <div className="text-xs text-gray-500 mb-1">Total Ventas</div>
             <div className="font-bold text-green-600">{formatearMoneda(totalVentas)}</div>
@@ -1132,8 +1165,7 @@ ${modoEdicion ? "✳️ MODO EDICIÓN ACTIVO" : ""}
                 <button
                   onClick={manejarEnvio}
                   disabled={cargandoVentas || cargandoGastos || cargandoActualizacion || (fechaActualBloqueada && !modoEdicion)}
-                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-200 ${
-                    modoEdicion 
+                  className={`w-full py-4 rounded-xl font-bold text-lg transition-all duration-200 ${modoEdicion
                       ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-md'
                       : fechaActualBloqueada
                         ? 'bg-gray-200 text-gray-500 cursor-not-allowed'

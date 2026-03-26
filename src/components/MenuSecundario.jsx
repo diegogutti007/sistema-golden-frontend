@@ -106,7 +106,7 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
       ],
     },
 
-    {
+/*     {
       titulo: "Empleado",
       icon: ShoppingCart,
       sub: [
@@ -129,7 +129,7 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
           allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
         },
       ],
-    },
+    }, */
 
     {
       titulo: "Inventario",

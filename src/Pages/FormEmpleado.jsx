@@ -17,14 +17,14 @@ function FormEmpleado() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api/tipo-empleado`)
+    fetch(`${BACKEND_URL}/api/tipos-empleado`)
       .then((res) => res.json())
       .then((data) => setTipos(Array.isArray(data) ? data : []))
       .catch((err) => console.error("❌ Error al obtener tipos:", err));
   }, []);
 
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api/cargo-empleado`)
+    fetch(`${BACKEND_URL}/api/cargos-empleado`)
       .then((res) => res.json())
       .then((data) => setCargos(Array.isArray(data) ? data : []))
       .catch((err) => console.error("❌ Error al obtener cargos:", err));

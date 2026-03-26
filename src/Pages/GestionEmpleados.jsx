@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BACKEND_URL } from '../config';
 import {
     Users,
     Plus,
@@ -39,7 +40,7 @@ const GestionEmpleados = () => {
         Estado: 'Activo'
     });
 
-    const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
+    
 
     useEffect(() => {
         cargarEmpleados();

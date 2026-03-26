@@ -17,6 +17,8 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.13.6",
     "bootstrap": "^5.3.8",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.545.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
@@ -25,6 +27,7 @@
     "react-router-dom": "^7.9.4",
     "react-scripts": "^5.0.1",
     "react-select": "^5.10.2",
+    "sweetalert2": "^11.26.24",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
