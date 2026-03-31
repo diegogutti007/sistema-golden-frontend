@@ -102,7 +102,7 @@ const CierreCaja = () => {
       const usuarioData = localStorage.getItem('usuario');
       if (usuarioData) {
         const usuario = JSON.parse(usuarioData);
-        return usuario.rol === 'admin' || usuario.rol === 'administrador';
+        return usuario.rol === 'admin' || usuario.rol === 'gerente';
       }
     } catch (error) {
       console.error("Error verificando rol:", error);
@@ -407,13 +407,13 @@ const CierreCaja = () => {
       if (response.ok) {
         const data = await response.json();
         console.log(`✅ Dinero inicial encontrado: ${data.monto}`);
-        setDineroInicial(parseFloat(data.monto) || 500);
+        setDineroInicial(parseFloat(data.monto) || 0);
       } else {
-        setDineroInicial(500);
+        setDineroInicial(0);
       }
     } catch (error) {
       console.error("Error obteniendo dinero inicial:", error);
-      setDineroInicial(500);
+      setDineroInicial(0);
     }
   };
 
@@ -433,7 +433,7 @@ const CierreCaja = () => {
       if (resultado.existe && resultado.cierre) {
         console.log(`✅ Cargando cierre existente para ${fechaFormateada}:`, resultado.cierre);
         setCierreExistente(resultado.cierre);
-        setDineroInicial(parseFloat(resultado.cierre.dinero_inicial) || 500);
+        setDineroInicial(parseFloat(resultado.cierre.dinero_inicial) || 0);
         setDineroFinalCaja(parseFloat(resultado.cierre.dinero_final_caja) || 0);
         setVentasEfectivo(parseFloat(resultado.cierre.ventas_efectivo) || 0);
         setVentasYape(parseFloat(resultado.cierre.ventas_yape) || 0);
