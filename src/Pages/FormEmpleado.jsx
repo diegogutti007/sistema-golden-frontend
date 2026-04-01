@@ -17,7 +17,7 @@ function FormEmpleado() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api/tipos-empleado`)
+    fetch(`${BACKEND_URL}/api/tipo-empleado`)
       .then((res) => res.json())
       .then((data) => setTipos(Array.isArray(data) ? data : []))
       .catch((err) => console.error("❌ Error al obtener tipos:", err));
