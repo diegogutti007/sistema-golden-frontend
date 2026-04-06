@@ -319,39 +319,6 @@ const CierreCaja = () => {
     }
   };
 
-  /* // Función para obtener gastos del día
-  const obtenerGastosDelDia = async (fecha) => {
-    try {
-      setCargandoGastos(true);
-      setErrorGastos(null);
-      const fechaFormateada = fecha.split('T')[0] || fecha;
-      console.log(`💰 Buscando gastos para: ${fechaFormateada}`);
-      
-      const url = `${BACKEND_URL}/api/gastos/resumen-dia?fecha=${fechaFormateada}`;
-      const response = await fetch(url, {
-        headers: crearHeadersConAuth()
-      });
-
-      if (response.status === 404) {
-        console.warn("⚠️ Endpoint de gastos no encontrado, usando lista vacía");
-        setGastos([]);
-        return;
-      }
-
-      if (!response.ok) throw new Error(`Error ${response.status}: ${response.statusText}`);
-      const data = await response.json();
-      
-      console.log(`✅ ${data.length} gastos encontrados para ${fechaFormateada}`);
-      setGastos(data || []);
-
-    } catch (error) {
-      console.error("Error obteniendo gastos:", error);
-      setErrorGastos(error.message);
-    } finally {
-      setCargandoGastos(false);
-    }
-  }; */
-
   // Función para obtener gastos del día
   const obtenerGastosDelDia = async (fecha) => {
     try {
@@ -500,6 +467,7 @@ const CierreCaja = () => {
       setErrorPassword('');
 
       const fechaFormateada = fechaCierre.split('T')[0] || fechaCierre;
+      console.log(fechaFormateada);
       await Promise.all([
         obtenerVentasDelDia(fechaFormateada),
         obtenerGastosDelDia(fechaFormateada),
