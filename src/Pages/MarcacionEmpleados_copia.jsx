@@ -14,11 +14,12 @@ import {
     Home,
     Smartphone,
     WifiOff,
-    RefreshCw,
+    RefreshCw,  // 🔴 IMPORTANTE: Asegurar que este icono está importado
     Shield
 } from 'lucide-react';
 
 const MarcacionEmpleados = () => {
+    const [codigo, setCodigo] = useState('');
     const [empleado, setEmpleado] = useState(null);
     const [registroHoy, setRegistroHoy] = useState(null);
     const [mensaje, setMensaje] = useState({ texto: '', tipo: '' });
@@ -27,11 +28,11 @@ const MarcacionEmpleados = () => {
     const [ubicacionValida, setUbicacionValida] = useState(null);
     const [verificandoUbicacion, setVerificandoUbicacion] = useState(false);
     const [configuracion, setConfiguracion] = useState(null);
-    const [paso, setPaso] = useState('cargando'); // 'cargando', 'marcacion', 'confirmacion'
+    const [paso, setPaso] = useState('codigo');
     const [metodoDeteccion, setMetodoDeteccion] = useState('');
     const [viewport, setViewport] = useState('mobile');
     const [ultimaVerificacion, setUltimaVerificacion] = useState(null);
-    const [usuarioActual, setUsuarioActual] = useState(null);
+    const [verificacionManual, setVerificacionManual] = useState(false);
 
     // Detectar tamaño de pantalla
     useEffect(() => {
@@ -47,9 +48,8 @@ const MarcacionEmpleados = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Cargar usuario logueado y configuración al iniciar
+    // Cargar configuración al iniciar
     useEffect(() => {
-        cargarUsuarioLogueado();
         cargarConfiguracion();
         verificarSoporteNavegador();
     }, []);
@@ -73,105 +73,6 @@ const MarcacionEmpleados = () => {
                 texto: 'Tu navegador no soporta geolocalización. Usa Chrome o Edge actualizado.',
                 tipo: 'error'
             });
-        }
-    };
-
-    const cargarUsuarioLogueado = async () => {
-        setCargando(true);
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                setMensaje({ texto: 'No hay sesión iniciada', tipo: 'error' });
-                setPaso('marcacion');
-                return;
-            }
-
-            // Decodificar el token para obtener el nombre de usuario
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const nombreUsuario = payload.usuario; // Asumiendo que el token tiene el campo 'usuario'
-            
-            if (!nombreUsuario) {
-                setMensaje({ texto: 'No se pudo identificar al usuario', tipo: 'error' });
-                setPaso('marcacion');
-                return;
-            }
-
-            // Obtener datos del usuario por su nombre de usuario
-            const response = await fetch(`${BACKEND_URL}/api/auth/usuario/${nombreUsuario}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (response.ok) {
-                const usuario = await response.json();
-                setUsuarioActual(usuario);
-                
-                // Verificar que el usuario tenga documento de identidad
-                if (!usuario.doc_identidad) {
-                    setMensaje({ 
-                        texto: 'Tu perfil no tiene asociado un documento de identidad. Contacta al administrador.', 
-                        tipo: 'error' 
-                    });
-                    setPaso('marcacion');
-                    return;
-                }
-
-                // Cargar datos del empleado usando su documento
-                await cargarEmpleadoPorDocumento(usuario.doc_identidad);
-            } else {
-                setMensaje({ texto: 'Error al obtener datos del usuario', tipo: 'error' });
-                setPaso('marcacion');
-            }
-        } catch (error) {
-            console.error('Error cargando usuario:', error);
-            setMensaje({ texto: 'Error de conexión al cargar usuario', tipo: 'error' });
-            setPaso('marcacion');
-        } finally {
-            setCargando(false);
-        }
-    };
-
-    const cargarEmpleadoPorDocumento = async (docIdentidad) => {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${BACKEND_URL}/api/empleados/documento/${docIdentidad}`, {
-                headers: {
-                    'Authorization': token ? `Bearer ${token}` : '',
-                    'Content-Type': 'application/json'
-                }
-            });
-            const data = await response.json();
-
-            if (response.ok) {
-                setEmpleado(data);
-                
-                // Cargar registro del día
-                const registroResponse = await fetch(`${BACKEND_URL}/api/marcaciones/hoy/${docIdentidad}`, {
-                    headers: {
-                        'Authorization': token ? `Bearer ${token}` : '',
-                        'Content-Type': 'application/json'
-                    }
-                });
-                const registroData = await registroResponse.json();
-                setRegistroHoy(registroData);
-                setPaso('marcacion');
-                
-                // Mostrar mensaje para que el usuario sepa que debe verificar ubicación
-                setMensaje({
-                    texto: '⚠️ Por favor, verifica tu ubicación antes de marcar',
-                    tipo: 'info'
-                });
-                setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
-            } else {
-                setMensaje({ texto: data.error || 'Empleado no encontrado', tipo: 'error' });
-                setPaso('marcacion');
-            }
-        } catch (error) {
-            console.error('Error cargando empleado:', error);
-            setMensaje({ texto: 'Error al cargar datos del empleado', tipo: 'error' });
-            setPaso('marcacion');
         }
     };
 
@@ -335,6 +236,49 @@ const MarcacionEmpleados = () => {
         }
     };
 
+    const buscarEmpleado = async () => {
+        setCargando(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${BACKEND_URL}/api/empleados/documento/${codigo}`, {
+                headers: {
+                    'Authorization': token ? `Bearer ${token}` : '',
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                setEmpleado(data);
+                const registroResponse = await fetch(`${BACKEND_URL}/api/marcaciones/hoy/${codigo}`, {
+                    headers: {
+                        'Authorization': token ? `Bearer ${token}` : '',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const registroData = await registroResponse.json();
+                setRegistroHoy(registroData);
+                setPaso('marcacion');
+                setVerificacionManual(true);
+                
+                // Mostrar mensaje para que el usuario sepa que debe verificar
+                setMensaje({
+                    texto: '⚠️ Por favor, verifica tu ubicación antes de marcar',
+                    tipo: 'info'
+                });
+                setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
+            } else {
+                setMensaje({ texto: data.error || 'Empleado no encontrado', tipo: 'error' });
+                setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
+            }
+        } catch (error) {
+            setMensaje({ texto: 'Error de conexión', tipo: 'error' });
+            setTimeout(() => setMensaje({ texto: '', tipo: '' }), 3000);
+        } finally {
+            setCargando(false);
+        }
+    };
+
     const marcar = async (tipo) => {
         if (!ubicacionValida?.valida) {
             setMensaje({
@@ -357,20 +301,12 @@ const MarcacionEmpleados = () => {
             }
         }
 
-        if (!empleado || !usuarioActual?.doc_identidad) {
-            setMensaje({
-                texto: '❌ No se encontró información del empleado',
-                tipo: 'error'
-            });
-            return;
-        }
-
         setCargando(true);
         setMensaje({ texto: 'Registrando marcación...', tipo: 'info' });
 
         try {
             let datosMarcacion = {
-                codigo_empleado: usuarioActual.doc_identidad,
+                codigo_empleado: codigo,
                 dispositivo: navigator.userAgent
             };
 
@@ -400,18 +336,7 @@ const MarcacionEmpleados = () => {
                 setMensaje({ texto: data.message, tipo: 'exito' });
 
                 setTimeout(async () => {
-                    // Recargar registro del día
-                    const token = localStorage.getItem('token');
-                    const registroResponse = await fetch(`${BACKEND_URL}/api/marcaciones/hoy/${usuarioActual.doc_identidad}`, {
-                        headers: {
-                            'Authorization': token ? `Bearer ${token}` : '',
-                            'Content-Type': 'application/json'
-                        }
-                    });
-                    const registroData = await registroResponse.json();
-                    setRegistroHoy(registroData);
-                    setPaso('marcacion');
-                    setMensaje({ texto: '', tipo: '' });
+                    await buscarEmpleado();
                 }, 2000);
             } else {
                 setMensaje({
@@ -447,26 +372,25 @@ const MarcacionEmpleados = () => {
     };
 
     const estados = getEstadoBotones();
+    
+    const resetear = () => {
+        setCodigo('');
+        setEmpleado(null);
+        setRegistroHoy(null);
+        setPaso('codigo');
+        setUbicacionValida(null);
+        setUltimaVerificacion(null);
+        setVerificacionManual(false);
+        setMensaje({ texto: '', tipo: '' });
+    };
 
     const getMensajeBienvenida = () => {
-        if (!empleado) return '';
+        if (!registroHoy) return '';
         const hora = new Date().getHours();
         if (hora < 12) return 'Buenos días';
         if (hora < 18) return 'Buenas tardes';
         return 'Buenas noches';
     };
-
-    // Pantalla de carga inicial
-    if (paso === 'cargando') {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-600 to-indigo-800 flex items-center justify-center">
-                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center">
-                    <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-white">Cargando tus datos...</p>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-600 to-indigo-800">
@@ -489,7 +413,58 @@ const MarcacionEmpleados = () => {
                     </p>
                 </div>
 
-                {/* Panel de marcación */}
+                {/* Paso 1: Ingreso de código */}
+                {paso === 'codigo' && (
+                    <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-5 sm:p-6">
+                        <div className="text-center mb-4 sm:mb-6">
+                            <Fingerprint className="w-12 h-12 sm:w-16 sm:h-16 text-blue-600 mx-auto mb-2" />
+                            <h2 className={`font-bold text-gray-800 ${
+                                viewport === 'mobile' ? 'text-xl' : 'text-2xl'
+                            }`}>
+                                Marca tu Asistencia
+                            </h2>
+                            <p className="text-gray-600 text-xs sm:text-sm">
+                                Ingresa tu número de documento
+                            </p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Número de Documento (DNI/Carnet)
+                                </label>
+                                <input
+                                    type="text"
+                                    value={codigo}
+                                    onChange={(e) => setCodigo(e.target.value.toUpperCase())}
+                                    onKeyPress={(e) => e.key === 'Enter' && buscarEmpleado()}
+                                    className="w-full px-4 py-3 sm:py-4 text-center text-xl sm:text-2xl border-2 border-gray-200 rounded-xl sm:rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                    placeholder="Ingresa tu documento"
+                                    disabled={cargando}
+                                    autoFocus
+                                    inputMode="numeric"
+                                />
+                            </div>
+
+                            <button
+                                onClick={buscarEmpleado}
+                                disabled={cargando || !codigo.trim()}
+                                className="w-full py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                            >
+                                {cargando ? (
+                                    <div className="flex items-center justify-center gap-2">
+                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        <span>Verificando...</span>
+                                    </div>
+                                ) : (
+                                    'Continuar'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Paso 2: Panel de marcación - AQUÍ ESTÁ EL BOTÓN DE VERIFICACIÓN */}
                 {paso === 'marcacion' && empleado && (
                     <div className="space-y-4">
                         {/* Tarjeta de empleado */}
@@ -505,13 +480,12 @@ const MarcacionEmpleados = () => {
                                     }`}>
                                         {empleado.Nombres} {empleado.Apellidos}
                                     </h2>
-                                    <p className="text-xs sm:text-sm opacity-90">Usuario: {usuarioActual?.usuario}</p>
-                                    <p className="text-xs sm:text-sm opacity-90">Documento: {usuarioActual?.doc_identidad}</p>
+                                    <p className="text-xs sm:text-sm opacity-90">DNI: {empleado.DocID}</p>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Sección de verificación de ubicación */}
+                        {/* 🔴 SECCIÓN DE VERIFICACIÓN DE UBICACIÓN CON BOTÓN 🔴 */}
                         {configuracion && (
                             <div className="bg-white/10 backdrop-blur-lg rounded-xl sm:rounded-2xl p-4 border border-white/20">
                                 <div className="flex items-center justify-between text-white">
@@ -534,6 +508,7 @@ const MarcacionEmpleados = () => {
                                         )}
                                     </div>
                                     
+                                    {/* 🔴 BOTÓN DE VERIFICACIÓN - ESTÁ AQUÍ 🔴 */}
                                     <button
                                         onClick={() => verificarUbicacion(true)}
                                         disabled={verificandoUbicacion}
@@ -676,16 +651,18 @@ const MarcacionEmpleados = () => {
                             </button>
                         </div>
 
-                        {/* Información del usuario logueado */}
-                        <div className="text-center text-white/60 text-xs p-2">
-                            <p>Sesión: {usuarioActual?.nombre} {usuarioActual?.apellido}</p>
-                            <p>Usuario: {usuarioActual?.usuario}</p>
-                            <p>{usuarioActual?.correo}</p>
-                        </div>
+                        {/* Botón para cambiar empleado */}
+                        <button
+                            onClick={resetear}
+                            className="w-full py-2 sm:py-3 text-gray-600 hover:text-gray-800 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+                        >
+                            <Home className="w-4 h-4" />
+                            <span>Cambiar empleado</span>
+                        </button>
                     </div>
                 )}
 
-                {/* Paso de confirmación */}
+                {/* Paso 3: Confirmación */}
                 {paso === 'confirmacion' && (
                     <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-8 text-center">
                         <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -721,7 +698,7 @@ const MarcacionEmpleados = () => {
                 )}
 
                 {/* Footer con info de ubicación */}
-                {configuracion && paso === 'marcacion' && (
+                {configuracion && paso === 'codigo' && (
                     <div className="mt-4 text-center text-white/60 text-xs">
                         <p>📍 Radio permitido: {configuracion.radioPermitido} metros</p>
                         <p className="hidden sm:block">📡 Redes WiFi: {configuracion.wifiPermitidos.join(' • ')}</p>

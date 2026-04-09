@@ -67,7 +67,7 @@ export default function ListaGastos() {
       const data = await res.json();
       setGastos(data);
       setGastosOriginales(data);
-      console.log(data);
+      console.log('los bolillos', data);
 
       // Extraer opciones únicas para los filtros
       const periodosUnicos = [...new Set(data.map(g => g.periodo_nombre).filter(Boolean))].sort();

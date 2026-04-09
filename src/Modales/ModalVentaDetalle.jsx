@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { BACKEND_URL } from '../config';
 
 export default function ModalVentaDetalle({ ventaId, onClose }) {
   const [venta, setVenta] = useState(null);

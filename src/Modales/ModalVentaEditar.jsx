@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import ComboBusqueda from "../util/ComboBusqueda";
 import ComboMin from "../util/ComboMin";
+import { BACKEND_URL } from '../config';
 
 export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
     const [clientes, setClientes] = useState([]);

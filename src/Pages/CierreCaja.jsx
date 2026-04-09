@@ -409,7 +409,8 @@ const CierreCaja = () => {
         setTotalVentas(parseFloat(resultado.cierre.ventas_total) || 0);
         setTotalGastos(parseFloat(resultado.cierre.total_gastos) || 0);
 
-        setGastos([]);
+        //setGastos([]);
+        obtenerGastosDelDia(fechaFormateada);
         setModoEdicion(false);
       } else {
         console.log(`📭 No hay cierre para ${fechaFormateada}, cargando datos del día`);
