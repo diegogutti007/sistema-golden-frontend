@@ -669,7 +669,7 @@ export default function VentaLista() {
                 <div className="col-span-2 flex items-start space-x-2 bg-gray-50 p-2 rounded-lg mb-1">
                   <FileTextIcon className="w-3 h-3 text-gray-500 mt-0.5 flex-shrink-0" />
                   <span className="text-gray-600 flex-1 break-words">
-                    <span className="font-medium">Detalle:</span> {v.Detalle || "Sin detalle"}
+                    <span className="font-medium">Detalle:</span> {v.detalle || "Sin detalle"}
                   </span>
                 </div>
 
