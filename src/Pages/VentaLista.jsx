@@ -568,10 +568,10 @@ export default function VentaLista() {
                           <div className="flex items-start">
                             <FileTextIcon className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
                             <span
-                              className={`text-sm max-w-xs truncate ${v.Detalle ? 'text-gray-700' : 'text-red-500 font-medium'}`}
-                              title={v.Detalle || ''}
+                              className={`text-sm max-w-xs truncate ${v.detalle ? 'text-gray-700' : 'text-red-500 font-medium'}`}
+                              title={v.detalle || ''}
                             >
-                              {v.Detalle || "No se encontró la cita"}
+                              {v.detalle || "No se encontró la cita"}
                             </span>
                           </div>
                         </td>
