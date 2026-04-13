@@ -51,8 +51,19 @@ export default function ListaGastos() {
       });
     }; */
   const formatearFecha = (fecha) => {
-    const [year, month, day] = fecha.split("-");
-    return `${day}/${month}/${year}`;
+    // Extrae solo la parte válida ISO si existe
+    const match = fecha.match(/\d{4}-\d{2}-\d{2}/);
+
+    if (!match) return fecha; // por si viene algo raro
+
+    const date = new Date(match[0]);
+
+    return date.toLocaleDateString("es-PE", {
+      timeZone: "America/Lima",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    });
   };
 
   // Opciones para los select
