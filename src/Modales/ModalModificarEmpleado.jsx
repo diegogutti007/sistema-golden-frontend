@@ -33,7 +33,7 @@ function ModalModificarEmpleado({ empleado, isOpen, onClose, onUpdate }) {
 
       // Cargar tipos de empleado
       Promise.all([
-        fetch(`${BACKEND_URL}/api/tipos-empleado`).then(res => res.json()),
+        fetch(`${BACKEND_URL}/api/tipo-empleado`).then(res => res.json()),
         fetch(`${BACKEND_URL}/api/cargos-empleado`).then(res => res.json())
       ])
         .then(([tiposData, cargosData]) => {
