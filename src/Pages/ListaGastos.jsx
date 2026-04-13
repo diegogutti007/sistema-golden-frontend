@@ -51,13 +51,8 @@ export default function ListaGastos() {
       });
     }; */
   const formatearFecha = (fecha) => {
-    const date = new Date(fecha);
-    return date.toLocaleString("es-PE", {
-      timeZone: "America/Lima",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit"
-    });
+    const [year, month, day] = fecha.split("-");
+    return `${day}/${month}/${year}`;
   };
 
   // Opciones para los select
