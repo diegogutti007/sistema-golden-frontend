@@ -76,6 +76,8 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                     ]);
 
                 console.log('📊 Venta cargada:', ventaData);
+                console.log('📋 Articulos:', articulosData);
+                console.log('👥 Empleados:', empleadosData);
 
                 // Establecer datos maestros
                 setClientes(clientesData.map(c => ({ 
