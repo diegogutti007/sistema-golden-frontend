@@ -57,6 +57,30 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
         return `${año}-${mes}-${dia}T${horas}:${minutos}`;
     };
 
+  const formatearFecha = (fechaStr) => {
+    if (!fechaStr) return '';
+
+    // Extraer solo la parte de la fecha (YYYY-MM-DD)
+    let fechaParte = fechaStr;
+
+    // Si viene con T (formato ISO: 2026-03-16T05:00:00.000Z)
+    if (fechaStr.includes('T')) {
+      fechaParte = fechaStr.split('T')[0]; // Tomar solo lo que está antes de T
+    }
+
+    // Ahora fechaParte debe ser "2026-03-16"
+    if (fechaParte.includes('-')) {
+      const partes = fechaParte.split('-');
+      if (partes.length === 3) {
+        const año = partes[0];
+        const mes = partes[1];
+        const dia = partes[2];
+
+        // Reordenar a DD-MM-YYYY
+        return `${dia}-${mes}-${año}`;
+      }
+    }
+
     // 🔹 Cargar todos los datos
     useEffect(() => {
         const cargarTodosLosDatos = async () => {
@@ -96,7 +120,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
 
                 setForm({
                     ClienteID: ventaReal.ClienteID || "",
-                    FechaVenta: ventaReal.FechaVenta,
+                    FechaVenta: formatearFecha(ventaReal.FechaVenta),
                     Observaciones: ventaReal.Observaciones || "",
                 });
 
