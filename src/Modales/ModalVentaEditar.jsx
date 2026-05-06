@@ -96,7 +96,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
 
                 setForm({
                     ClienteID: ventaReal.ClienteID || "",
-                    FechaVenta: obtenerFechaLocal(ventaReal.FechaVenta),
+                    FechaVenta: ventaReal.FechaVenta,
                     Observaciones: ventaReal.Observaciones || "",
                 });
 
