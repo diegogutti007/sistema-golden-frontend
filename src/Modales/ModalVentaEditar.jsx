@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
-    X, Save, ShoppingCart, FileText, CreditCard, Plus
+    X, Save, ShoppingCart, FileText, CreditCard, Plus, Trash2, User, Calendar, AlertCircle
 } from "lucide-react";
 import ComboBusqueda from "../util/ComboBusqueda";
 import ComboMin from "../util/ComboMin";
@@ -16,12 +17,23 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
     const [loading, setLoading] = useState(false);
     const [loadingDatos, setLoadingDatos] = useState(true);
     const [venta, setVenta] = useState(null);
+    const [guardando, setGuardando] = useState(false);
+    const [mounted, setMounted] = useState(false);
 
     const [form, setForm] = useState({
         ClienteID: "",
         FechaVenta: "",
         Observaciones: "",
     });
+
+    useEffect(() => {
+        setMounted(true);
+        // Bloquear scroll del body cuando el modal está abierto
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
 
     // 🔹 Función para formatear fecha
     const obtenerFechaLocal = (fechaISO) => {
@@ -52,7 +64,6 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                 setLoadingDatos(true);
                 console.log('🔄 Iniciando carga de datos para venta:', ventaId);
 
-                // Cargar datos maestros y la venta principal
                 const [clientesRes, articulosRes, pagosRes, empleadosRes, ventaRes] = await Promise.all([
                     fetch(`${BACKEND_URL}/api/clientes`),
                     fetch(`${BACKEND_URL}/api/articulos`),
@@ -60,11 +71,6 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                     fetch(`${BACKEND_URL}/api/listaempleadoactivo`),
                     fetch(`${BACKEND_URL}/api/venta/${ventaId}`)
                 ]);
-
-                // Verificar si la respuesta de la venta es OK
-                if (!ventaRes.ok) {
-                    throw new Error(`Error al cargar venta: ${ventaRes.status}`);
-                }
 
                 const [clientesData, articulosData, tiposPagoData, empleadosData, ventaData] =
                     await Promise.all([
@@ -75,11 +81,10 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                         ventaRes.json(),
                     ]);
 
-                console.log('📊 Venta cargada:', ventaData);
-                console.log('📋 Articulos:', articulosData);
-                console.log('👥 Empleados:', empleadosData);
+                const ventaReal = ventaData.venta || ventaData;
+                const detallesData = ventaData.detalles || [];
+                const pagosData = ventaData.pagos || [];
 
-                // Establecer datos maestros
                 setClientes(clientesData.map(c => ({ 
                     value: c.ClienteID, 
                     label: `${c.Nombre || ''} ${c.Apellido || ''}`.trim() || 'Cliente sin nombre'
@@ -87,24 +92,51 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                 setArticulos(articulosData);
                 setTiposPago(tiposPagoData);
                 setEmpleados(empleadosData);
-                setVenta(ventaData);
+                setVenta(ventaReal);
 
-                // Establecer datos del formulario
                 setForm({
-                    ClienteID: ventaData.ClienteID || "",
-                    FechaVenta: obtenerFechaLocal(ventaData.FechaVenta),
-                    Observaciones: ventaData.Observaciones || "",
+                    ClienteID: ventaReal.ClienteID || "",
+                    FechaVenta: obtenerFechaLocal(ventaReal.FechaVenta),
+                    Observaciones: ventaReal.Observaciones || "",
                 });
 
-                // 🔹 INICIALIZAR DETALLES Y PAGOS VACÍOS
-                // Como los endpoints separados no funcionan, empezamos con arrays vacíos
-                console.log('🆕 Inicializando detalles y pagos vacíos');
-                setDetalles([]);
-                setPagos([]);
+                if (detallesData && Array.isArray(detallesData) && detallesData.length > 0) {
+                    const detallesFormateados = detallesData.map(det => ({
+                        ArticuloID: det.ArticuloID || "",
+                        Cantidad: det.Cantidad || 1,
+                        PrecioUnitario: parseFloat(det.PrecioUnitario || det.Importe || 0),
+                        EmpID: det.EmpID || det.empId || det.EmpleadoID || det.empleado_id || det.EmpId || "",
+                        DetalleID: det.DetalleID
+                    }));
+                    setDetalles(detallesFormateados);
+                } else {
+                    setDetalles([{ ArticuloID: "", Cantidad: 1, PrecioUnitario: 0, EmpID: "" }]);
+                }
+
+                if (pagosData && Array.isArray(pagosData) && pagosData.length > 0) {
+                    const pagosFormateados = pagosData.map(pago => {
+                        let tipoPagoID = null;
+                        if (pago.TipoPagoID) tipoPagoID = pago.TipoPagoID;
+                        else if (pago.TipoPago) {
+                            const tipoPagoEncontrado = tiposPagoData.find(tp => 
+                                tp.nombre === pago.TipoPago || tp.nombre.toLowerCase() === pago.TipoPago.toLowerCase()
+                            );
+                            tipoPagoID = tipoPagoEncontrado ? tipoPagoEncontrado.tipo_pago_id : null;
+                        }
+                        return {
+                            TipoPagoID: tipoPagoID,
+                            Monto: parseFloat(pago.Monto || pago.monto || 0),
+                            venta_pago_id: pago.venta_pago_id
+                        };
+                    });
+                    setPagos(pagosFormateados);
+                } else {
+                    setPagos([{ TipoPagoID: "", Monto: 0 }]);
+                }
 
             } catch (error) {
-                console.error('❌ Error crítico cargando datos:', error);
-                alert('Error al cargar los datos de la venta');
+                console.error('❌ Error:', error);
+                alert(`Error al cargar los datos: ${error.message}`);
             } finally {
                 setLoadingDatos(false);
             }
@@ -115,7 +147,6 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
         }
     }, [ventaId]);
 
-    // 🔹 Funciones para detalles
     const actualizarDetalle = (i, campo, valor) => {
         const nuevos = [...detalles];
         nuevos[i][campo] = valor;
@@ -127,12 +158,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
     };
 
     const agregarArticulo = () => {
-        setDetalles([...detalles, { 
-            ArticuloID: "", 
-            Cantidad: 1, 
-            PrecioUnitario: 0, 
-            EmpID: "" 
-        }]);
+        setDetalles([...detalles, { ArticuloID: "", Cantidad: 1, PrecioUnitario: 0, EmpID: "" }]);
     };
 
     const eliminarDetalle = (i) => {
@@ -143,12 +169,8 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
         }
     };
 
-    // 🔹 Funciones para pagos
     const agregarPago = () => {
-        setPagos([...pagos, { 
-            TipoPagoID: "", 
-            Monto: 0 
-        }]);
+        setPagos([...pagos, { TipoPagoID: "", Monto: 0 }]);
     };
 
     const actualizarPago = (i, campo, valor) => {
@@ -165,66 +187,55 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
         }
     };
 
-    // 🔹 Cálculos de totales
-    const totalArticulos = detalles.reduce(
-        (acc, d) => acc + (d.Cantidad || 0) * (d.PrecioUnitario || 0), 0
-    );
+    const totalArticulos = detalles.reduce((acc, d) => acc + (d.Cantidad || 0) * (d.PrecioUnitario || 0), 0);
     const totalPagos = pagos.reduce((acc, p) => acc + (p.Monto || 0), 0);
+    const diferencia = totalArticulos - totalPagos;
 
-    // 🔹 Guardar cambios
     const handleGuardar = async (e) => {
         e.preventDefault();
-        setLoading(true);
-
-        console.log('💾 Intentando guardar cambios...', {
-            form,
-            detalles,
-            pagos,
-            totalArticulos,
-            totalPagos
-        });
-
-        // Validaciones
+        
         if (!form.ClienteID) {
             alert("⚠️ Debe seleccionar un cliente");
-            setLoading(false);
             return;
         }
 
         if (detalles.length === 0) {
             alert("⚠️ Debe agregar al menos un artículo");
-            setLoading(false);
             return;
         }
 
         if (pagos.length === 0) {
             alert("⚠️ Debe agregar al menos un método de pago");
-            setLoading(false);
             return;
         }
 
-        if (Math.abs(totalArticulos - totalPagos) > 0.01) {
+        if (Math.abs(diferencia) > 0.01) {
             alert("⚠️ La suma de pagos debe igualar el total de artículos");
-            setLoading(false);
             return;
         }
 
-        // Preparar datos para enviar
+        setGuardando(true);
         const data = {
             ...form,
             Total: totalArticulos,
-            Detalles: detalles,
-            Pagos: pagos,
+            Detalles: detalles.map(d => ({
+                ArticuloID: d.ArticuloID,
+                Cantidad: d.Cantidad,
+                PrecioUnitario: d.PrecioUnitario,
+                EmpID: d.EmpID,
+                DetalleID: d.DetalleID
+            })),
+            Pagos: pagos.map(p => ({
+                TipoPagoID: p.TipoPagoID,
+                Monto: p.Monto,
+                venta_pago_id: p.venta_pago_id
+            })),
         };
-
-        console.log('📤 Enviando datos al servidor:', data);
 
         try {
             const res = await fetch(`${BACKEND_URL}/api/venta/${ventaId}`, {
                 method: "PUT",
-                headers: { 
-                    "Content-Type": "application/json" 
-                },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
             });
 
@@ -233,219 +244,175 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                 onGuardado();
                 onClose();
             } else {
-                const errorText = await res.text();
-                console.error('❌ Error del servidor:', errorText);
-                alert(`❌ Error al actualizar venta: ${res.status} ${res.statusText}`);
+                alert(`❌ Error al actualizar venta: ${res.status}`);
             }
         } catch (error) {
-            console.error("❌ Error de conexión:", error);
-            alert("❌ Error de conexión al actualizar la venta");
+            alert("❌ Error de conexión");
         } finally {
-            setLoading(false);
+            setGuardando(false);
         }
     };
 
     const clienteSel = clientes.find(c => c.value === form.ClienteID) || null;
 
-    // 🔹 Estilos personalizados para combos
     const customStyles = {
         control: (base) => ({
             ...base,
-            border: '1px solid #D1D5DB',
+            border: '1px solid #E5E7EB',
             borderRadius: '0.5rem',
-            padding: '2px 4px',
+            padding: '4px 8px',
             fontSize: '0.875rem',
-            minHeight: '38px',
+            minHeight: '42px',
             boxShadow: 'none',
-            '&:hover': {
-                borderColor: '#3B82F6'
-            }
+            '&:hover': { borderColor: '#F59E0B' },
+            '&:focus-within': { borderColor: '#F59E0B', boxShadow: '0 0 0 3px rgba(245, 158, 11, 0.1)' }
         }),
         menu: (base) => ({
             ...base,
             borderRadius: '0.5rem',
             border: '1px solid #E5E7EB',
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-            zIndex: 10000,
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            zIndex: 999999,
             fontSize: '0.875rem'
         }),
-        menuPortal: (base) => ({
-            ...base,
-            zIndex: 10000
-        }),
+        menuPortal: (base) => ({ ...base, zIndex: 999999 }),
         option: (base, state) => ({
             ...base,
-            backgroundColor: state.isSelected ? '#3B82F6' : state.isFocused ? '#EFF6FF' : 'white',
+            backgroundColor: state.isSelected ? '#F59E0B' : state.isFocused ? '#FEF3C7' : 'white',
             color: state.isSelected ? 'white' : '#374151',
-            fontSize: '0.875rem',
-            padding: '8px 12px',
-            '&:active': {
-                backgroundColor: '#3B82F6',
-                color: 'white'
-            }
+            padding: '10px 12px',
+            cursor: 'pointer',
+            '&:active': { backgroundColor: '#F59E0B', color: 'white' }
         })
     };
 
-    // 🔹 Renderizado condicional
-    if (loadingDatos) {
-        return (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] overflow-y-auto relative p-4 flex justify-center items-center">
-                    <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto mb-4"></div>
-                        <p className="text-gray-600">Cargando datos de la venta #{ventaId}...</p>
-                        <p className="text-sm text-gray-500 mt-2">Por favor espere</p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    if (!venta) {
-        return (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-                <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl h-[90vh] overflow-y-auto relative p-4 flex justify-center items-center">
-                    <div className="text-center">
-                        <div className="text-red-500 text-lg font-semibold mb-4">
-                            ❌ No se pudieron cargar los datos de la venta
+    const modalContent = (
+        <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4"
+            style={{ zIndex: 999999 }}
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onClose();
+            }}
+        >
+            <div 
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col"
+                style={{ zIndex: 999999 }}
+            >
+                {/* Header - Mejorado */}
+                <div className="sticky top-0 bg-gradient-to-r from-yellow-500 to-orange-500 px-6 py-4 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-white bg-opacity-20 p-2 rounded-xl">
+                            <ShoppingCart className="w-6 h-6 text-white" />
                         </div>
-                        <p className="text-gray-600 mb-4">Venta ID: {ventaId}</p>
-                        <button
-                            onClick={onClose}
-                            className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                        >
-                            Cerrar
-                        </button>
+                        <div>
+                            <h2 className="text-xl font-bold text-white">Editar Venta #{ventaId}</h2>
+                            {venta && (
+                                <p className="text-sm text-white text-opacity-90">
+                                    Cliente: {venta.ClienteNombre || "No especificado"} | 
+                                    Total: S/ {Number(venta.Total || 0).toFixed(2)}
+                                </p>
+                            )}
+                        </div>
                     </div>
+                    <button
+                        onClick={onClose}
+                        className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-2 transition-all duration-200"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
-            </div>
-        );
-    }
 
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative">
-                {/* Header */}
-                <div className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-bold text-yellow-600 flex items-center gap-2">
-                            <ShoppingCart className="w-5 h-5" /> 
-                            Editar Venta #{ventaId}
-                        </h2>
-                        <button
-                            onClick={onClose}
-                            className="text-gray-500 hover:text-red-600 transition-colors duration-200 p-1"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
-                    </div>
-                    {venta && (
-                        <div className="text-sm text-gray-600 mt-2">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                <div>
-                                    <span className="font-semibold">Cliente:</span> {venta.ClienteNombre || "No especificado"}
-                                </div>
-                                <div>
-                                    <span className="font-semibold">Fecha original:</span> {new Date(venta.FechaVenta).toLocaleDateString('es-PE')}
-                                </div>
-                                <div>
-                                    <span className="font-semibold">Total original:</span> S/ {Number(venta.Total || 0).toFixed(2)}
-                                </div>
+                {/* Contenido - Scrollable */}
+                <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                    {loadingDatos ? (
+                        <div className="flex justify-center items-center py-20">
+                            <div className="text-center">
+                                <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-yellow-500 border-t-transparent mb-4"></div>
+                                <h3 className="text-lg font-semibold text-gray-800 mb-2">Cargando venta</h3>
+                                <p className="text-sm text-gray-500">Por favor espere un momento...</p>
                             </div>
                         </div>
-                    )}
-                </div>
-
-                {/* Contenido */}
-                <div className="p-4">
-                    <form onSubmit={handleGuardar} className="space-y-4">
-                        {/* Información básica */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-700">Cliente *</label>
-                                <div className="relative z-[10001]">
-                                    <ComboBusqueda
-                                        opciones={clientes}
-                                        valorActual={clienteSel}
-                                        onSeleccionar={(op) => setForm({ ...form, ClienteID: op ? op.value : "" })}
-                                        placeholder="Seleccionar cliente..."
-                                        styles={customStyles}
+                    ) : (
+                        <form onSubmit={handleGuardar} className="space-y-6">
+                            {/* Información básica - Tarjeta mejorada */}
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                    <div className="w-1 h-6 bg-yellow-500 rounded-full"></div>
+                                    Información de la Venta
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                                            <User className="w-4 h-4 inline mr-1" /> Cliente *
+                                        </label>
+                                        <div className="relative z-10">
+                                            <ComboBusqueda
+                                                opciones={clientes}
+                                                valorActual={clienteSel}
+                                                onSeleccionar={(op) => setForm({ ...form, ClienteID: op ? op.value : "" })}
+                                                placeholder="Seleccionar cliente..."
+                                                styles={customStyles}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-semibold text-gray-700 mb-2 block">
+                                            <Calendar className="w-4 h-4 inline mr-1" /> Fecha de Venta *
+                                        </label>
+                                        <input
+                                            type="datetime-local"
+                                            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition-all"
+                                            value={form.FechaVenta}
+                                            onChange={(e) => setForm({ ...form, FechaVenta: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div className="mt-4">
+                                    <label className="text-sm font-semibold text-gray-700 mb-2 block">Observaciones</label>
+                                    <textarea
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm resize-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition-all"
+                                        rows="3"
+                                        value={form.Observaciones}
+                                        onChange={(e) => setForm({ ...form, Observaciones: e.target.value })}
+                                        placeholder="Observaciones adicionales sobre la venta..."
                                     />
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-semibold text-gray-700">Fecha de Venta *</label>
-                                <input
-                                    type="datetime-local"
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition-all duration-200"
-                                    value={form.FechaVenta}
-                                    onChange={(e) => setForm({ ...form, FechaVenta: e.target.value })}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        {/* Observaciones */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-700">Observaciones</label>
-                            <textarea
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition-all duration-200"
-                                rows="3"
-                                value={form.Observaciones}
-                                onChange={(e) => setForm({ ...form, Observaciones: e.target.value })}
-                                placeholder="Observaciones adicionales sobre la venta..."
-                            />
-                        </div>
-
-                        {/* Sección de Artículos */}
-                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                                    <FileText className="w-5 h-5 text-yellow-500" /> 
-                                    Artículos y Servicios ({detalles.length})
-                                </h3>
-                                <button
-                                    type="button"
-                                    onClick={agregarArticulo}
-                                    className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors duration-200 flex items-center gap-2"
-                                >
-                                    <Plus className="w-4 h-4" /> 
-                                    Agregar Artículo
-                                </button>
-                            </div>
-
-                            {detalles.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                                    <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                                    <p className="font-medium">No hay artículos agregados</p>
-                                    <p className="text-sm">Haz clic en "Agregar Artículo" para comenzar</p>
+                            {/* Artículos - Tarjeta mejorada */}
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                        <div className="w-1 h-6 bg-yellow-500 rounded-full"></div>
+                                        <FileText className="w-5 h-5 text-yellow-500" /> 
+                                        Artículos y Servicios ({detalles.length})
+                                    </h3>
+                                    <button
+                                        type="button"
+                                        onClick={agregarArticulo}
+                                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
+                                    >
+                                        <Plus className="w-4 h-4" /> Agregar Artículo
+                                    </button>
                                 </div>
-                            ) : (
+
                                 <div className="space-y-3">
                                     {detalles.map((d, i) => (
-                                        <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
-                                            <div className="relative z-[10001]">
-                                                <label className="text-sm font-medium text-gray-700 mb-2 block">Artículo *</label>
-                                                <ComboMin
-                                                    opciones={articulos.map(a => ({ 
-                                                        value: a.ArticuloID, 
-                                                        label: a.Nombre 
-                                                    }))}
-                                                    valorActual={
-                                                        articulos
-                                                            .map(a => ({ value: a.ArticuloID, label: a.Nombre }))
-                                                            .find(op => op.value === d.ArticuloID) || null
-                                                    }
-                                                    onSeleccionar={(op) => actualizarDetalle(i, "ArticuloID", op ? op.value : "")}
-                                                    placeholder="Seleccionar artículo..."
-                                                    styles={customStyles}
-                                                />
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                                <div>
-                                                    <label className="text-sm font-medium text-gray-700 mb-1 block">Cantidad *</label>
+                                        <div key={i} className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all">
+                                            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                                                <div className="md:col-span-5 relative z-[100]">
+                                                    <label className="text-xs font-medium text-gray-600 mb-1 block">Artículo *</label>
+                                                    <ComboMin
+                                                        opciones={articulos.map(a => ({ value: a.ArticuloID, label: a.Nombre }))}
+                                                        valorActual={articulos.find(a => a.ArticuloID === d.ArticuloID) ? { value: d.ArticuloID, label: articulos.find(a => a.ArticuloID === d.ArticuloID)?.Nombre } : null}
+                                                        onSeleccionar={(op) => actualizarDetalle(i, "ArticuloID", op ? op.value : "")}
+                                                        placeholder="Seleccionar artículo..."
+                                                        styles={customStyles}
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-2">
+                                                    <label className="text-xs font-medium text-gray-600 mb-1 block">Cantidad</label>
                                                     <input
                                                         type="number"
                                                         min="1"
@@ -455,8 +422,8 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                                                         required
                                                     />
                                                 </div>
-                                                <div>
-                                                    <label className="text-sm font-medium text-gray-700 mb-1 block">Precio Unitario *</label>
+                                                <div className="md:col-span-2">
+                                                    <label className="text-xs font-medium text-gray-600 mb-1 block">Precio Unitario</label>
                                                     <input
                                                         type="number"
                                                         step="0.01"
@@ -467,176 +434,165 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                                                         required
                                                     />
                                                 </div>
-                                                <div>
-                                                    <label className="text-sm font-medium text-gray-700 mb-1 block">Empleado</label>
-                                                    <div className="relative z-[10001]">
-                                                        <ComboMin
-                                                            opciones={empleados.map(emp => ({
-                                                                value: emp.EmpId,
-                                                                label: `${emp.Nombres} ${emp.Apellidos}`,
-                                                            }))}
-                                                            valorActual={
-                                                                empleados
-                                                                    .map(emp => ({
-                                                                        value: emp.EmpId,
-                                                                        label: `${emp.Nombres} ${emp.Apellidos}`,
-                                                                    }))
-                                                                    .find(op => op.value === d.EmpID) || null
-                                                            }
-                                                            onSeleccionar={(op) => actualizarDetalle(i, "EmpID", op ? op.value : "")}
-                                                            placeholder="Seleccionar empleado"
-                                                            styles={customStyles}
-                                                        />
-                                                    </div>
+                                                <div className="md:col-span-2">
+                                                    <label className="text-xs font-medium text-gray-600 mb-1 block">Empleado</label>
+                                                    <ComboMin
+                                                        opciones={empleados.map(emp => ({
+                                                            value: emp.EmpId,
+                                                            label: `${emp.Nombres} ${emp.Apellidos}`,
+                                                        }))}
+                                                        valorActual={empleados.find(emp => emp.EmpId === d.EmpID) ? { value: d.EmpID, label: empleados.find(emp => emp.EmpId === d.EmpID)?.Nombres } : null}
+                                                        onSeleccionar={(op) => actualizarDetalle(i, "EmpID", op ? op.value : "")}
+                                                        placeholder="Seleccionar"
+                                                        styles={customStyles}
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-1 flex flex-col justify-end">
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => eliminarDetalle(i)} 
+                                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-all"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
                                                 </div>
                                             </div>
-
-                                            <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-                                                <span className="font-semibold text-gray-800">
+                                            <div className="mt-3 pt-3 border-t border-gray-200 text-right">
+                                                <span className="text-sm font-semibold text-gray-700">
                                                     Subtotal: S/ {(d.Cantidad * d.PrecioUnitario).toFixed(2)}
                                                 </span>
-                                                <button 
-                                                    type="button"
-                                                    onClick={() => eliminarDetalle(i)} 
-                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded transition-colors duration-200"
-                                                >
-                                                    Eliminar
-                                                </button>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
-                            )}
-                        </div>
-
-                        {/* Sección de Pagos */}
-                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                                    <CreditCard className="w-5 h-5 text-green-500" /> 
-                                    Métodos de Pago ({pagos.length})
-                                </h3>
-                                <button
-                                    type="button"
-                                    onClick={agregarPago}
-                                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors duration-200 flex items-center gap-2"
-                                >
-                                    <Plus className="w-4 h-4" /> 
-                                    Agregar Pago
-                                </button>
                             </div>
 
-                            {pagos.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                                    <CreditCard className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                                    <p className="font-medium">No hay métodos de pago</p>
-                                    <p className="text-sm">Haz clic en "Agregar Pago" para comenzar</p>
+                            {/* Pagos - Tarjeta mejorada */}
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                                        <div className="w-1 h-6 bg-green-500 rounded-full"></div>
+                                        <CreditCard className="w-5 h-5 text-green-500" /> 
+                                        Métodos de Pago ({pagos.length})
+                                    </h3>
+                                    <button
+                                        type="button"
+                                        onClick={agregarPago}
+                                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow-md"
+                                    >
+                                        <Plus className="w-4 h-4" /> Agregar Pago
+                                    </button>
                                 </div>
-                            ) : (
+
                                 <div className="space-y-3">
                                     {pagos.map((p, i) => (
-                                        <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
-                                            <div className="relative z-[10001]">
-                                                <label className="text-sm font-medium text-gray-700 mb-2 block">Tipo de Pago *</label>
-                                                <ComboMin
-                                                    opciones={tiposPago.map(t => ({ 
-                                                        value: t.tipo_pago_id, 
-                                                        label: t.nombre 
-                                                    }))}
-                                                    valorActual={
-                                                        tiposPago
-                                                            .map(t => ({ value: t.tipo_pago_id, label: t.nombre }))
-                                                            .find(op => op.value === p.TipoPagoID) || null
-                                                    }
-                                                    onSeleccionar={(op) => actualizarPago(i, "TipoPagoID", op ? op.value : "")}
-                                                    placeholder="Seleccionar tipo de pago"
-                                                    styles={customStyles}
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="text-sm font-medium text-gray-700 mb-1 block">Monto *</label>
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    min="0"
-                                                    value={p.Monto}
-                                                    onChange={(e) => actualizarPago(i, "Monto", +e.target.value)}
-                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
-                                                    required
-                                                />
-                                            </div>
-
-                                            <div className="flex justify-end">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => eliminarPago(i)}
-                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded transition-colors duration-200"
-                                                >
-                                                    Eliminar pago
-                                                </button>
+                                        <div key={i} className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all">
+                                            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                                                <div className="md:col-span-5 relative z-[100]">
+                                                    <label className="text-xs font-medium text-gray-600 mb-1 block">Tipo de Pago *</label>
+                                                    <ComboMin
+                                                        opciones={tiposPago.map(t => ({ value: t.tipo_pago_id, label: t.nombre }))}
+                                                        valorActual={tiposPago.find(t => t.tipo_pago_id === p.TipoPagoID) ? { value: p.TipoPagoID, label: tiposPago.find(t => t.tipo_pago_id === p.TipoPagoID)?.nombre } : null}
+                                                        onSeleccionar={(op) => actualizarPago(i, "TipoPagoID", op ? op.value : "")}
+                                                        placeholder="Seleccionar tipo de pago"
+                                                        styles={customStyles}
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-6">
+                                                    <label className="text-xs font-medium text-gray-600 mb-1 block">Monto *</label>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        min="0"
+                                                        value={p.Monto}
+                                                        onChange={(e) => actualizarPago(i, "Monto", +e.target.value)}
+                                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="md:col-span-1 flex flex-col justify-end">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => eliminarPago(i)}
+                                                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-all"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
-                            )}
-                        </div>
-
-                        {/* Resumen */}
-                        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4 border border-yellow-200">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="text-center">
-                                    <p className="text-sm text-gray-600">Total Artículos</p>
-                                    <p className="text-2xl font-bold text-gray-800">S/ {totalArticulos.toFixed(2)}</p>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-sm text-gray-600">Total Pagos</p>
-                                    <p className={`text-2xl font-bold ${
-                                        Math.abs(totalArticulos - totalPagos) < 0.01 
-                                            ? "text-green-600" 
-                                            : "text-red-600"
-                                    }`}>
-                                        S/ {totalPagos.toFixed(2)}
-                                    </p>
-                                    {Math.abs(totalArticulos - totalPagos) >= 0.01 && (
-                                        <p className="text-xs text-red-600 mt-1">
-                                            Diferencia: S/ {(totalArticulos - totalPagos).toFixed(2)}
-                                        </p>
-                                    )}
-                                </div>
                             </div>
-                        </div>
 
-                        {/* Botón de guardar */}
-                        <div className="flex gap-3 pt-4">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="flex-1 py-3 bg-gray-500 text-white font-semibold rounded-lg hover:bg-gray-600 transition-colors duration-200"
-                            >
-                                Cancelar
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={loading || detalles.length === 0 || pagos.length === 0 || Math.abs(totalArticulos - totalPagos) >= 0.01}
-                                className="flex-1 py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold rounded-lg flex justify-center items-center gap-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {loading ? (
-                                    <>
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                        Guardando...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Save className="w-4 h-4" /> 
-                                        Actualizar Venta
-                                    </>
+                            {/* Resumen mejorado */}
+                            <div className={`rounded-xl p-6 shadow-lg ${
+                                Math.abs(diferencia) < 0.01 
+                                    ? "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200" 
+                                    : "bg-gradient-to-r from-red-50 to-orange-50 border border-red-200"
+                            }`}>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="text-center">
+                                        <p className="text-sm text-gray-600 mb-1">Total Artículos</p>
+                                        <p className="text-3xl font-bold text-gray-800">S/ {totalArticulos.toFixed(2)}</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-sm text-gray-600 mb-1">Total Pagos</p>
+                                        <p className="text-3xl font-bold text-gray-800">S/ {totalPagos.toFixed(2)}</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-sm text-gray-600 mb-1">Diferencia</p>
+                                        <p className={`text-3xl font-bold ${Math.abs(diferencia) < 0.01 ? "text-green-600" : "text-red-600"}`}>
+                                            S/ {Math.abs(diferencia).toFixed(2)}
+                                            {Math.abs(diferencia) >= 0.01 && (
+                                                <span className="text-sm ml-1">{diferencia > 0 ? "(pendiente)" : "(sobrante)"}</span>
+                                            )}
+                                        </p>
+                                    </div>
+                                </div>
+                                {Math.abs(diferencia) >= 0.01 && (
+                                    <div className="mt-4 p-3 bg-red-100 rounded-lg flex items-center gap-2 text-red-700">
+                                        <AlertCircle className="w-5 h-5" />
+                                        <p className="text-sm font-medium">El total de pagos debe igualar el total de artículos</p>
+                                    </div>
                                 )}
-                            </button>
-                        </div>
-                    </form>
+                            </div>
+
+                            {/* Botones mejorados */}
+                            <div className="flex gap-4 pt-4 sticky bottom-0 bg-gray-50 py-4 -mb-6">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="flex-1 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-xl transition-all duration-200 shadow-sm hover:shadow-md"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={guardando || detalles.length === 0 || pagos.length === 0 || Math.abs(diferencia) >= 0.01}
+                                    className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold rounded-xl transition-all duration-200 flex justify-center items-center gap-2 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {guardando ? (
+                                        <>
+                                            <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                            Guardando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save className="w-4 h-4" /> 
+                                            Actualizar Venta
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    )}
                 </div>
             </div>
         </div>
     );
+
+    // Usar Portal para renderizar el modal fuera del flujo normal del DOM
+    if (!mounted) return null;
+    return createPortal(modalContent, document.body);
 }

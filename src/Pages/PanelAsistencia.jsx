@@ -20,7 +20,13 @@ import {
     X,
     TrendingUp,
     Sun,
-    Moon
+    Moon,
+    Plus,
+    Save,
+    User,
+    LogIn,
+    LogOut,
+    Coffee
 } from 'lucide-react';
 
 const PanelAsistencia = () => {
@@ -33,8 +39,8 @@ const PanelAsistencia = () => {
     const [registros, setRegistros] = useState([]);
     const [empleados, setEmpleados] = useState([]);
     const [empleadoFiltro, setEmpleadoFiltro] = useState('');
-    const [tipoHorarioFiltro, setTipoHorarioFiltro] = useState('');
-    const [tiposHorario, setTiposHorario] = useState([]);
+    const [horarioFiltro, setHorarioFiltro] = useState(''); // Cambiado de tipoHorarioFiltro a horarioFiltro
+    const [horarios, setHorarios] = useState([]); // Cambiado de tiposHorario a horarios
     const [cargando, setCargando] = useState(false);
     const [estadisticas, setEstadisticas] = useState({
         total: 0,
@@ -49,6 +55,19 @@ const PanelAsistencia = () => {
     const [itemsPorPagina, setItemsPorPagina] = useState(10);
     const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
     const [viewport, setViewport] = useState('mobile');
+    const [mostrarFormulario, setMostrarFormulario] = useState(false);
+    const [registrando, setRegistrando] = useState(false);
+    
+    // Estado para el formulario de registro
+    const [nuevoRegistro, setNuevoRegistro] = useState({
+        empId: '',
+        fecha: new Date().toISOString().split('T')[0],
+        horaEntrada: '',
+        horaSalidaAlmuerzo: '',
+        horaRegresoAlmuerzo: '',
+        horaSalida: '',
+        observaciones: ''
+    });
 
     // Detectar tamaño de pantalla
     useEffect(() => {
@@ -73,30 +92,34 @@ const PanelAsistencia = () => {
 
     useEffect(() => {
         cargarEmpleados();
-        cargarTiposHorario();
+        cargarHorarios(); // Cambiado de cargarTiposHorario a cargarHorarios
     }, []);
 
     useEffect(() => {
         cargarReporte();
-    }, [fechaInicio, fechaFin, empleadoFiltro, tipoHorarioFiltro]);
+    }, [fechaInicio, fechaFin, empleadoFiltro, horarioFiltro]);
 
+    // Cargar empleados desde tu endpoint
     const cargarEmpleados = async () => {
         try {
-            // Eliminamos el token - endpoint público
-            const response = await fetch(`${BACKEND_URL}/api/empleados`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
+            const response = await fetch(`${BACKEND_URL}/api/listaempleadoactivo`);
+            
             if (!response.ok) {
                 throw new Error(`Error ${response.status}: ${response.statusText}`);
             }
 
             const data = await response.json();
             if (Array.isArray(data)) {
-                setEmpleados(data);
+                const empleadosFormateados = data.map(emp => ({
+                    EmpId: emp.EmpId,
+                    Nombres: emp.Nombres,
+                    Apellidos: emp.Apellidos,
+                    Codigo: emp.DocID,
+                    TipoEmpleado: emp.TipoEmpleado,
+                    Cargo: emp.Descripcion,
+                    HorarioId: emp.HorarioId // Asumiendo que el empleado tiene un HorarioId
+                }));
+                setEmpleados(empleadosFormateados);
             } else {
                 console.error('La respuesta no es un array:', data);
                 setEmpleados([]);
@@ -107,16 +130,40 @@ const PanelAsistencia = () => {
         }
     };
 
-    const cargarTiposHorario = async () => {
+    // Cargar horarios desde la tabla horarios
+    const cargarHorarios = async () => {
         try {
-            // Endpoint público sin token
-            const response = await fetch(`${BACKEND_URL}/api/tipos-empleado`);
+            const response = await fetch(`${BACKEND_URL}/api/horario/activos`);
+            
             if (response.ok) {
                 const data = await response.json();
-                setTiposHorario(data);
+                console.log('Bueno ', data);
+                // Formatear los horarios para el select
+                const horariosFormateados = data.map(horario => ({
+                    HorarioId: horario.HorarioId,
+                    Codigo: horario.Codigo,
+                    Nombre: horario.Nombre,
+                    Descripcion: horario.Descripcion,
+                    HoraEntrada: horario.HoraEntrada,
+                    HoraSalida: horario.HoraSalida,
+                    HoraAlmuerzoInicio: horario.HoraAlmuerzoInicio,
+                    HoraAlmuerzoFin: horario.HoraAlmuerzoFin,
+                    ToleranciaEntrada: horario.ToleranciaEntrada,
+                    ToleranciaSalida: horario.ToleranciaSalida,
+                    HorasLaborales: horario.HorasLaborales,
+                    EsTurnoNoche: horario.EsTurnoNoche,
+                    TieneAlmuerzo: horario.TieneAlmuerzo,
+                    Activo: horario.Activo
+                }));
+                setHorarios(horariosFormateados);
+                
+            } else {
+                console.error('Error cargando horarios:', response.status);
+                setHorarios([]);
             }
         } catch (error) {
-            console.error('Error cargando tipos de horario:', error);
+            console.error('Error cargando horarios:', error);
+            setHorarios([]);
         }
     };
 
@@ -127,11 +174,10 @@ const PanelAsistencia = () => {
             if (empleadoFiltro) {
                 url += `&empId=${empleadoFiltro}`;
             }
-            if (tipoHorarioFiltro) {
-                url += `&tipo_empleado=${tipoHorarioFiltro}`;
+            if (horarioFiltro) {
+                url += `&horario_id=${horarioFiltro}`;
             }
 
-            // Endpoint público sin token
             const response = await fetch(url);
             const data = await response.json();
             setRegistros(data);
@@ -149,18 +195,14 @@ const PanelAsistencia = () => {
         const presentes = data.filter(r => r.Estado === 'Completo' || r.Estado === 'Tardanza').length;
         const ausentes = data.filter(r => r.Estado === 'Ausente').length;
         
-        // Calcular tardanzas (ahora usando el campo EsTardanza)
         const tardanzas = data.filter(r => r.EsTardanza === 1 || r.EsTardanza === true).length;
         
-        // Calcular minutos totales de tardanza
         const minutosTardanzaTotal = data.reduce((sum, r) => sum + (parseInt(r.MinutosTardanza) || 0), 0);
         const minutosTardanzaPromedio = tardanzas > 0 ? (minutosTardanzaTotal / tardanzas).toFixed(0) : 0;
         
-        // Calcular horas totales
         const horasTotales = data.reduce((sum, r) => sum + (parseFloat(r.HorasTrabajadas) || 0), 0);
         const horasPromedio = presentes > 0 ? (horasTotales / presentes).toFixed(2) : 0;
         
-        // Porcentaje de tardanzas
         const porcentajeTardanzas = total > 0 ? ((tardanzas / total) * 100).toFixed(1) : 0;
 
         setEstadisticas({
@@ -171,6 +213,70 @@ const PanelAsistencia = () => {
             horasPromedio,
             minutosTardanzaPromedio,
             porcentajeTardanzas
+        });
+    };
+
+    // Función para registrar asistencia manual
+    const registrarAsistencia = async () => {
+        if (!nuevoRegistro.empId) {
+            alert('Por favor seleccione un empleado');
+            return;
+        }
+        if (!nuevoRegistro.fecha) {
+            alert('Por favor seleccione una fecha');
+            return;
+        }
+        if (!nuevoRegistro.horaEntrada) {
+            alert('Por favor registre la hora de entrada');
+            return;
+        }
+
+        setRegistrando(true);
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/asistencia/registro-manual`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    empId: parseInt(nuevoRegistro.empId),
+                    fecha: nuevoRegistro.fecha,
+                    horaEntrada: nuevoRegistro.horaEntrada,
+                    horaSalidaAlmuerzo: nuevoRegistro.horaSalidaAlmuerzo || null,
+                    horaRegresoAlmuerzo: nuevoRegistro.horaRegresoAlmuerzo || null,
+                    horaSalida: nuevoRegistro.horaSalida || null,
+                    observaciones: nuevoRegistro.observaciones || null,
+                    metodoValidacion: 'manual'
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                alert('✅ Asistencia registrada correctamente');
+                setMostrarFormulario(false);
+                resetFormulario();
+                cargarReporte();
+            } else {
+                const error = await response.json();
+                alert(`❌ Error al registrar: ${error.message || 'Error desconocido'}`);
+            }
+        } catch (error) {
+            console.error('Error registrando asistencia:', error);
+            alert('❌ Error al conectar con el servidor');
+        } finally {
+            setRegistrando(false);
+        }
+    };
+
+    const resetFormulario = () => {
+        setNuevoRegistro({
+            empId: '',
+            fecha: new Date().toISOString().split('T')[0],
+            horaEntrada: '',
+            horaSalidaAlmuerzo: '',
+            horaRegresoAlmuerzo: '',
+            horaSalida: '',
+            observaciones: ''
         });
     };
 
@@ -225,6 +331,7 @@ const PanelAsistencia = () => {
             case 'wifi': return <Wifi className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />;
             case 'gps': return <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />;
             case 'ip_local': return <Smartphone className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" />;
+            case 'manual': return <User className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />;
             default: return null;
         }
     };
@@ -273,24 +380,190 @@ const PanelAsistencia = () => {
     return (
         <div className="min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-                {/* Header - Responsive */}
+                {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
                     <div>
                         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Panel de Asistencia</h1>
                         <p className="text-sm sm:text-base text-gray-600">Monitoreo de marcaciones y control de tardanzas</p>
                     </div>
-                    <button
-                        onClick={exportarExcel}
-                        disabled={registros.length === 0}
-                        className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-                    >
-                        <Download className="w-4 h-4" />
-                        <span className="hidden sm:inline">Exportar Excel</span>
-                        <span className="sm:hidden">Exportar</span>
-                    </button>
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setMostrarFormulario(true)}
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span className="hidden sm:inline">Registrar Asistencia</span>
+                            <span className="sm:hidden">Registrar</span>
+                        </button>
+                        <button
+                            onClick={exportarExcel}
+                            disabled={registros.length === 0}
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                        >
+                            <Download className="w-4 h-4" />
+                            <span className="hidden sm:inline">Exportar Excel</span>
+                            <span className="sm:hidden">Exportar</span>
+                        </button>
+                    </div>
                 </div>
 
-                {/* Filtros - Responsive con toggle en móvil */}
+                {/* Modal de Registro (mismo código) */}
+                {mostrarFormulario && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-2xl px-6 py-4 sticky top-0">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                                            <User className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-xl font-bold text-white">Registrar Asistencia Manual</h2>
+                                            <p className="text-blue-100 text-sm">Complete los datos del registro</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => setMostrarFormulario(false)}
+                                        className="text-white/80 hover:text-white p-2 hover:bg-white/20 rounded-xl transition-colors"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="p-6">
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <User className="w-4 h-4 inline mr-1" />
+                                            Empleado *
+                                        </label>
+                                        <select
+                                            value={nuevoRegistro.empId}
+                                            onChange={(e) => setNuevoRegistro({...nuevoRegistro, empId: e.target.value})}
+                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        >
+                                            <option value="">Seleccione un empleado</option>
+                                            {empleados.map(emp => (
+                                                <option key={emp.EmpId} value={emp.EmpId}>
+                                                    {emp.Nombres} {emp.Apellidos} - {emp.Codigo}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <Calendar className="w-4 h-4 inline mr-1" />
+                                            Fecha *
+                                        </label>
+                                        <input
+                                            type="date"
+                                            value={nuevoRegistro.fecha}
+                                            onChange={(e) => setNuevoRegistro({...nuevoRegistro, fecha: e.target.value})}
+                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                <LogIn className="w-4 h-4 inline mr-1 text-green-600" />
+                                                Hora de Entrada *
+                                            </label>
+                                            <input
+                                                type="time"
+                                                value={nuevoRegistro.horaEntrada}
+                                                onChange={(e) => setNuevoRegistro({...nuevoRegistro, horaEntrada: e.target.value})}
+                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                <Coffee className="w-4 h-4 inline mr-1 text-yellow-600" />
+                                                Hora Salida Almuerzo
+                                            </label>
+                                            <input
+                                                type="time"
+                                                value={nuevoRegistro.horaSalidaAlmuerzo}
+                                                onChange={(e) => setNuevoRegistro({...nuevoRegistro, horaSalidaAlmuerzo: e.target.value})}
+                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                <Coffee className="w-4 h-4 inline mr-1 text-yellow-600" />
+                                                Hora Regreso Almuerzo
+                                            </label>
+                                            <input
+                                                type="time"
+                                                value={nuevoRegistro.horaRegresoAlmuerzo}
+                                                onChange={(e) => setNuevoRegistro({...nuevoRegistro, horaRegresoAlmuerzo: e.target.value})}
+                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                <LogOut className="w-4 h-4 inline mr-1 text-red-600" />
+                                                Hora de Salida
+                                            </label>
+                                            <input
+                                                type="time"
+                                                value={nuevoRegistro.horaSalida}
+                                                onChange={(e) => setNuevoRegistro({...nuevoRegistro, horaSalida: e.target.value})}
+                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Observaciones
+                                        </label>
+                                        <textarea
+                                            rows="3"
+                                            value={nuevoRegistro.observaciones}
+                                            onChange={(e) => setNuevoRegistro({...nuevoRegistro, observaciones: e.target.value})}
+                                            placeholder="Ej: Registro manual por falta de marcación, justificación de tardanza, etc."
+                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+                                    <button
+                                        onClick={() => setMostrarFormulario(false)}
+                                        className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-medium"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={registrarAsistencia}
+                                        disabled={registrando}
+                                        className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        {registrando ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                Registrando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Save className="w-4 h-4" />
+                                                Guardar Registro
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Filtros */}
                 <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg mb-4 sm:mb-6">
                     {viewport === 'mobile' && (
                         <button
@@ -348,17 +621,17 @@ const PanelAsistencia = () => {
                             </div>
                             <div>
                                 <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                                    Tipo de Horario
+                                    Horario
                                 </label>
                                 <select
-                                    value={tipoHorarioFiltro}
-                                    onChange={(e) => setTipoHorarioFiltro(e.target.value)}
+                                    value={horarioFiltro}
+                                    onChange={(e) => setHorarioFiltro(e.target.value)}
                                     className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 >
                                     <option value="">Todos los horarios</option>
-                                    {tiposHorario.map(tipo => (
-                                        <option key={tipo.Tipo_EmpId} value={tipo.Tipo_EmpId}>
-                                            {tipo.Nombre}
+                                    {horarios.map(horario => (
+                                        <option key={horario.HorarioId} value={horario.HorarioId}>
+                                            {horario.Nombre}
                                         </option>
                                     ))}
                                 </select>
@@ -376,7 +649,7 @@ const PanelAsistencia = () => {
                     </div>
                 </div>
 
-                {/* Tarjetas de estadísticas - Grid responsive con nuevas métricas */}
+                {/* Estadísticas */}
                 <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 mb-6">
                     <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white">
                         <div className="flex items-center justify-between">
@@ -441,13 +714,13 @@ const PanelAsistencia = () => {
                     </div>
                 </div>
 
-                {/* Tabla de registros - Responsive con scroll horizontal */}
+                {/* Tabla de registros */}
                 <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden">
                     {cargando ? (
                         <div className="flex justify-center items-center py-12">
                             <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                         </div>
-                    ) : (
+                    ) : registros.length > 0 ? (
                         <>
                             <div className="overflow-x-auto">
                                 <table className="min-w-full">
@@ -485,23 +758,15 @@ const PanelAsistencia = () => {
                                                             : `${reg.Nombres || ''} ${reg.Apellidos || ''}`
                                                         }
                                                     </div>
-                                                    <div className="text-xs text-gray-500">
-                                                        {reg.Codigo}
-                                                    </div>
+                                                    <div className="text-xs text-gray-500">{reg.Codigo}</div>
                                                 </td>
                                                 <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">
                                                     <div className="flex items-center gap-1">
-                                                        {reg.HorarioNombre ? (
-                                                            <>
-                                                                {reg.EsTurnoNoche ? 
-                                                                    <Moon className="w-3 h-3 text-indigo-500" /> : 
-                                                                    <Sun className="w-3 h-3 text-yellow-500" />
-                                                                }
-                                                                <span className="text-xs">{reg.HorarioNombre}</span>
-                                                            </>
-                                                        ) : (
-                                                            <span className="text-gray-400">—</span>
-                                                        )}
+                                                        {reg.EsTurnoNoche ? 
+                                                            <Moon className="w-3 h-3 text-indigo-500" /> : 
+                                                            <Sun className="w-3 h-3 text-yellow-500" />
+                                                        }
+                                                        <span className="text-xs">{reg.HorarioNombre || 'Sin horario'}</span>
                                                     </div>
                                                 </td>
                                                 {viewport !== 'mobile' && (
@@ -557,70 +822,70 @@ const PanelAsistencia = () => {
                                 </table>
                             </div>
 
-                            {/* Paginación - Responsive */}
-                            {registros.length > 0 && (
-                                <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                    <p className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
-                                        Mostrando {indicePrimero + 1} - {Math.min(indiceUltimo, registros.length)} de {registros.length} registros
-                                    </p>
-                                    <div className="flex justify-center sm:justify-end gap-1 sm:gap-2">
-                                        <button
-                                            onClick={() => setPaginaActual(paginaActual - 1)}
-                                            disabled={paginaActual === 1}
-                                            className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 transition-colors"
-                                        >
-                                            <ChevronLeft className="w-4 h-4" />
-                                        </button>
-                                        {Array.from({ length: Math.min(5, totalPaginas) }, (_, i) => {
-                                            let pageNum;
-                                            if (totalPaginas <= 5) {
-                                                pageNum = i + 1;
-                                            } else if (paginaActual <= 3) {
-                                                pageNum = i + 1;
-                                            } else if (paginaActual >= totalPaginas - 2) {
-                                                pageNum = totalPaginas - 4 + i;
-                                            } else {
-                                                pageNum = paginaActual - 2 + i;
-                                            }
-                                            
-                                            return (
-                                                <button
-                                                    key={pageNum}
-                                                    onClick={() => setPaginaActual(pageNum)}
-                                                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-colors ${
-                                                        paginaActual === pageNum
-                                                            ? 'bg-blue-600 text-white'
-                                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                    }`}
-                                                >
-                                                    {pageNum}
-                                                </button>
-                                            );
-                                        })}
-                                        <button
-                                            onClick={() => setPaginaActual(paginaActual + 1)}
-                                            disabled={paginaActual === totalPaginas}
-                                            className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 transition-colors"
-                                        >
-                                            <ChevronRight className="w-4 h-4" />
-                                        </button>
-                                    </div>
+                            {/* Paginación */}
+                            <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <p className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
+                                    Mostrando {indicePrimero + 1} - {Math.min(indiceUltimo, registros.length)} de {registros.length} registros
+                                </p>
+                                <div className="flex justify-center sm:justify-end gap-1 sm:gap-2">
+                                    <button
+                                        onClick={() => setPaginaActual(paginaActual - 1)}
+                                        disabled={paginaActual === 1}
+                                        className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+                                    {Array.from({ length: Math.min(5, totalPaginas) }, (_, i) => {
+                                        let pageNum;
+                                        if (totalPaginas <= 5) {
+                                            pageNum = i + 1;
+                                        } else if (paginaActual <= 3) {
+                                            pageNum = i + 1;
+                                        } else if (paginaActual >= totalPaginas - 2) {
+                                            pageNum = totalPaginas - 4 + i;
+                                        } else {
+                                            pageNum = paginaActual - 2 + i;
+                                        }
+                                        
+                                        return (
+                                            <button
+                                                key={pageNum}
+                                                onClick={() => setPaginaActual(pageNum)}
+                                                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-colors ${
+                                                    paginaActual === pageNum
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        );
+                                    })}
+                                    <button
+                                        onClick={() => setPaginaActual(paginaActual + 1)}
+                                        disabled={paginaActual === totalPaginas}
+                                        className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
                                 </div>
-                            )}
+                            </div>
                         </>
+                    ) : (
+                        <div className="text-center py-12">
+                            <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                            <h3 className="text-lg font-medium text-gray-700 mb-2">No hay registros</h3>
+                            <p className="text-gray-500 mb-4">No se encontraron marcaciones para el período seleccionado</p>
+                            <button
+                                onClick={() => setMostrarFormulario(true)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 inline-flex items-center gap-2"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Registrar primera asistencia
+                            </button>
+                        </div>
                     )}
                 </div>
-
-                {/* Mensaje si no hay datos */}
-                {!cargando && registros.length === 0 && (
-                    <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-8 sm:p-12 text-center">
-                        <Calendar className="w-12 h-12 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg sm:text-xl font-medium text-gray-700 mb-2">No hay registros</h3>
-                        <p className="text-sm sm:text-base text-gray-500">
-                            No se encontraron marcaciones para el período seleccionado
-                        </p>
-                    </div>
-                )}
             </div>
         </div>
     );
