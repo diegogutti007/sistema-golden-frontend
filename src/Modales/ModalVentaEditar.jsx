@@ -14,7 +14,6 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
     const [tiposPago, setTiposPago] = useState([]);
     const [detalles, setDetalles] = useState([]);
     const [pagos, setPagos] = useState([]);
-    const [loading, setLoading] = useState(false);
     const [loadingDatos, setLoadingDatos] = useState(true);
     const [venta, setVenta] = useState(null);
     const [guardando, setGuardando] = useState(false);
@@ -28,65 +27,80 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
 
     useEffect(() => {
         setMounted(true);
-        // Bloquear scroll del body cuando el modal está abierto
         document.body.style.overflow = 'hidden';
         return () => {
             document.body.style.overflow = 'unset';
         };
     }, []);
 
-    // 🔹 Función para formatear fecha
-    const obtenerFechaLocal = (fechaISO) => {
-        if (!fechaISO) {
-            const ahora = new Date();
-            const año = ahora.getFullYear();
-            const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-            const dia = String(ahora.getDate()).padStart(2, '0');
-            const horas = String(ahora.getHours()).padStart(2, '0');
-            const minutos = String(ahora.getMinutes()).padStart(2, '0');
-            return `${año}-${mes}-${dia}T${horas}:${minutos}`;
+    // 🔹 Función para formatear fecha a DD-MM-YYYY
+    const formatearFecha = (fechaStr) => {
+        if (!fechaStr) return '';
+
+        // Extraer solo la parte de la fecha (YYYY-MM-DD)
+        let fechaParte = fechaStr;
+
+        // Si viene con T (formato ISO: 2026-03-16T05:00:00.000Z)
+        if (fechaStr.includes('T')) {
+            fechaParte = fechaStr.split('T')[0]; // Tomar solo lo que está antes de T
         }
-        
-        const fecha = new Date(fechaISO);
-        const año = fecha.getFullYear();
-        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-        const dia = String(fecha.getDate()).padStart(2, '0');
-        const horas = String(fecha.getHours()).padStart(2, '0');
-        const minutos = String(fecha.getMinutes()).padStart(2, '0');
-        
-        return `${año}-${mes}-${dia}T${horas}:${minutos}`;
+
+        // Ahora fechaParte debe ser "2026-03-16"
+        if (fechaParte.includes('-')) {
+            const partes = fechaParte.split('-');
+            if (partes.length === 3) {
+                const año = partes[0];
+                const mes = partes[1];
+                const dia = partes[2];
+
+                // Reordenar a DD-MM-YYYY
+                return `${dia}-${mes}-${año}`;
+            }
+        }
+        return fechaStr;
     };
 
-  const formatearFecha = (fechaStr) => {
-    if (!fechaStr) return '';
+    // 🔹 Función para formatear fecha para el input date (YYYY-MM-DD)
+    const formatearFechaInput = (fechaStr) => {
+        if (!fechaStr) return '';
+        
+        // Si ya está en formato YYYY-MM-DD, devolverlo
+        if (fechaStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            return fechaStr;
+        }
+        
+        // Si viene en formato DD-MM-YYYY
+        if (fechaStr.includes('-')) {
+            const partes = fechaStr.split('-');
+            if (partes.length === 3 && partes[0].length === 2) {
+                const dia = partes[0];
+                const mes = partes[1];
+                const año = partes[2];
+                return `${año}-${mes}-${dia}`;
+            }
+        }
+        
+        // Si viene en formato ISO
+        if (fechaStr.includes('T')) {
+            return fechaStr.split('T')[0];
+        }
+        
+        return fechaStr;
+    };
 
-    // Extraer solo la parte de la fecha (YYYY-MM-DD)
-    let fechaParte = fechaStr;
+    // 🔹 Función para obtener fecha actual en formato YYYY-MM-DD
+    const obtenerFechaActual = () => {
+        const ahora = new Date();
+        const año = ahora.getFullYear();
+        const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+        const dia = String(ahora.getDate()).padStart(2, '0');
+        return `${año}-${mes}-${dia}`;
+    };
 
-    // Si viene con T (formato ISO: 2026-03-16T05:00:00.000Z)
-    if (fechaStr.includes('T')) {
-      fechaParte = fechaStr.split('T')[0]; // Tomar solo lo que está antes de T
-    }
-
-    // Ahora fechaParte debe ser "2026-03-16"
-    if (fechaParte.includes('-')) {
-      const partes = fechaParte.split('-');
-      if (partes.length === 3) {
-        const año = partes[0];
-        const mes = partes[1];
-        const dia = partes[2];
-
-        // Reordenar a DD-MM-YYYY
-        return `${dia}-${mes}-${año}`;
-      }
-    }
-
-    // 🔹 Cargar todos los datos
     useEffect(() => {
         const cargarTodosLosDatos = async () => {
             try {
                 setLoadingDatos(true);
-                console.log('🔄 Iniciando carga de datos para venta:', ventaId);
 
                 const [clientesRes, articulosRes, pagosRes, empleadosRes, ventaRes] = await Promise.all([
                     fetch(`${BACKEND_URL}/api/clientes`),
@@ -118,9 +132,14 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                 setEmpleados(empleadosData);
                 setVenta(ventaReal);
 
+                // Formatear fecha para mostrar (DD-MM-YYYY) y para el input (YYYY-MM-DD)
+                const fechaOriginal = ventaReal.FechaVenta || obtenerFechaActual();
+                const fechaFormateadaMostrar = formatearFecha(fechaOriginal);
+                const fechaFormateadaInput = formatearFechaInput(fechaOriginal);
+
                 setForm({
                     ClienteID: ventaReal.ClienteID || "",
-                    FechaVenta: formatearFecha(ventaReal.FechaVenta),
+                    FechaVenta: fechaFormateadaInput, // Para el input date
                     Observaciones: ventaReal.Observaciones || "",
                 });
 
@@ -159,7 +178,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                 }
 
             } catch (error) {
-                console.error('❌ Error:', error);
+                console.error('Error:', error);
                 alert(`Error al cargar los datos: ${error.message}`);
             } finally {
                 setLoadingDatos(false);
@@ -219,28 +238,33 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
         e.preventDefault();
         
         if (!form.ClienteID) {
-            alert("⚠️ Debe seleccionar un cliente");
+            alert("Debe seleccionar un cliente");
             return;
         }
 
         if (detalles.length === 0) {
-            alert("⚠️ Debe agregar al menos un artículo");
+            alert("Debe agregar al menos un artículo");
             return;
         }
 
         if (pagos.length === 0) {
-            alert("⚠️ Debe agregar al menos un método de pago");
+            alert("Debe agregar al menos un método de pago");
             return;
         }
 
         if (Math.abs(diferencia) > 0.01) {
-            alert("⚠️ La suma de pagos debe igualar el total de artículos");
+            alert("La suma de pagos debe igualar el total de artículos");
             return;
         }
 
         setGuardando(true);
+        
+        // Formatear la fecha para enviar al servidor en formato ISO
+        const fechaParaEnviar = form.FechaVenta ? `${form.FechaVenta}T00:00:00.000Z` : new Date().toISOString();
+        
         const data = {
             ...form,
+            FechaVenta: fechaParaEnviar,
             Total: totalArticulos,
             Detalles: detalles.map(d => ({
                 ArticuloID: d.ArticuloID,
@@ -264,14 +288,15 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
             });
 
             if (res.ok) {
-                alert("✅ Venta actualizada correctamente");
+                alert("Venta actualizada correctamente");
                 onGuardado();
                 onClose();
             } else {
-                alert(`❌ Error al actualizar venta: ${res.status}`);
+                const errorData = await res.json();
+                alert(`Error al actualizar venta: ${errorData.error || res.status}`);
             }
         } catch (error) {
-            alert("❌ Error de conexión");
+            alert("Error de conexión");
         } finally {
             setGuardando(false);
         }
@@ -318,11 +343,8 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                 if (e.target === e.currentTarget) onClose();
             }}
         >
-            <div 
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col"
-                style={{ zIndex: 999999 }}
-            >
-                {/* Header - Mejorado */}
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
+                {/* Header */}
                 <div className="sticky top-0 bg-gradient-to-r from-yellow-500 to-orange-500 px-6 py-4 flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <div className="bg-white bg-opacity-20 p-2 rounded-xl">
@@ -333,7 +355,8 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                             {venta && (
                                 <p className="text-sm text-white text-opacity-90">
                                     Cliente: {venta.ClienteNombre || "No especificado"} | 
-                                    Total: S/ {Number(venta.Total || 0).toFixed(2)}
+                                    Total: S/ {Number(venta.Total || 0).toFixed(2)} |
+                                    Fecha: {formatearFecha(venta.FechaVenta)}
                                 </p>
                             )}
                         </div>
@@ -346,7 +369,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                     </button>
                 </div>
 
-                {/* Contenido - Scrollable */}
+                {/* Contenido */}
                 <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
                     {loadingDatos ? (
                         <div className="flex justify-center items-center py-20">
@@ -358,7 +381,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                         </div>
                     ) : (
                         <form onSubmit={handleGuardar} className="space-y-6">
-                            {/* Información básica - Tarjeta mejorada */}
+                            {/* Información básica */}
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                                     <div className="w-1 h-6 bg-yellow-500 rounded-full"></div>
@@ -384,7 +407,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                                             <Calendar className="w-4 h-4 inline mr-1" /> Fecha de Venta *
                                         </label>
                                         <input
-                                            type="datetime-local"
+                                            type="date"
                                             className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none transition-all"
                                             value={form.FechaVenta}
                                             onChange={(e) => setForm({ ...form, FechaVenta: e.target.value })}
@@ -404,7 +427,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                                 </div>
                             </div>
 
-                            {/* Artículos - Tarjeta mejorada */}
+                            {/* Artículos */}
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -491,7 +514,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                                 </div>
                             </div>
 
-                            {/* Pagos - Tarjeta mejorada */}
+                            {/* Pagos */}
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
@@ -549,7 +572,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                                 </div>
                             </div>
 
-                            {/* Resumen mejorado */}
+                            {/* Resumen */}
                             <div className={`rounded-xl p-6 shadow-lg ${
                                 Math.abs(diferencia) < 0.01 
                                     ? "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200" 
@@ -582,7 +605,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                                 )}
                             </div>
 
-                            {/* Botones mejorados */}
+                            {/* Botones */}
                             <div className="flex gap-4 pt-4 sticky bottom-0 bg-gray-50 py-4 -mb-6">
                                 <button
                                     type="button"
@@ -616,7 +639,6 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
         </div>
     );
 
-    // Usar Portal para renderizar el modal fuera del flujo normal del DOM
     if (!mounted) return null;
     return createPortal(modalContent, document.body);
 }
