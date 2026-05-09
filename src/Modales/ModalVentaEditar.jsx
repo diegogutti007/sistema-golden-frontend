@@ -63,12 +63,12 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
     // 🔹 Función para formatear fecha para el input date (YYYY-MM-DD)
     const formatearFechaInput = (fechaStr) => {
         if (!fechaStr) return '';
-        
+
         // Si ya está en formato YYYY-MM-DD, devolverlo
         if (fechaStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
             return fechaStr;
         }
-        
+
         // Si viene en formato DD-MM-YYYY
         if (fechaStr.includes('-')) {
             const partes = fechaStr.split('-');
@@ -79,12 +79,12 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                 return `${año}-${mes}-${dia}`;
             }
         }
-        
+
         // Si viene en formato ISO
         if (fechaStr.includes('T')) {
             return fechaStr.split('T')[0];
         }
-        
+
         return fechaStr;
     };
 
@@ -123,8 +123,8 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                 const detallesData = ventaData.detalles || [];
                 const pagosData = ventaData.pagos || [];
 
-                setClientes(clientesData.map(c => ({ 
-                    value: c.ClienteID, 
+                setClientes(clientesData.map(c => ({
+                    value: c.ClienteID,
                     label: `${c.Nombre || ''} ${c.Apellido || ''}`.trim() || 'Cliente sin nombre'
                 })));
                 setArticulos(articulosData);
@@ -161,7 +161,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                         let tipoPagoID = null;
                         if (pago.TipoPagoID) tipoPagoID = pago.TipoPagoID;
                         else if (pago.TipoPago) {
-                            const tipoPagoEncontrado = tiposPagoData.find(tp => 
+                            const tipoPagoEncontrado = tiposPagoData.find(tp =>
                                 tp.nombre === pago.TipoPago || tp.nombre.toLowerCase() === pago.TipoPago.toLowerCase()
                             );
                             tipoPagoID = tipoPagoEncontrado ? tipoPagoEncontrado.tipo_pago_id : null;
@@ -234,9 +234,77 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
     const totalPagos = pagos.reduce((acc, p) => acc + (p.Monto || 0), 0);
     const diferencia = totalArticulos - totalPagos;
 
+    /*     const handleGuardar = async (e) => {
+            e.preventDefault();
+            
+            if (!form.ClienteID) {
+                alert("Debe seleccionar un cliente");
+                return;
+            }
+    
+            if (detalles.length === 0) {
+                alert("Debe agregar al menos un artículo");
+                return;
+            }
+    
+            if (pagos.length === 0) {
+                alert("Debe agregar al menos un método de pago");
+                return;
+            }
+    
+            if (Math.abs(diferencia) > 0.01) {
+                alert("La suma de pagos debe igualar el total de artículos");
+                return;
+            }
+    
+            setGuardando(true);
+            
+            // Formatear la fecha para enviar al servidor en formato ISO
+            const fechaParaEnviar = form.FechaVenta ? `${form.FechaVenta}T00:00:00.000Z` : new Date().toISOString();
+            
+            const data = {
+                ...form,
+                FechaVenta: fechaParaEnviar,
+                Total: totalArticulos,
+                Detalles: detalles.map(d => ({
+                    ArticuloID: d.ArticuloID,
+                    Cantidad: d.Cantidad,
+                    PrecioUnitario: d.PrecioUnitario,
+                    EmpID: d.EmpID,
+                    DetalleID: d.DetalleID
+                })),
+                Pagos: pagos.map(p => ({
+                    TipoPagoID: p.TipoPagoID,
+                    Monto: p.Monto,
+                    venta_pago_id: p.venta_pago_id
+                })),
+            };
+    
+            try {
+                const res = await fetch(`${BACKEND_URL}/api/venta/${ventaId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                });
+    
+                if (res.ok) {
+                    alert("Venta actualizada correctamente");
+                    onGuardado();
+                    onClose();
+                } else {
+                    const errorData = await res.json();
+                    alert(`Error al actualizar venta: ${errorData.error || res.status}`);
+                }
+            } catch (error) {
+                alert("Error de conexión");
+            } finally {
+                setGuardando(false);
+            }
+        }; */
+
     const handleGuardar = async (e) => {
         e.preventDefault();
-        
+
         if (!form.ClienteID) {
             alert("Debe seleccionar un cliente");
             return;
@@ -258,10 +326,11 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
         }
 
         setGuardando(true);
-        
-        // Formatear la fecha para enviar al servidor en formato ISO
-        const fechaParaEnviar = form.FechaVenta ? `${form.FechaVenta}T00:00:00.000Z` : new Date().toISOString();
-        
+
+        // SOLO yyyy-mm-dd
+        const fechaParaEnviar = form.FechaVenta
+            || new Date().toISOString().split('T')[0];
+
         const data = {
             ...form,
             FechaVenta: fechaParaEnviar,
@@ -301,7 +370,6 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
             setGuardando(false);
         }
     };
-
     const clienteSel = clientes.find(c => c.value === form.ClienteID) || null;
 
     const customStyles = {
@@ -336,7 +404,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
     };
 
     const modalContent = (
-        <div 
+        <div
             className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4"
             style={{ zIndex: 999999 }}
             onClick={(e) => {
@@ -354,7 +422,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                             <h2 className="text-xl font-bold text-white">Editar Venta #{ventaId}</h2>
                             {venta && (
                                 <p className="text-sm text-white text-opacity-90">
-                                    Cliente: {venta.ClienteNombre || "No especificado"} | 
+                                    Cliente: {venta.ClienteNombre || "No especificado"} |
                                     Total: S/ {Number(venta.Total || 0).toFixed(2)} |
                                     Fecha: {formatearFecha(venta.FechaVenta)}
                                 </p>
@@ -432,7 +500,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                                         <div className="w-1 h-6 bg-yellow-500 rounded-full"></div>
-                                        <FileText className="w-5 h-5 text-yellow-500" /> 
+                                        <FileText className="w-5 h-5 text-yellow-500" />
                                         Artículos y Servicios ({detalles.length})
                                     </h3>
                                     <button
@@ -495,9 +563,9 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                                                     />
                                                 </div>
                                                 <div className="md:col-span-1 flex flex-col justify-end">
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={() => eliminarDetalle(i)} 
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => eliminarDetalle(i)}
                                                         className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-all"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -519,7 +587,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
                                         <div className="w-1 h-6 bg-green-500 rounded-full"></div>
-                                        <CreditCard className="w-5 h-5 text-green-500" /> 
+                                        <CreditCard className="w-5 h-5 text-green-500" />
                                         Métodos de Pago ({pagos.length})
                                     </h3>
                                     <button
@@ -550,7 +618,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                                                     <input
                                                         type="number"
                                                         step="0.01"
-                                                        min="0"
+                                                        /* min="0" */
                                                         value={p.Monto}
                                                         onChange={(e) => actualizarPago(i, "Monto", +e.target.value)}
                                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 outline-none"
@@ -573,11 +641,10 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                             </div>
 
                             {/* Resumen */}
-                            <div className={`rounded-xl p-6 shadow-lg ${
-                                Math.abs(diferencia) < 0.01 
-                                    ? "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200" 
+                            <div className={`rounded-xl p-6 shadow-lg ${Math.abs(diferencia) < 0.01
+                                    ? "bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200"
                                     : "bg-gradient-to-r from-red-50 to-orange-50 border border-red-200"
-                            }`}>
+                                }`}>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div className="text-center">
                                         <p className="text-sm text-gray-600 mb-1">Total Artículos</p>
@@ -626,7 +693,7 @@ export default function ModalVentaEditar({ ventaId, onClose, onGuardado }) {
                                         </>
                                     ) : (
                                         <>
-                                            <Save className="w-4 h-4" /> 
+                                            <Save className="w-4 h-4" />
                                             Actualizar Venta
                                         </>
                                     )}
