@@ -192,13 +192,13 @@ const DashboardPagosPersonal = () => {
                 Actualizar
               </button>
               
-              <button
+{/*               <button
                 onClick={() => window.print()}
                 className="flex items-center gap-2 px-4 py-2 bg-white text-slate-600 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all"
               >
                 <Printer className="w-4 h-4" />
                 Imprimir
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
@@ -508,7 +508,7 @@ const DashboardPagosPersonal = () => {
 
         {/* Footer */}
         <div className="mt-8 text-center text-xs text-slate-400">
-          <p>Reporte de pagos de personal - Sueldos (cat.2), Bonos (cat.11), Comisiones (cat.12)</p>
+          <p>Reporte de pagos de personal - Sueldos</p>
         </div>
       </div>
     </div>
