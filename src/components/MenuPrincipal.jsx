@@ -604,7 +604,16 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                               iconBg="bg-green-500/10"
                               iconColor="text-green-400"
                               title="Dashboard Gastos"
-                              description="Ver resumen de gastos"
+                              description="Resumen de gastos"
+                            />
+                            <SubmenuItem
+                              to="/gastos/DashboardPagosPersonal"
+                              onClick={() => setGastosOpen(false)}
+                              icon={Activity}
+                              iconBg="bg-purple-500/10"
+                              iconColor="text-purple-400"
+                              title="Dashboard Pagos Personal"
+                              description="Resumen de pagos"
                             />
                           </div>
                         </div>
@@ -970,6 +979,14 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                   >
                     <Activity className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
                     <span>Dashboard Gastos</span>
+                  </Link>
+                  <Link
+                    to="/gastos/DashboardPagosPersonal"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                  >
+                    <Activity className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                    <span>Dashboard Pagos Personal</span>
                   </Link>
                 </div>
               </HideIfUnauthorized>
