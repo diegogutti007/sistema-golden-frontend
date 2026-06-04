@@ -13,6 +13,7 @@ import {
   BarChart3,
   History,
   Wallet,
+  Target,
   ChevronDown,
   PanelLeft // <-- AÑADIDO
 } from "lucide-react";
@@ -586,6 +587,15 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                               title="Gestión Gastos"
                               description="Administrar gastos"
                             />
+                            <SubmenuItem
+                              to="/gastos/PresupuestosGastos"
+                              onClick={() => setGastosOpen(false)}
+                              icon={Target}
+                              iconBg="bg-blue-500/10"
+                              iconColor="text-blue-400"
+                              title="Presupuestos Gastos"
+                              description="Gestionar presupuestos"
+                            />
                           </div>
                         </div>
                       )}
@@ -934,6 +944,14 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                   >
                     <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
                     <span>Gestión Gastos</span>
+                  </Link>
+                  <Link
+                    to="/gastos/PresupuestosGastos"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                  >
+                    <Target className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                    <span>Presupuestos Gastos</span>
                   </Link>
                 </div>
               </HideIfUnauthorized>

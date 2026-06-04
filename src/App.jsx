@@ -23,6 +23,7 @@ import GestionServicios from "./Pages/GestionServicios";
 import GestionClientes from "./Pages/GestionClientes";
 import GestionEmpleados from "./Pages/GestionEmpleados";
 import Asistencia from "./Pages/PanelAsistencia";
+import PresupuestosGastos from "./Pages/PresupuestosGastos";
 
 import MarcacionEmpleados from "./Pages/MarcacionEmpleados";
 import GestionHorarios from "./Pages/GestionHorarios";
@@ -124,7 +125,8 @@ function App() {
         <Route path="/citas/Historial" element={<ProtectedRoute><HistorialCitas /></ProtectedRoute>} />
         {/* gastos */}
         <Route path="/gastos" element={<ProtectedRoute><FormularioGasto /></ProtectedRoute>} />
-        <Route path="/gastos/GestionGastos" element={<ProtectedRoute><ListaGastos /></ProtectedRoute>} />.
+        <Route path="/gastos/GestionGastos" element={<ProtectedRoute><ListaGastos /></ProtectedRoute>} />
+        <Route path="/gastos/PresupuestosGastos" element={<ProtectedRoute><PresupuestosGastos /></ProtectedRoute>} />
         {/* ventas */}
         <Route path="/Ventas" element={<ProtectedRoute><VentaFormulario /></ProtectedRoute>} />
         <Route path="/Ventas/GestionVentas" element={<ProtectedRoute><VentaLista /></ProtectedRoute>} />
@@ -149,6 +151,7 @@ function App() {
         <Route path="/inventario/stock" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Inventario Stock</h1><p>Gestión de stock</p></div></ProtectedRoute>} />
         <Route path="/inventario/proveedores" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Inventario Proveedores</h1><p>Gestión de proveedores</p></div></ProtectedRoute>} />
         <Route path="*" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      
       </Routes>
     </LayoutPrincipal>
   );
