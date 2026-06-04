@@ -24,6 +24,7 @@ import GestionClientes from "./Pages/GestionClientes";
 import GestionEmpleados from "./Pages/GestionEmpleados";
 import Asistencia from "./Pages/PanelAsistencia";
 import PresupuestosGastos from "./Pages/PresupuestosGastos";
+import DashboardGastos from "./Pages/DashboardGastos";
 
 import MarcacionEmpleados from "./Pages/MarcacionEmpleados";
 import GestionHorarios from "./Pages/GestionHorarios";
@@ -127,6 +128,7 @@ function App() {
         <Route path="/gastos" element={<ProtectedRoute><FormularioGasto /></ProtectedRoute>} />
         <Route path="/gastos/GestionGastos" element={<ProtectedRoute><ListaGastos /></ProtectedRoute>} />
         <Route path="/gastos/PresupuestosGastos" element={<ProtectedRoute><PresupuestosGastos /></ProtectedRoute>} />
+        <Route path="/gastos/DashboardGastos" element={<ProtectedRoute><DashboardGastos /></ProtectedRoute>} />
         {/* ventas */}
         <Route path="/Ventas" element={<ProtectedRoute><VentaFormulario /></ProtectedRoute>} />
         <Route path="/Ventas/GestionVentas" element={<ProtectedRoute><VentaLista /></ProtectedRoute>} />

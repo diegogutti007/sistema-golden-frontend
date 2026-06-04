@@ -8,6 +8,7 @@ import {
   Users,
   Calendar,
   DollarSign,
+  Activity,
   TrendingDown,
   LogOut,
   BarChart3,
@@ -596,6 +597,15 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                               title="Presupuestos Gastos"
                               description="Gestionar presupuestos"
                             />
+                            <SubmenuItem
+                              to="/gastos/DashboardGastos"
+                              onClick={() => setGastosOpen(false)}
+                              icon={Activity}
+                              iconBg="bg-green-500/10"
+                              iconColor="text-green-400"
+                              title="Dashboard Gastos"
+                              description="Ver resumen de gastos"
+                            />
                           </div>
                         </div>
                       )}
@@ -952,6 +962,14 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                   >
                     <Target className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
                     <span>Presupuestos Gastos</span>
+                  </Link>
+                  <Link
+                    to="/gastos/DashboardGastos"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                  >
+                    <Activity className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                    <span>Dashboard Gastos</span>
                   </Link>
                 </div>
               </HideIfUnauthorized>
