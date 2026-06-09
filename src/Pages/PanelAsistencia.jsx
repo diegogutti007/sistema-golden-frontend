@@ -16,11 +16,13 @@ const PanelAsistencia = () => {
     const [horarioFiltro, setHorarioFiltro] = useState('');
     const [cargando, setCargando] = useState(false);
     const [paginaActual, setPaginaActual] = useState(1);
-    const [itemsPorPagina] = useState(10);
+    const [itemsPorPagina, setItemsPorPagina] = useState(10);
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
     const [registrando, setRegistrando] = useState(false);
     const [editandoRegistro, setEditandoRegistro] = useState(null);
     const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
+    const [mostrarFiltrosMovil, setMostrarFiltrosMovil] = useState(false);
+    const [modoVista, setModoVista] = useState('tabla');
     
     const [estadisticas, setEstadisticas] = useState({
         total: 0, presentes: 0, ausentes: 0, tardanzas: 0,
@@ -32,6 +34,26 @@ const PanelAsistencia = () => {
         empId: '', fecha: new Date().toISOString().split('T')[0],
         horaEntrada: '', horaSalidaAlmuerzo: '', horaRegresoAlmuerzo: '', horaSalida: '', observaciones: ''
     });
+
+    const [isMobile, setIsMobile] = useState(false);
+    const [isTablet, setIsTablet] = useState(false);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 640);
+            setIsTablet(window.innerWidth >= 640 && window.innerWidth < 1024);
+            if (window.innerWidth < 640) {
+                setItemsPorPagina(5);
+            } else if (window.innerWidth < 1024) {
+                setItemsPorPagina(8);
+            } else {
+                setItemsPorPagina(10);
+            }
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         cargarEmpleados();
@@ -103,58 +125,29 @@ const PanelAsistencia = () => {
         });
     };
 
-    // ==================== FUNCIONES DE FORMATEO ====================
-    
-    // Convertir horas decimales a formato "HH:MM"
     const decimalToHourMinute = (horasDecimal) => {
         if (!horasDecimal || horasDecimal === 0) return '—';
-        
         const horas = Math.floor(horasDecimal);
         const minutos = Math.round((horasDecimal - horas) * 60);
-        
-        // Ajustar cuando minutos llegan a 60
-        if (minutos === 60) {
-            return `${horas + 1}:00`;
-        }
-        
+        if (minutos === 60) return `${horas + 1}:00`;
         return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
     };
 
-    // Convertir minutos a formato "HH:MM"
-    const minutesToHourMinute = (minutos) => {
-        if (!minutos || minutos === 0) return '—';
-        
-        const horas = Math.floor(minutos / 60);
-        const mins = minutos % 60;
-        
-        return `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-    };
-
-    // Formatear horas extras a "Xh Ymin"
     const formatearHorasExtras = (horasDecimal) => {
         if (!horasDecimal || horasDecimal === 0) return '—';
-        
         const horasNum = parseFloat(horasDecimal);
         const horas = Math.floor(horasNum);
         const minutos = Math.round((horasNum - horas) * 60);
-        
-        if (horas > 0 && minutos > 0) {
-            return `${horas}h ${minutos}min`;
-        } else if (horas > 0) {
-            return `${horas}h`;
-        } else {
-            return `${minutos}min`;
-        }
+        if (horas > 0 && minutos > 0) return `${horas}h ${minutos}min`;
+        if (horas > 0) return `${horas}h`;
+        return `${minutos}min`;
     };
 
-    // Formatear tardanza a texto legible
     const formatearTardanza = (minutos, esTardanza) => {
         if (!esTardanza) return 'Puntual';
         if (!minutos || minutos === 0) return 'Puntual';
-        
         const horas = Math.floor(minutos / 60);
         const mins = minutos % 60;
-        
         if (horas > 0 && mins > 0) return `${horas}h ${mins}min`;
         if (horas > 0) return `${horas}h`;
         return `${mins}min`;
@@ -281,185 +274,242 @@ const PanelAsistencia = () => {
         return 'bg-gray-100';
     };
 
+    const getEstadoIcono = (estado, esTardanza) => {
+        if (esTardanza) return <AlertCircle className="w-4 h-4" />;
+        if (estado === 'Completo') return <CheckCircle className="w-4 h-4" />;
+        if (estado === 'Ausente') return <XCircle className="w-4 h-4" />;
+        return null;
+    };
+
     const totalPaginas = Math.ceil(registros.length / itemsPorPagina);
     const startIndex = (paginaActual - 1) * itemsPorPagina;
     const registrosPagina = registros.slice(startIndex, startIndex + itemsPorPagina);
 
+    const TarjetaRegistro = ({ registro }) => (
+        <div className="bg-white rounded-lg shadow-md p-4 mb-3 hover:shadow-lg transition-shadow">
+            <div className="flex justify-between items-start mb-3">
+                <div className="flex-1">
+                    <h3 className="font-bold text-gray-800">{registro.Nombres} {registro.Apellidos}</h3>
+                    <p className="text-xs text-gray-500">{registro.DocID}</p>
+                    <p className="text-xs text-gray-500 mt-1">{new Date(registro.Fecha).toLocaleDateString('es-PE')}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                    <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${getEstadoColor(registro.Estado, registro.EsTardanza)}`}>
+                        {getEstadoIcono(registro.Estado, registro.EsTardanza)}
+                        {registro.EsTardanza ? 'Tardanza' : registro.Estado || '—'}
+                    </span>
+                    <button onClick={() => abrirModalEdicion(registro)} className="text-blue-600 hover:bg-blue-50 p-1 rounded">
+                        <Edit className="w-4 h-4" />
+                    </button>
+                </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="bg-gray-50 p-2 rounded">
+                    <p className="text-xs text-gray-500">Entrada</p>
+                    <p className="font-mono font-medium">{registro.HoraEntrada?.substring(0,5) || '—'}</p>
+                </div>
+                <div className="bg-gray-50 p-2 rounded">
+                    <p className="text-xs text-gray-500">Salida Alm.</p>
+                    <p className="font-mono font-medium">{registro.HoraSalidaAlmuerzo?.substring(0,5) || '—'}</p>
+                </div>
+                <div className="bg-gray-50 p-2 rounded">
+                    <p className="text-xs text-gray-500">Regreso Alm.</p>
+                    <p className="font-mono font-medium">{registro.HoraRegresoAlmuerzo?.substring(0,5) || '—'}</p>
+                </div>
+                <div className="bg-gray-50 p-2 rounded">
+                    <p className="text-xs text-gray-500">Salida</p>
+                    <p className="font-mono font-medium">{registro.HoraSalida?.substring(0,5) || '—'}</p>
+                </div>
+            </div>
+            
+            <div className="flex justify-between mt-3 pt-2 border-t">
+                <div>
+                    <p className="text-xs text-gray-500">Horas Trab.</p>
+                    <p className="text-sm font-medium">{decimalToHourMinute(registro.HorasTrabajadas)}</p>
+                </div>
+                <div>
+                    <p className="text-xs text-gray-500">Horas Extras</p>
+                    <p className="text-sm font-medium text-purple-600">{formatearHorasExtras(registro.HorasExtras)}</p>
+                </div>
+                <div>
+                    <p className="text-xs text-gray-500">Tardanza</p>
+                    <p className="text-sm font-medium">{formatearTardanza(registro.MinutosTardanza, registro.EsTardanza)}</p>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
-        <div className="min-h-screen bg-gray-50 p-4">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-2xl font-bold">Panel de Asistencia</h1>
-                        <p className="text-gray-500 text-sm">Control de horas extras y tardanzas</p>
+        <div className="min-h-screen bg-gray-50">
+            <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6">
+                {/* Header - Centrado en móvil */}
+                <div className="text-center sm:text-left sm:flex sm:justify-between sm:items-center mb-6">
+                    <div className="mb-3 sm:mb-0">
+                        <h1 className="text-xl sm:text-2xl font-bold">Panel de Asistencia</h1>
+                        <p className="text-gray-500 text-xs sm:text-sm">Control de horas extras y tardanzas</p>
                     </div>
-                    <div className="flex gap-3">
-                        <button onClick={() => setMostrarFormulario(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                            <Plus className="w-4 h-4" /> Registrar
-                        </button>
-                        <button onClick={exportarExcel} disabled={!registros.length} className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50">
-                            <Download className="w-4 h-4" /> Exportar
+                    <div className="flex justify-center gap-2">
+                        <button 
+                            onClick={() => setModoVista(modoVista === 'tabla' ? 'tarjetas' : 'tabla')}
+                            className="bg-gray-600 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"
+                        >
+                            {modoVista === 'tabla' ? '📱 Vista Móvil' : '📊 Vista Tabla'}
                         </button>
                     </div>
                 </div>
 
-                {/* Modal Registrar */}
-                {mostrarFormulario && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-xl max-w-md w-full p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold">Registrar Asistencia</h2>
-                                <button onClick={() => setMostrarFormulario(false)}><X className="w-5 h-5" /></button>
-                            </div>
-                            <div className="space-y-3">
-                                <select value={nuevoRegistro.empId} onChange={e => setNuevoRegistro({...nuevoRegistro, empId: e.target.value})} className="w-full p-2 border rounded">
-                                    <option value="">Seleccionar empleado</option>
-                                    {empleados.map(e => <option key={e.EmpId} value={e.EmpId}>{e.Nombres} {e.Apellidos}</option>)}
-                                </select>
-                                <input type="date" value={nuevoRegistro.fecha} onChange={e => setNuevoRegistro({...nuevoRegistro, fecha: e.target.value})} className="w-full p-2 border rounded" />
-                                <input type="time" value={nuevoRegistro.horaEntrada} onChange={e => setNuevoRegistro({...nuevoRegistro, horaEntrada: e.target.value})} className="w-full p-2 border rounded" placeholder="Hora Entrada" />
-                                <input type="time" value={nuevoRegistro.horaSalidaAlmuerzo} onChange={e => setNuevoRegistro({...nuevoRegistro, horaSalidaAlmuerzo: e.target.value})} className="w-full p-2 border rounded" placeholder="Salida Almuerzo" />
-                                <input type="time" value={nuevoRegistro.horaRegresoAlmuerzo} onChange={e => setNuevoRegistro({...nuevoRegistro, horaRegresoAlmuerzo: e.target.value})} className="w-full p-2 border rounded" placeholder="Regreso Almuerzo" />
-                                <input type="time" value={nuevoRegistro.horaSalida} onChange={e => setNuevoRegistro({...nuevoRegistro, horaSalida: e.target.value})} className="w-full p-2 border rounded" placeholder="Hora Salida" />
-                                <textarea value={nuevoRegistro.observaciones} onChange={e => setNuevoRegistro({...nuevoRegistro, observaciones: e.target.value})} className="w-full p-2 border rounded" rows="2" placeholder="Observaciones"></textarea>
-                            </div>
-                            <div className="flex gap-3 mt-4">
-                                <button onClick={registrarAsistencia} disabled={registrando} className="flex-1 bg-blue-600 text-white py-2 rounded">Guardar</button>
-                                <button onClick={() => setMostrarFormulario(false)} className="flex-1 bg-gray-200 py-2 rounded">Cancelar</button>
-                            </div>
-                        </div>
+                {/* Botones de acción principales - CENTRADOS en móvil */}
+                <div className="flex justify-center gap-3 mb-6">
+                    <button 
+                        onClick={() => setMostrarFormulario(true)} 
+                        className="bg-blue-600 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
+                    >
+                        <Plus className="w-4 h-4" /> 
+                        <span className="text-sm font-medium">Registrar</span>
+                    </button>
+                    <button 
+                        onClick={exportarExcel} 
+                        disabled={!registros.length} 
+                        className="bg-green-600 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                    >
+                        <Download className="w-4 h-4" /> 
+                        <span className="text-sm font-medium">Exportar</span>
+                    </button>
+                </div>
+
+                {/* Botón filtros móvil - CENTRADO */}
+                {isMobile && (
+                    <div className="flex justify-center mb-4">
+                        <button
+                            onClick={() => setMostrarFiltrosMovil(!mostrarFiltrosMovil)}
+                            className="bg-gray-100 px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm"
+                        >
+                            <Filter className="w-4 h-4" />
+                            <span className="text-sm">{mostrarFiltrosMovil ? 'Ocultar Filtros' : 'Mostrar Filtros'}</span>
+                        </button>
                     </div>
                 )}
 
-                {/* Modal Edición */}
-                {mostrarModalEdicion && editandoRegistro && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-xl max-w-md w-full p-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold">Editar Asistencia</h2>
-                                <button onClick={() => setMostrarModalEdicion(false)}><X className="w-5 h-5" /></button>
-                            </div>
-                            <div className="space-y-3">
-                                <div className="bg-gray-50 p-2 rounded">
-                                    <p className="font-medium">{editandoRegistro.Nombres} {editandoRegistro.Apellidos}</p>
-                                    <p className="text-xs text-gray-500">{new Date(editandoRegistro.Fecha).toLocaleDateString('es-PE')}</p>
-                                </div>
-                                <input type="time" value={editandoRegistro.HoraEntrada?.substring(0,5) || ''} onChange={e => setEditandoRegistro({...editandoRegistro, HoraEntrada: e.target.value})} className="w-full p-2 border rounded" />
-                                <input type="time" value={editandoRegistro.HoraSalidaAlmuerzo?.substring(0,5) || ''} onChange={e => setEditandoRegistro({...editandoRegistro, HoraSalidaAlmuerzo: e.target.value})} className="w-full p-2 border rounded" />
-                                <input type="time" value={editandoRegistro.HoraRegresoAlmuerzo?.substring(0,5) || ''} onChange={e => setEditandoRegistro({...editandoRegistro, HoraRegresoAlmuerzo: e.target.value})} className="w-full p-2 border rounded" />
-                                <input type="time" value={editandoRegistro.HoraSalida?.substring(0,5) || ''} onChange={e => setEditandoRegistro({...editandoRegistro, HoraSalida: e.target.value})} className="w-full p-2 border rounded" />
-                                <textarea value={editandoRegistro.Observaciones || ''} onChange={e => setEditandoRegistro({...editandoRegistro, Observaciones: e.target.value})} className="w-full p-2 border rounded" rows="2" placeholder="Observaciones"></textarea>
-                                {editandoRegistro.HorasExtras > 0 && (
-                                    <div className="bg-purple-50 p-2 rounded text-xs text-purple-600">
-                                        ⏱️ Horas extras: {formatearHorasExtras(editandoRegistro.HorasExtras)}
-                                    </div>
-                                )}
-                                {editandoRegistro.EsTardanza === 1 && (
-                                    <div className="bg-orange-50 p-2 rounded text-xs text-orange-600">
-                                        ⚠️ Tardanza: {formatearTardanza(editandoRegistro.MinutosTardanza, true)}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex gap-3 mt-4">
-                                <button onClick={guardarEdicion} disabled={registrando} className="flex-1 bg-blue-600 text-white py-2 rounded">Guardar</button>
-                                <button onClick={() => setMostrarModalEdicion(false)} className="flex-1 bg-gray-200 py-2 rounded">Cancelar</button>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Filtros */}
-                <div className="bg-white rounded-lg shadow p-4 mb-6">
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                        <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} className="p-2 border rounded" />
-                        <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="p-2 border rounded" />
-                        <select value={empleadoFiltro} onChange={e => setEmpleadoFiltro(e.target.value)} className="p-2 border rounded">
+                {/* Filtros Responsive */}
+                <div className={`bg-white rounded-lg shadow p-4 mb-6 ${isMobile && !mostrarFiltrosMovil ? 'hidden' : ''}`}>
+                    <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 lg:grid-cols-5 sm:gap-3">
+                        <input 
+                            type="date" 
+                            value={fechaInicio} 
+                            onChange={e => setFechaInicio(e.target.value)} 
+                            className="w-full p-2 border rounded text-sm"
+                        />
+                        <input 
+                            type="date" 
+                            value={fechaFin} 
+                            onChange={e => setFechaFin(e.target.value)} 
+                            className="w-full p-2 border rounded text-sm"
+                        />
+                        <select 
+                            value={empleadoFiltro} 
+                            onChange={e => setEmpleadoFiltro(e.target.value)} 
+                            className="w-full p-2 border rounded text-sm"
+                        >
                             <option value="">Todos los empleados</option>
                             {empleados.map(e => <option key={e.EmpId} value={e.EmpId}>{e.Nombres} {e.Apellidos}</option>)}
                         </select>
-                        <select value={horarioFiltro} onChange={e => setHorarioFiltro(e.target.value)} className="p-2 border rounded">
+                        <select 
+                            value={horarioFiltro} 
+                            onChange={e => setHorarioFiltro(e.target.value)} 
+                            className="w-full p-2 border rounded text-sm"
+                        >
                             <option value="">Todos los horarios</option>
                             {horarios.map(h => <option key={h.HorarioId} value={h.HorarioId}>{h.Nombre}</option>)}
                         </select>
-                        <button onClick={cargarReporte} className="bg-blue-600 text-white py-2 rounded">Buscar</button>
+                        <button 
+                            onClick={cargarReporte} 
+                            className="w-full bg-blue-600 text-white py-2 rounded text-sm hover:bg-blue-700 transition"
+                        >
+                            Buscar
+                        </button>
                     </div>
                 </div>
 
-                {/* Estadísticas */}
-                <div className="grid grid-cols-2 md:grid-cols-7 gap-3 mb-6">
-                    <div className="bg-blue-500 rounded-lg p-3 text-white text-center">
-                        <p className="text-xs">Total</p>
-                        <p className="text-xl font-bold">{estadisticas.total}</p>
+                {/* Estadísticas - Grid centrado */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-3 mb-6">
+                    <div className="bg-blue-500 rounded-lg p-3 text-white text-center shadow-sm">
+                        <p className="text-xs sm:text-sm">Total</p>
+                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.total}</p>
                     </div>
-                    <div className="bg-green-500 rounded-lg p-3 text-white text-center">
-                        <p className="text-xs">Presentes</p>
-                        <p className="text-xl font-bold">{estadisticas.presentes}</p>
+                    <div className="bg-green-500 rounded-lg p-3 text-white text-center shadow-sm">
+                        <p className="text-xs sm:text-sm">Presentes</p>
+                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.presentes}</p>
                     </div>
-                    <div className="bg-orange-500 rounded-lg p-3 text-white text-center">
-                        <p className="text-xs">Tardanzas</p>
-                        <p className="text-xl font-bold">{estadisticas.tardanzas}</p>
+                    <div className="bg-orange-500 rounded-lg p-3 text-white text-center shadow-sm">
+                        <p className="text-xs sm:text-sm">Tardanzas</p>
+                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.tardanzas}</p>
                         <p className="text-xs">{estadisticas.porcentajeTardanzas}%</p>
                     </div>
-                    <div className="bg-yellow-500 rounded-lg p-3 text-white text-center">
-                        <p className="text-xs">Min Tardanza</p>
-                        <p className="text-xl font-bold">{estadisticas.minutosTardanzaPromedio}</p>
+                    <div className="bg-yellow-500 rounded-lg p-3 text-white text-center shadow-sm">
+                        <p className="text-xs sm:text-sm">Min Prom</p>
+                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.minutosTardanzaPromedio}</p>
                     </div>
-                    <div className="bg-red-500 rounded-lg p-3 text-white text-center">
-                        <p className="text-xs">Ausentes</p>
-                        <p className="text-xl font-bold">{estadisticas.ausentes}</p>
+                    <div className="bg-red-500 rounded-lg p-3 text-white text-center shadow-sm">
+                        <p className="text-xs sm:text-sm">Ausentes</p>
+                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.ausentes}</p>
                     </div>
-                    <div className="bg-purple-500 rounded-lg p-3 text-white text-center">
-                        <p className="text-xs">Horas Extras</p>
-                        <p className="text-xl font-bold">{estadisticas.horasExtras}</p>
+                    <div className="bg-purple-500 rounded-lg p-3 text-white text-center shadow-sm">
+                        <p className="text-xs sm:text-sm">Horas Extras</p>
+                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.horasExtras}</p>
                     </div>
-                    <div className="bg-indigo-500 rounded-lg p-3 text-white text-center">
-                        <p className="text-xs">Empleados HE</p>
-                        <p className="text-xl font-bold">{estadisticas.empleadosConHorasExtras}</p>
+                    <div className="bg-indigo-500 rounded-lg p-3 text-white text-center shadow-sm">
+                        <p className="text-xs sm:text-sm">Empleados HE</p>
+                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.empleadosConHorasExtras}</p>
                     </div>
                 </div>
 
-                {/* Tabla */}
+                {/* Contenido Principal */}
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                     {cargando ? (
-                        <div className="text-center py-10">Cargando...</div>
+                        <div className="text-center py-10">
+                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            <p className="mt-2 text-gray-500">Cargando...</p>
+                        </div>
                     ) : registros.length === 0 ? (
-                        <div className="text-center py-10 text-gray-500">No hay registros</div>
-                    ) : (
+                        <div className="text-center py-10 text-gray-500">
+                            <p>No hay registros</p>
+                        </div>
+                    ) : modoVista === 'tabla' && !isMobile ? (
                         <>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="p-3 text-left">Fecha</th>
-                                            <th className="p-3 text-left">Empleado</th>
-                                            <th className="p-3 text-left">Entrada</th>
-                                            <th className="p-3 text-left">Salida Alm.</th>
-                                            <th className="p-3 text-left">Regreso Alm.</th>
-                                            <th className="p-3 text-left">Salida</th>
-                                            <th className="p-3 text-left">Horas Trab.</th>
-                                            <th className="p-3 text-left">HE</th>
-                                            <th className="p-3 text-left">Estado</th>
-                                            <th className="p-3 text-left">Tardanza</th>
-                                            <th className="p-3 text-center">Acciones</th>
+                                            <th className="p-3 text-left text-xs sm:text-sm">Fecha</th>
+                                            <th className="p-3 text-left text-xs sm:text-sm">Empleado</th>
+                                            <th className="p-3 text-left text-xs sm:text-sm hidden md:table-cell">Entrada</th>
+                                            <th className="p-3 text-left text-xs sm:text-sm hidden lg:table-cell">Salida Alm.</th>
+                                            <th className="p-3 text-left text-xs sm:text-sm hidden lg:table-cell">Regreso Alm.</th>
+                                            <th className="p-3 text-left text-xs sm:text-sm">Salida</th>
+                                            <th className="p-3 text-left text-xs sm:text-sm">Horas Trab.</th>
+                                            <th className="p-3 text-left text-xs sm:text-sm">HE</th>
+                                            <th className="p-3 text-left text-xs sm:text-sm">Estado</th>
+                                            <th className="p-3 text-left text-xs sm:text-sm hidden md:table-cell">Tardanza</th>
+                                            <th className="p-3 text-center text-xs sm:text-sm">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
                                         {registrosPagina.map((r, i) => (
                                             <tr key={i} className="hover:bg-gray-50">
-                                                <td className="p-3">{new Date(r.Fecha).toLocaleDateString('es-PE')}</td>
+                                                <td className="p-3 text-xs sm:text-sm">{new Date(r.Fecha).toLocaleDateString('es-PE')}</td>
                                                 <td className="p-3">
-                                                    <div className="font-medium">{r.Nombres} {r.Apellidos}</div>
+                                                    <div className="font-medium text-xs sm:text-sm">{r.Nombres} {r.Apellidos}</div>
                                                     <div className="text-xs text-gray-500">{r.DocID}</div>
                                                 </td>
-                                                <td className="p-3 font-mono">{r.HoraEntrada?.substring(0,5) || '—'}</td>
-                                                <td className="p-3 font-mono">{r.HoraSalidaAlmuerzo?.substring(0,5) || '—'}</td>
-                                                <td className="p-3 font-mono">{r.HoraRegresoAlmuerzo?.substring(0,5) || '—'}</td>
-                                                <td className="p-3 font-mono">{r.HoraSalida?.substring(0,5) || '—'}</td>
-                                                <td className="p-3 font-mono">
+                                                <td className="p-3 font-mono text-xs sm:text-sm hidden md:table-cell">{r.HoraEntrada?.substring(0,5) || '—'}</td>
+                                                <td className="p-3 font-mono text-xs sm:text-sm hidden lg:table-cell">{r.HoraSalidaAlmuerzo?.substring(0,5) || '—'}</td>
+                                                <td className="p-3 font-mono text-xs sm:text-sm hidden lg:table-cell">{r.HoraRegresoAlmuerzo?.substring(0,5) || '—'}</td>
+                                                <td className="p-3 font-mono text-xs sm:text-sm">{r.HoraSalida?.substring(0,5) || '—'}</td>
+                                                <td className="p-3 font-mono text-xs sm:text-sm">
                                                     {r.HorasTrabajadas ? decimalToHourMinute(r.HorasTrabajadas) : '—'}
                                                 </td>
-                                                <td className="p-3 text-purple-600 font-medium">
+                                                <td className="p-3 text-purple-600 font-medium text-xs sm:text-sm">
                                                     {formatearHorasExtras(r.HorasExtras)}
                                                 </td>
                                                 <td className="p-3">
@@ -467,7 +517,7 @@ const PanelAsistencia = () => {
                                                         {r.EsTardanza ? 'Tardanza' : r.Estado || '—'}
                                                     </span>
                                                 </td>
-                                                <td className="p-3">
+                                                <td className="p-3 text-xs sm:text-sm hidden md:table-cell">
                                                     {formatearTardanza(r.MinutosTardanza, r.EsTardanza)}
                                                 </td>
                                                 <td className="p-3 text-center">
@@ -481,12 +531,47 @@ const PanelAsistencia = () => {
                                 </table>
                             </div>
                             {totalPaginas > 1 && (
-                                <div className="flex justify-center gap-2 p-4 border-t">
-                                    <button onClick={() => setPaginaActual(p => Math.max(1, p-1))} disabled={paginaActual === 1} className="px-3 py-1 bg-gray-100 rounded disabled:opacity-50">
+                                <div className="flex justify-center items-center gap-2 p-4 border-t">
+                                    <button 
+                                        onClick={() => setPaginaActual(p => Math.max(1, p-1))} 
+                                        disabled={paginaActual === 1} 
+                                        className="px-3 py-1 bg-gray-100 rounded disabled:opacity-50 hover:bg-gray-200 transition"
+                                    >
                                         <ChevronLeft className="w-4 h-4" />
                                     </button>
-                                    <span className="px-3 py-1">Pág {paginaActual} de {totalPaginas}</span>
-                                    <button onClick={() => setPaginaActual(p => Math.min(totalPaginas, p+1))} disabled={paginaActual === totalPaginas} className="px-3 py-1 bg-gray-100 rounded disabled:opacity-50">
+                                    <span className="px-3 py-1 text-sm">Pág {paginaActual} de {totalPaginas}</span>
+                                    <button 
+                                        onClick={() => setPaginaActual(p => Math.min(totalPaginas, p+1))} 
+                                        disabled={paginaActual === totalPaginas} 
+                                        className="px-3 py-1 bg-gray-100 rounded disabled:opacity-50 hover:bg-gray-200 transition"
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            <div className="p-4">
+                                {registrosPagina.map((r, i) => (
+                                    <TarjetaRegistro key={i} registro={r} />
+                                ))}
+                            </div>
+                            {totalPaginas > 1 && (
+                                <div className="flex justify-center items-center gap-2 p-4 border-t">
+                                    <button 
+                                        onClick={() => setPaginaActual(p => Math.max(1, p-1))} 
+                                        disabled={paginaActual === 1} 
+                                        className="px-3 py-1 bg-gray-100 rounded disabled:opacity-50 hover:bg-gray-200 transition"
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </button>
+                                    <span className="px-3 py-1 text-sm">Pág {paginaActual} de {totalPaginas}</span>
+                                    <button 
+                                        onClick={() => setPaginaActual(p => Math.min(totalPaginas, p+1))} 
+                                        disabled={paginaActual === totalPaginas} 
+                                        className="px-3 py-1 bg-gray-100 rounded disabled:opacity-50 hover:bg-gray-200 transition"
+                                    >
                                         <ChevronRight className="w-4 h-4" />
                                     </button>
                                 </div>
@@ -494,6 +579,162 @@ const PanelAsistencia = () => {
                         </>
                     )}
                 </div>
+
+                {/* Modal Registrar - Responsive y centrado */}
+                {mostrarFormulario && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                            <div className="sticky top-0 bg-white border-b px-5 py-4 flex justify-between items-center">
+                                <h2 className="text-lg font-bold">Registrar Asistencia</h2>
+                                <button onClick={() => setMostrarFormulario(false)} className="p-1 hover:bg-gray-100 rounded">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="p-5 space-y-3">
+                                <select 
+                                    value={nuevoRegistro.empId} 
+                                    onChange={e => setNuevoRegistro({...nuevoRegistro, empId: e.target.value})} 
+                                    className="w-full p-2.5 border rounded-lg text-sm"
+                                >
+                                    <option value="">Seleccionar empleado</option>
+                                    {empleados.map(e => <option key={e.EmpId} value={e.EmpId}>{e.Nombres} {e.Apellidos}</option>)}
+                                </select>
+                                <input 
+                                    type="date" 
+                                    value={nuevoRegistro.fecha} 
+                                    onChange={e => setNuevoRegistro({...nuevoRegistro, fecha: e.target.value})} 
+                                    className="w-full p-2.5 border rounded-lg text-sm"
+                                />
+                                <input 
+                                    type="time" 
+                                    value={nuevoRegistro.horaEntrada} 
+                                    onChange={e => setNuevoRegistro({...nuevoRegistro, horaEntrada: e.target.value})} 
+                                    className="w-full p-2.5 border rounded-lg text-sm" 
+                                    placeholder="Hora Entrada" 
+                                />
+                                <input 
+                                    type="time" 
+                                    value={nuevoRegistro.horaSalidaAlmuerzo} 
+                                    onChange={e => setNuevoRegistro({...nuevoRegistro, horaSalidaAlmuerzo: e.target.value})} 
+                                    className="w-full p-2.5 border rounded-lg text-sm" 
+                                    placeholder="Salida Almuerzo" 
+                                />
+                                <input 
+                                    type="time" 
+                                    value={nuevoRegistro.horaRegresoAlmuerzo} 
+                                    onChange={e => setNuevoRegistro({...nuevoRegistro, horaRegresoAlmuerzo: e.target.value})} 
+                                    className="w-full p-2.5 border rounded-lg text-sm" 
+                                    placeholder="Regreso Almuerzo" 
+                                />
+                                <input 
+                                    type="time" 
+                                    value={nuevoRegistro.horaSalida} 
+                                    onChange={e => setNuevoRegistro({...nuevoRegistro, horaSalida: e.target.value})} 
+                                    className="w-full p-2.5 border rounded-lg text-sm" 
+                                    placeholder="Hora Salida" 
+                                />
+                                <textarea 
+                                    value={nuevoRegistro.observaciones} 
+                                    onChange={e => setNuevoRegistro({...nuevoRegistro, observaciones: e.target.value})} 
+                                    className="w-full p-2.5 border rounded-lg text-sm" 
+                                    rows="3" 
+                                    placeholder="Observaciones"
+                                ></textarea>
+                            </div>
+                            <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
+                                <button 
+                                    onClick={registrarAsistencia} 
+                                    disabled={registrando} 
+                                    className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50"
+                                >
+                                    Guardar
+                                </button>
+                                <button 
+                                    onClick={() => setMostrarFormulario(false)} 
+                                    className="flex-1 bg-gray-200 py-2.5 rounded-lg text-sm font-medium"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Modal Edición - Responsive y centrado */}
+                {mostrarModalEdicion && editandoRegistro && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+                            <div className="sticky top-0 bg-white border-b px-5 py-4 flex justify-between items-center">
+                                <h2 className="text-lg font-bold">Editar Asistencia</h2>
+                                <button onClick={() => setMostrarModalEdicion(false)} className="p-1 hover:bg-gray-100 rounded">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="p-5 space-y-3">
+                                <div className="bg-gray-50 p-3 rounded-lg">
+                                    <p className="font-medium text-sm">{editandoRegistro.Nombres} {editandoRegistro.Apellidos}</p>
+                                    <p className="text-xs text-gray-500">{new Date(editandoRegistro.Fecha).toLocaleDateString('es-PE')}</p>
+                                </div>
+                                <input 
+                                    type="time" 
+                                    value={editandoRegistro.HoraEntrada?.substring(0,5) || ''} 
+                                    onChange={e => setEditandoRegistro({...editandoRegistro, HoraEntrada: e.target.value})} 
+                                    className="w-full p-2.5 border rounded-lg text-sm" 
+                                />
+                                <input 
+                                    type="time" 
+                                    value={editandoRegistro.HoraSalidaAlmuerzo?.substring(0,5) || ''} 
+                                    onChange={e => setEditandoRegistro({...editandoRegistro, HoraSalidaAlmuerzo: e.target.value})} 
+                                    className="w-full p-2.5 border rounded-lg text-sm" 
+                                />
+                                <input 
+                                    type="time" 
+                                    value={editandoRegistro.HoraRegresoAlmuerzo?.substring(0,5) || ''} 
+                                    onChange={e => setEditandoRegistro({...editandoRegistro, HoraRegresoAlmuerzo: e.target.value})} 
+                                    className="w-full p-2.5 border rounded-lg text-sm" 
+                                />
+                                <input 
+                                    type="time" 
+                                    value={editandoRegistro.HoraSalida?.substring(0,5) || ''} 
+                                    onChange={e => setEditandoRegistro({...editandoRegistro, HoraSalida: e.target.value})} 
+                                    className="w-full p-2.5 border rounded-lg text-sm" 
+                                />
+                                <textarea 
+                                    value={editandoRegistro.Observaciones || ''} 
+                                    onChange={e => setEditandoRegistro({...editandoRegistro, Observaciones: e.target.value})} 
+                                    className="w-full p-2.5 border rounded-lg text-sm" 
+                                    rows="3" 
+                                    placeholder="Observaciones"
+                                ></textarea>
+                                {editandoRegistro.HorasExtras > 0 && (
+                                    <div className="bg-purple-50 p-3 rounded-lg text-sm text-purple-600">
+                                        ⏱️ Horas extras: {formatearHorasExtras(editandoRegistro.HorasExtras)}
+                                    </div>
+                                )}
+                                {editandoRegistro.EsTardanza === 1 && (
+                                    <div className="bg-orange-50 p-3 rounded-lg text-sm text-orange-600">
+                                        ⚠️ Tardanza: {formatearTardanza(editandoRegistro.MinutosTardanza, true)}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
+                                <button 
+                                    onClick={guardarEdicion} 
+                                    disabled={registrando} 
+                                    className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50"
+                                >
+                                    Guardar
+                                </button>
+                                <button 
+                                    onClick={() => setMostrarModalEdicion(false)} 
+                                    className="flex-1 bg-gray-200 py-2.5 rounded-lg text-sm font-medium"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
