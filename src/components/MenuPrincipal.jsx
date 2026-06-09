@@ -379,6 +379,15 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                                 description="Gestión de pagos"
                               />
                               <SubmenuItem
+                                to="/GestionHorariosSemanales"
+                                onClick={() => setEmpleadosOpen(false)}
+                                icon={Calendar}
+                                iconBg="bg-purple-500/10"
+                                iconColor="text-purple-400"
+                                title="Gestión Horarios Semanales"
+                                description="Administrar horarios semanales"
+                              />
+                              <SubmenuItem
                                 to="/Asistencias"
                                 onClick={() => setEmpleadosOpen(false)}
                                 icon={Calendar}
@@ -823,6 +832,14 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                     >
                       <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
                       <span>Comisiones</span>
+                    </Link>
+                    <Link
+                      to="/GestionHorariosSemanales"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                      <span>Gestión Horarios Semanales</span>
                     </Link>
                     <Link
                       to="/Asistencias"

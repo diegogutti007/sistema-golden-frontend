@@ -23,7 +23,11 @@ import {
   ThumbsDown,
   LayoutDashboard,
   Eye,
-  XCircle
+  XCircle,
+  FileText,
+  Clock,
+  User,
+  Search
 } from "lucide-react";
 
 import { BACKEND_URL } from "../config";
@@ -36,6 +40,12 @@ const DashboardGastos = () => {
   const [error, setError] = useState(null);
   const [resumen, setResumen] = useState(null);
   const [selectedCategoria, setSelectedCategoria] = useState(null);
+  
+  // Estados para el detalle de gastos
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detalleGastos, setDetalleGastos] = useState([]);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [searchTermGasto, setSearchTermGasto] = useState("");
 
   useEffect(() => {
     fetchPeriodos();
@@ -83,6 +93,36 @@ const DashboardGastos = () => {
     }
   };
 
+  // Función para obtener detalle de gastos por categoría
+  const fetchDetalleGastos = async (categoria) => {
+    setLoadingDetalle(true);
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/gastos-por-categoria`, {
+        params: { 
+          categoria_id: categoria.categoria_id,
+          periodo_id: periodoSelected,
+          limite: 100
+        }
+      });
+      if (response.data.success) {
+        setDetalleGastos(response.data.data || []);
+      } else {
+        setDetalleGastos([]);
+      }
+    } catch (err) {
+      console.error(err);
+      setDetalleGastos([]);
+    } finally {
+      setLoadingDetalle(false);
+      setShowDetailModal(true);
+    }
+  };
+
+  const handleCardClick = (categoria) => {
+    setSelectedCategoria(categoria);
+    fetchDetalleGastos(categoria);
+  };
+
   const formatMoney = (value) => {
     const num = Number(value) || 0;
     return new Intl.NumberFormat("es-PE", {
@@ -92,6 +132,22 @@ const DashboardGastos = () => {
       maximumFractionDigits: 2
     }).format(num);
   };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "Sin fecha";
+    return new Date(dateString).toLocaleDateString("es-PE", {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
+  };
+
+  // Filtrar gastos por búsqueda
+  const gastosFiltrados = detalleGastos.filter(gasto => 
+    gasto.descripcion?.toLowerCase().includes(searchTermGasto.toLowerCase()) ||
+    gasto.categoria?.toLowerCase().includes(searchTermGasto.toLowerCase()) ||
+    gasto.observaciones?.toLowerCase().includes(searchTermGasto.toLowerCase())
+  );
 
   // Configuración de íconos y colores por estado
   const getEstadoConfig = (estado, porcentaje = 0) => {
@@ -398,7 +454,7 @@ const DashboardGastos = () => {
                 <div
                   key={categoria.categoria_id}
                   className={`bg-white rounded-xl border-2 ${config.border} shadow-md overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group`}
-                  onClick={() => setSelectedCategoria(categoria)}
+                  onClick={() => handleCardClick(categoria)}
                 >
                   {/* Header con color de estado */}
                   <div className={`bg-gradient-to-r ${config.bgGradiente} p-4 text-white relative overflow-hidden`}>
@@ -472,7 +528,7 @@ const DashboardGastos = () => {
                     <span>{categoria.cantidad_gastos || 0} transacciones</span>
                     <span className="flex items-center gap-1">
                       <Eye className="w-3 h-3" />
-                      Click para detalles
+                      Ver detalles
                     </span>
                   </div>
                 </div>
@@ -481,114 +537,149 @@ const DashboardGastos = () => {
           </div>
         )}
 
-        {/* Modal de Detalle Gerencial */}
-        {selectedCategoria && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedCategoria(null)}>
-            <div className="bg-white rounded-2xl max-w-md w-full max-h-[85vh] overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              {(() => {
-                const porcentaje = selectedCategoria.porcentaje_ejecucion || 0;
-                const estado = calcularEstado(
-                  porcentaje, 
-                  selectedCategoria.presupuesto_mensual, 
-                  selectedCategoria.alerta_porcentaje || 80
-                );
-                const config = getEstadoConfig(estado, porcentaje);
+        {/* Modal de Detalle de Gastos */}
+        {showDetailModal && selectedCategoria && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowDetailModal(false)}>
+            <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              {/* Header del Modal */}
+              <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-5 text-white">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-6 h-6" />
+                    <div>
+                      <h2 className="text-xl font-bold">{selectedCategoria.nombre}</h2>
+                      <p className="text-purple-200 text-sm">Detalle de gastos del periodo</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowDetailModal(false)}
+                    className="text-white/80 hover:text-white transition-colors"
+                  >
+                    <XCircle className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* Resumen de la categoría */}
+              <div className="p-5 border-b border-gray-100 bg-gray-50">
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500">Presupuesto</p>
+                    <p className="text-lg font-bold text-blue-600">{formatMoney(selectedCategoria.presupuesto_mensual)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500">Gasto Real</p>
+                    <p className={`text-lg font-bold ${(selectedCategoria.porcentaje_ejecucion || 0) > 100 ? 'text-red-600' : 'text-gray-800'}`}>
+                      {formatMoney(selectedCategoria.gasto_real_mensual)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500">Ejecución</p>
+                    <p className={`text-lg font-bold ${
+                      (selectedCategoria.porcentaje_ejecucion || 0) > 100 ? 'text-red-600' :
+                      (selectedCategoria.porcentaje_ejecucion || 0) >= 80 ? 'text-yellow-600' : 'text-green-600'
+                    }`}>
+                      {(selectedCategoria.porcentaje_ejecucion || 0).toFixed(1)}%
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500">Diferencia</p>
+                    <p className={`text-lg font-bold ${selectedCategoria.diferencia >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatMoney(Math.abs(selectedCategoria.diferencia))}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Buscador de gastos */}
+              <div className="p-4 border-b border-gray-100">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Buscar gasto por descripción..."
+                    value={searchTermGasto}
+                    onChange={(e) => setSearchTermGasto(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+              
+              {/* Lista de gastos */}
+              <div className="p-5 overflow-y-auto max-h-[50vh]">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Lista de Gastos
+                  </h3>
+                  <span className="text-xs text-gray-500">
+                    {gastosFiltrados.length} gastos encontrados
+                  </span>
+                </div>
                 
-                return (
-                  <>
-                    <div className={`bg-gradient-to-r ${config.bgGradiente} p-6 text-white`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-white/20 rounded-xl p-2">
-                            {config.icono}
-                          </div>
-                          <div>
-                            <h2 className="text-xl font-bold">{selectedCategoria.nombre}</h2>
-                            <p className="text-white/80 text-sm">{config.nombre}</p>
-                          </div>
-                        </div>
-                        <button onClick={() => setSelectedCategoria(null)} className="text-white/80 hover:text-white">
-                          <XCircle className="w-6 h-6" />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <div className="p-6 space-y-5">
-                      {/* Indicador Circular Grande */}
-                      <div className="flex justify-center">
-                        <GaugeIndicator value={Math.min(porcentaje, 150)} size={140} estado={estado} />
-                      </div>
-                      
-                      {/* Montos Detallados */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="text-center p-3 bg-slate-50 rounded-xl">
-                          <p className="text-xs text-slate-500 mb-1">Presupuesto Mensual</p>
-                          <p className="text-xl font-bold text-slate-800">{formatMoney(selectedCategoria.presupuesto_mensual)}</p>
-                        </div>
-                        <div className="text-center p-3 bg-slate-50 rounded-xl">
-                          <p className="text-xs text-slate-500 mb-1">Gasto Real</p>
-                          <p className={`text-xl font-bold ${porcentaje > 100 ? 'text-red-600' : 'text-slate-800'}`}>
-                            {formatMoney(selectedCategoria.gasto_real_mensual)}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Diferencia */}
-                      <div className={`p-4 rounded-xl ${
-                        selectedCategoria.diferencia >= 0 ? 'bg-green-50' : 'bg-red-50'
-                      }`}>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Diferencia</span>
-                          <div className={`flex items-center gap-2 font-bold text-lg ${
-                            selectedCategoria.diferencia >= 0 ? 'text-green-700' : 'text-red-700'
-                          }`}>
-                            {selectedCategoria.diferencia >= 0 ? (
-                              <TrendingUp className="w-5 h-5" />
-                            ) : (
-                              <TrendingDown className="w-5 h-5" />
-                            )}
-                            {formatMoney(Math.abs(selectedCategoria.diferencia))}
-                          </div>
-                        </div>
-                        <p className="text-xs mt-2 text-slate-600">
-                          {selectedCategoria.diferencia >= 0 
-                            ? `Tienes ${formatMoney(selectedCategoria.diferencia)} disponibles para seguir gastando`
-                            : `Has excedido el presupuesto en ${formatMoney(Math.abs(selectedCategoria.diferencia))}`
-                          }
-                        </p>
-                      </div>
-                      
-                      {/* Estadísticas adicionales */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 bg-slate-50 rounded-lg text-center">
-                          <p className="text-xs text-slate-500">Total Gastos</p>
-                          <p className="text-lg font-bold text-slate-700">{selectedCategoria.cantidad_gastos || 0}</p>
-                          <p className="text-xs text-slate-400">transacciones</p>
-                        </div>
-                        <div className="p-3 bg-slate-50 rounded-lg text-center">
-                          <p className="text-xs text-slate-500">Ticket Promedio</p>
-                          <p className="text-lg font-bold text-slate-700">
-                            {formatMoney(selectedCategoria.gasto_real_mensual / (selectedCategoria.cantidad_gastos || 1))}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Alerta si es necesario */}
-                      {estado !== 'NORMAL' && estado !== 'SIN_PRESUPUESTO' && (
-                        <div className={`p-3 rounded-lg ${config.bgLight} border ${config.border}`}>
+                {loadingDetalle ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  </div>
+                ) : gastosFiltrados.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <DollarSign className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                    <p>No hay gastos registrados en esta categoría</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {gastosFiltrados.map((gasto, index) => (
+                      <div key={gasto.gasto_id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            {config.icono}
-                            <span className={`text-sm font-medium ${config.text}`}>
-                              {config.mensaje}
-                            </span>
+                            <span className="text-sm font-medium text-gray-800">{gasto.descripcion}</span>
+                            {gasto.categoria && (
+                              <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-600 rounded-full">
+                                {gasto.categoria}
+                              </span>
+                            )}
                           </div>
-                          <p className="text-xs mt-1 text-slate-500">{config.accion}</p>
+                          <div className="flex items-center gap-3 mt-1 flex-wrap">
+                            {gasto.fecha_gasto && (
+                              <span className="text-xs text-gray-400 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(gasto.fecha_gasto)}
+                              </span>
+                            )}
+                            {gasto.periodo_nombre && (
+                              <span className="text-xs text-gray-400">
+                                Periodo: {gasto.periodo_nombre}
+                              </span>
+                            )}
+                            {gasto.usuario && (
+                              <span className="text-xs text-gray-400 flex items-center gap-1">
+                                <User className="w-3 h-3" />
+                                {gasto.usuario}
+                              </span>
+                            )}
+                          </div>
+                          {gasto.observaciones && (
+                            <p className="text-xs text-gray-400 mt-1">{gasto.observaciones}</p>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  </>
-                );
-              })()}
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-red-600">{formatMoney(gasto.monto)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* Footer del Modal */}
+              <div className="border-t border-gray-100 p-4 bg-gray-50 flex justify-end">
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         )}

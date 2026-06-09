@@ -28,6 +28,7 @@ import DashboardGastos from "./Pages/DashboardGastos";
 import DashboardPagosPersonal from "./Pages/DashboardPagosPersonal";
 import MarcacionEmpleados from "./Pages/MarcacionEmpleados";
 import GestionHorarios from "./Pages/GestionHorarios";
+import GestionHorariosSemanales from "./Pages/GestionHorariosSemanales";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -119,6 +120,7 @@ function App() {
         <Route path="/ListaEmpleado" element={<ProtectedRoute><ListaEmpleado /></ProtectedRoute>} />
         <Route path="/ComisionDetalles" element={<ProtectedRoute><ListaComisiones /></ProtectedRoute>} />
         <Route path="/MarcacionEmpleados" element={<ProtectedRoute><MarcacionEmpleados /></ProtectedRoute>} />
+        <Route path="/GestionHorariosSemanales" element={<ProtectedRoute><GestionHorariosSemanales /></ProtectedRoute>} />
         <Route path="/Asistencias" element={<ProtectedRoute><Asistencia /></ProtectedRoute>} />
         <Route path="/Horarios" element={<ProtectedRoute><GestionHorarios /></ProtectedRoute>} />
         {/* Citas */}

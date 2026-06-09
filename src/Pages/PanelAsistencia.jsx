@@ -1,169 +1,68 @@
 import React, { useState, useEffect } from 'react';
 import { BACKEND_URL } from '../config';
 import {
-    Calendar,
-    Users,
-    Clock,
-    Download,
-    Search,
-    Filter,
-    BarChart,
-    ChevronLeft,
-    ChevronRight,
-    MapPin,
-    Wifi,
-    Smartphone,
-    AlertCircle,
-    CheckCircle,
-    XCircle,
-    Menu,
-    X,
-    TrendingUp,
-    Sun,
-    Moon,
-    Plus,
-    Save,
-    User,
-    LogIn,
-    LogOut,
-    Coffee
+    Calendar, Users, Clock, Download, Search, Filter, ChevronLeft, ChevronRight,
+    MapPin, Wifi, Smartphone, AlertCircle, CheckCircle, XCircle, Menu, X,
+    TrendingUp, Sun, Moon, Plus, Save, User, Coffee, Zap, Timer, Award, Edit
 } from 'lucide-react';
 
 const PanelAsistencia = () => {
-    const [fechaInicio, setFechaInicio] = useState(
-        new Date().toISOString().split('T')[0]
-    );
-    const [fechaFin, setFechaFin] = useState(
-        new Date().toISOString().split('T')[0]
-    );
+    const [fechaInicio, setFechaInicio] = useState(new Date().toISOString().split('T')[0]);
+    const [fechaFin, setFechaFin] = useState(new Date().toISOString().split('T')[0]);
     const [registros, setRegistros] = useState([]);
     const [empleados, setEmpleados] = useState([]);
+    const [horarios, setHorarios] = useState([]);
     const [empleadoFiltro, setEmpleadoFiltro] = useState('');
-    const [horarioFiltro, setHorarioFiltro] = useState(''); // Cambiado de tipoHorarioFiltro a horarioFiltro
-    const [horarios, setHorarios] = useState([]); // Cambiado de tiposHorario a horarios
+    const [horarioFiltro, setHorarioFiltro] = useState('');
     const [cargando, setCargando] = useState(false);
-    const [estadisticas, setEstadisticas] = useState({
-        total: 0,
-        presentes: 0,
-        ausentes: 0,
-        tardanzas: 0,
-        horasPromedio: 0,
-        minutosTardanzaPromedio: 0,
-        porcentajeTardanzas: 0
-    });
     const [paginaActual, setPaginaActual] = useState(1);
-    const [itemsPorPagina, setItemsPorPagina] = useState(10);
-    const [filtrosAbiertos, setFiltrosAbiertos] = useState(false);
-    const [viewport, setViewport] = useState('mobile');
+    const [itemsPorPagina] = useState(10);
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
     const [registrando, setRegistrando] = useState(false);
+    const [editandoRegistro, setEditandoRegistro] = useState(null);
+    const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
     
-    // Estado para el formulario de registro
-    const [nuevoRegistro, setNuevoRegistro] = useState({
-        empId: '',
-        fecha: new Date().toISOString().split('T')[0],
-        horaEntrada: '',
-        horaSalidaAlmuerzo: '',
-        horaRegresoAlmuerzo: '',
-        horaSalida: '',
-        observaciones: ''
+    const [estadisticas, setEstadisticas] = useState({
+        total: 0, presentes: 0, ausentes: 0, tardanzas: 0,
+        horasPromedio: 0, minutosTardanzaPromedio: 0, porcentajeTardanzas: 0,
+        horasExtras: 0, empleadosConHorasExtras: 0
     });
 
-    // Detectar tamaño de pantalla
-    useEffect(() => {
-        const handleResize = () => {
-            const width = window.innerWidth;
-            if (width >= 1024) {
-                setViewport('desktop');
-                setItemsPorPagina(15);
-            } else if (width >= 768) {
-                setViewport('tablet');
-                setItemsPorPagina(10);
-            } else {
-                setViewport('mobile');
-                setItemsPorPagina(5);
-            }
-        };
-        
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    const [nuevoRegistro, setNuevoRegistro] = useState({
+        empId: '', fecha: new Date().toISOString().split('T')[0],
+        horaEntrada: '', horaSalidaAlmuerzo: '', horaRegresoAlmuerzo: '', horaSalida: '', observaciones: ''
+    });
 
     useEffect(() => {
         cargarEmpleados();
-        cargarHorarios(); // Cambiado de cargarTiposHorario a cargarHorarios
+        cargarHorarios();
     }, []);
 
     useEffect(() => {
         cargarReporte();
     }, [fechaInicio, fechaFin, empleadoFiltro, horarioFiltro]);
 
-    // Cargar empleados desde tu endpoint
     const cargarEmpleados = async () => {
         try {
-            const response = await fetch(`${BACKEND_URL}/api/listaempleadoactivo`);
-            
-            if (!response.ok) {
-                throw new Error(`Error ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
+            const res = await fetch(`${BACKEND_URL}/api/listaempleadoactivo`);
+            const data = await res.json();
             if (Array.isArray(data)) {
-                const empleadosFormateados = data.map(emp => ({
-                    EmpId: emp.EmpId,
-                    Nombres: emp.Nombres,
-                    Apellidos: emp.Apellidos,
-                    Codigo: emp.DocID,
-                    TipoEmpleado: emp.TipoEmpleado,
-                    Cargo: emp.Descripcion,
-                    HorarioId: emp.HorarioId // Asumiendo que el empleado tiene un HorarioId
-                }));
-                setEmpleados(empleadosFormateados);
-            } else {
-                console.error('La respuesta no es un array:', data);
-                setEmpleados([]);
+                setEmpleados(data.map(emp => ({ EmpId: emp.EmpId, Nombres: emp.Nombres, Apellidos: emp.Apellidos, Codigo: emp.DocID })));
             }
         } catch (error) {
             console.error('Error cargando empleados:', error);
-            setEmpleados([]);
         }
     };
 
-    // Cargar horarios desde la tabla horarios
     const cargarHorarios = async () => {
         try {
-            const response = await fetch(`${BACKEND_URL}/api/horario/activos`);
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Bueno ', data);
-                // Formatear los horarios para el select
-                const horariosFormateados = data.map(horario => ({
-                    HorarioId: horario.HorarioId,
-                    Codigo: horario.Codigo,
-                    Nombre: horario.Nombre,
-                    Descripcion: horario.Descripcion,
-                    HoraEntrada: horario.HoraEntrada,
-                    HoraSalida: horario.HoraSalida,
-                    HoraAlmuerzoInicio: horario.HoraAlmuerzoInicio,
-                    HoraAlmuerzoFin: horario.HoraAlmuerzoFin,
-                    ToleranciaEntrada: horario.ToleranciaEntrada,
-                    ToleranciaSalida: horario.ToleranciaSalida,
-                    HorasLaborales: horario.HorasLaborales,
-                    EsTurnoNoche: horario.EsTurnoNoche,
-                    TieneAlmuerzo: horario.TieneAlmuerzo,
-                    Activo: horario.Activo
-                }));
-                setHorarios(horariosFormateados);
-                
-            } else {
-                console.error('Error cargando horarios:', response.status);
-                setHorarios([]);
+            const res = await fetch(`${BACKEND_URL}/api/horario/activos`);
+            if (res.ok) {
+                const data = await res.json();
+                setHorarios(data.map(h => ({ HorarioId: h.HorarioId, Nombre: h.Nombre })));
             }
         } catch (error) {
             console.error('Error cargando horarios:', error);
-            setHorarios([]);
         }
     };
 
@@ -171,15 +70,10 @@ const PanelAsistencia = () => {
         setCargando(true);
         try {
             let url = `${BACKEND_URL}/api/reportes/asistencia?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
-            if (empleadoFiltro) {
-                url += `&empId=${empleadoFiltro}`;
-            }
-            if (horarioFiltro) {
-                url += `&horario_id=${horarioFiltro}`;
-            }
-
-            const response = await fetch(url);
-            const data = await response.json();
+            if (empleadoFiltro) url += `&empId=${empleadoFiltro}`;
+            if (horarioFiltro) url += `&horario_id=${horarioFiltro}`;
+            const res = await fetch(url);
+            const data = await res.json();
             setRegistros(data);
             calcularEstadisticas(data);
             setPaginaActual(1);
@@ -192,698 +86,412 @@ const PanelAsistencia = () => {
 
     const calcularEstadisticas = (data) => {
         const total = data.length;
-        const presentes = data.filter(r => r.Estado === 'Completo' || r.Estado === 'Tardanza').length;
+        const presentes = data.filter(r => r.Estado === 'Completo').length;
         const ausentes = data.filter(r => r.Estado === 'Ausente').length;
+        const tardanzas = data.filter(r => r.EsTardanza === 1).length;
+        const minutosTardanzaTotal = data.reduce((s, r) => s + (parseInt(r.MinutosTardanza) || 0), 0);
+        const horasTotales = data.reduce((s, r) => s + (parseFloat(r.HorasTrabajadas) || 0), 0);
+        const horasExtrasTotal = data.reduce((s, r) => s + (parseFloat(r.HorasExtras) || 0), 0);
         
-        const tardanzas = data.filter(r => r.EsTardanza === 1 || r.EsTardanza === true).length;
-        
-        const minutosTardanzaTotal = data.reduce((sum, r) => sum + (parseInt(r.MinutosTardanza) || 0), 0);
-        const minutosTardanzaPromedio = tardanzas > 0 ? (minutosTardanzaTotal / tardanzas).toFixed(0) : 0;
-        
-        const horasTotales = data.reduce((sum, r) => sum + (parseFloat(r.HorasTrabajadas) || 0), 0);
-        const horasPromedio = presentes > 0 ? (horasTotales / presentes).toFixed(2) : 0;
-        
-        const porcentajeTardanzas = total > 0 ? ((tardanzas / total) * 100).toFixed(1) : 0;
-
         setEstadisticas({
-            total,
-            presentes,
-            ausentes,
-            tardanzas,
-            horasPromedio,
-            minutosTardanzaPromedio,
-            porcentajeTardanzas
+            total, presentes, ausentes, tardanzas,
+            horasPromedio: presentes > 0 ? (horasTotales / presentes).toFixed(2) : 0,
+            minutosTardanzaPromedio: tardanzas > 0 ? (minutosTardanzaTotal / tardanzas).toFixed(0) : 0,
+            porcentajeTardanzas: total > 0 ? ((tardanzas / total) * 100).toFixed(1) : 0,
+            horasExtras: horasExtrasTotal.toFixed(1),
+            empleadosConHorasExtras: new Set(data.filter(r => parseFloat(r.HorasExtras) > 0).map(r => r.EmpId)).size
         });
     };
 
-    // Función para registrar asistencia manual
-    const registrarAsistencia = async () => {
-        if (!nuevoRegistro.empId) {
-            alert('Por favor seleccione un empleado');
-            return;
+    // ==================== FUNCIONES DE FORMATEO ====================
+    
+    // Convertir horas decimales a formato "HH:MM"
+    const decimalToHourMinute = (horasDecimal) => {
+        if (!horasDecimal || horasDecimal === 0) return '—';
+        
+        const horas = Math.floor(horasDecimal);
+        const minutos = Math.round((horasDecimal - horas) * 60);
+        
+        // Ajustar cuando minutos llegan a 60
+        if (minutos === 60) {
+            return `${horas + 1}:00`;
         }
-        if (!nuevoRegistro.fecha) {
-            alert('Por favor seleccione una fecha');
-            return;
-        }
-        if (!nuevoRegistro.horaEntrada) {
-            alert('Por favor registre la hora de entrada');
-            return;
-        }
+        
+        return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
+    };
 
+    // Convertir minutos a formato "HH:MM"
+    const minutesToHourMinute = (minutos) => {
+        if (!minutos || minutos === 0) return '—';
+        
+        const horas = Math.floor(minutos / 60);
+        const mins = minutos % 60;
+        
+        return `${horas.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+    };
+
+    // Formatear horas extras a "Xh Ymin"
+    const formatearHorasExtras = (horasDecimal) => {
+        if (!horasDecimal || horasDecimal === 0) return '—';
+        
+        const horasNum = parseFloat(horasDecimal);
+        const horas = Math.floor(horasNum);
+        const minutos = Math.round((horasNum - horas) * 60);
+        
+        if (horas > 0 && minutos > 0) {
+            return `${horas}h ${minutos}min`;
+        } else if (horas > 0) {
+            return `${horas}h`;
+        } else {
+            return `${minutos}min`;
+        }
+    };
+
+    // Formatear tardanza a texto legible
+    const formatearTardanza = (minutos, esTardanza) => {
+        if (!esTardanza) return 'Puntual';
+        if (!minutos || minutos === 0) return 'Puntual';
+        
+        const horas = Math.floor(minutos / 60);
+        const mins = minutos % 60;
+        
+        if (horas > 0 && mins > 0) return `${horas}h ${mins}min`;
+        if (horas > 0) return `${horas}h`;
+        return `${mins}min`;
+    };
+
+    const registrarAsistencia = async () => {
+        if (!nuevoRegistro.empId || !nuevoRegistro.horaEntrada) {
+            alert('❌ Complete los campos requeridos');
+            return;
+        }
         setRegistrando(true);
         try {
-            const response = await fetch(`${BACKEND_URL}/api/asistencia/registro-manual`, {
+            const res = await fetch(`${BACKEND_URL}/api/asistencia/registro-manual`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    empId: parseInt(nuevoRegistro.empId),
-                    fecha: nuevoRegistro.fecha,
-                    horaEntrada: nuevoRegistro.horaEntrada,
-                    horaSalidaAlmuerzo: nuevoRegistro.horaSalidaAlmuerzo || null,
-                    horaRegresoAlmuerzo: nuevoRegistro.horaRegresoAlmuerzo || null,
-                    horaSalida: nuevoRegistro.horaSalida || null,
-                    observaciones: nuevoRegistro.observaciones || null,
-                    metodoValidacion: 'manual'
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    ...nuevoRegistro, 
+                    empId: parseInt(nuevoRegistro.empId), 
+                    metodoValidacion: 'manual' 
                 })
             });
-
-            if (response.ok) {
-                const data = await response.json();
-                alert('✅ Asistencia registrada correctamente');
+            const data = await res.json();
+            if (res.ok) {
+                let mensaje = `✅ ${data.message}`;
+                if (data.data?.horasExtras > 0) {
+                    mensaje += `\n📊 Horas extras: ${formatearHorasExtras(data.data.horasExtras)}`;
+                }
+                if (data.data?.horasTrabajadas > 0) {
+                    mensaje += `\n⏱️ Horas trabajadas: ${decimalToHourMinute(data.data.horasTrabajadas)}`;
+                }
+                if (data.data?.esTardanza) {
+                    mensaje += `\n⚠️ Tardanza: ${formatearTardanza(data.data.minutosTardanza, true)}`;
+                }
+                alert(mensaje);
                 setMostrarFormulario(false);
-                resetFormulario();
+                setNuevoRegistro({ 
+                    empId: '', fecha: new Date().toISOString().split('T')[0],
+                    horaEntrada: '', horaSalidaAlmuerzo: '', horaRegresoAlmuerzo: '', horaSalida: '', observaciones: '' 
+                });
                 cargarReporte();
             } else {
-                const error = await response.json();
-                alert(`❌ Error al registrar: ${error.message || 'Error desconocido'}`);
+                alert(`❌ ${data.message}`);
             }
         } catch (error) {
-            console.error('Error registrando asistencia:', error);
             alert('❌ Error al conectar con el servidor');
         } finally {
             setRegistrando(false);
         }
     };
 
-    const resetFormulario = () => {
-        setNuevoRegistro({
-            empId: '',
-            fecha: new Date().toISOString().split('T')[0],
-            horaEntrada: '',
-            horaSalidaAlmuerzo: '',
-            horaRegresoAlmuerzo: '',
-            horaSalida: '',
-            observaciones: ''
-        });
+    const abrirModalEdicion = async (registro) => {
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/asistencia/registro/${registro.AsistenciaID}`);
+            const data = await res.json();
+            if (data.success) {
+                setEditandoRegistro(data.data);
+                setMostrarModalEdicion(true);
+            }
+        } catch (error) {
+            alert('Error al cargar el registro');
+        }
+    };
+
+    const guardarEdicion = async () => {
+        if (!editandoRegistro) return;
+        setRegistrando(true);
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/asistencia/registro/${editandoRegistro.AsistenciaID}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    horaEntrada: editandoRegistro.HoraEntrada?.substring(0,5) || '',
+                    horaSalidaAlmuerzo: editandoRegistro.HoraSalidaAlmuerzo?.substring(0,5) || '',
+                    horaRegresoAlmuerzo: editandoRegistro.HoraRegresoAlmuerzo?.substring(0,5) || '',
+                    horaSalida: editandoRegistro.HoraSalida?.substring(0,5) || '',
+                    observaciones: editandoRegistro.Observaciones || ''
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                let mensaje = `✅ ${data.message}`;
+                if (data.data?.horasExtras > 0) {
+                    mensaje += `\n📊 Horas extras: ${formatearHorasExtras(data.data.horasExtras)}`;
+                }
+                alert(mensaje);
+                setMostrarModalEdicion(false);
+                setEditandoRegistro(null);
+                cargarReporte();
+            } else {
+                alert(`❌ ${data.message}`);
+            }
+        } catch (error) {
+            alert('Error al actualizar');
+        } finally {
+            setRegistrando(false);
+        }
     };
 
     const exportarExcel = () => {
-        const headers = [
-            'Fecha',
-            'Empleado',
-            'Documento',
-            'Horario',
-            'Entrada',
-            'Salida Almuerzo',
-            'Regreso Almuerzo',
-            'Salida',
-            'Horas',
-            'Estado',
-            'Tardanza',
-            'Minutos Tardanza',
-            'Método'
-        ];
-
+        const headers = ['Fecha', 'Empleado', 'Documento', 'Entrada', 'Salida Alm.', 'Regreso Alm.', 'Salida', 'Horas Trab.', 'Horas Extras', 'Estado', 'Tardanza'];
         const rows = registros.map(r => [
             new Date(r.Fecha).toLocaleDateString('es-PE'),
-            `${r.Nombres} ${r.Apellidos}`,
-            r.Codigo,
-            r.HorarioNombre || '',
-            r.HoraEntrada || '',
-            r.HoraSalidaAlmuerzo || '',
-            r.HoraRegresoAlmuerzo || '',
-            r.HoraSalida || '',
-            r.HorasTrabajadas || '',
-            r.Estado,
-            r.EsTardanza ? 'Sí' : 'No',
-            r.MinutosTardanza || '',
-            r.MetodoValidacion || ''
+            `${r.Nombres} ${r.Apellidos}`, r.DocID,
+            r.HoraEntrada?.substring(0,5) || '—', r.HoraSalidaAlmuerzo?.substring(0,5) || '—',
+            r.HoraRegresoAlmuerzo?.substring(0,5) || '—', r.HoraSalida?.substring(0,5) || '—',
+            decimalToHourMinute(r.HorasTrabajadas), formatearHorasExtras(r.HorasExtras), 
+            r.Estado || '—', formatearTardanza(r.MinutosTardanza, r.EsTardanza)
         ]);
-
-        const csv = [headers, ...rows]
-            .map(row => row.map(cell => `"${cell}"`).join(','))
-            .join('\n');
-
+        const csv = [headers, ...rows].map(row => row.map(c => `"${c}"`).join(',')).join('\n');
         const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-        const url = window.URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `asistencia_${fechaInicio}_${fechaFin}.csv`;
         a.click();
-        window.URL.revokeObjectURL(url);
-    };
-
-    const getMetodoIcono = (metodo) => {
-        switch (metodo) {
-            case 'wifi': return <Wifi className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" />;
-            case 'gps': return <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-green-600" />;
-            case 'ip_local': return <Smartphone className="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" />;
-            case 'manual': return <User className="w-3 h-3 sm:w-4 sm:h-4 text-gray-600" />;
-            default: return null;
-        }
+        URL.revokeObjectURL(url);
     };
 
     const getEstadoColor = (estado, esTardanza) => {
-        if (esTardanza) return 'bg-orange-100 text-orange-800 border-orange-200';
-        switch (estado) {
-            case 'Completo':
-                return 'bg-green-100 text-green-800 border-green-200';
-            case 'Incompleto':
-                return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-            case 'Ausente':
-                return 'bg-red-100 text-red-800 border-red-200';
-            default:
-                return 'bg-gray-100 text-gray-800 border-gray-200';
-        }
+        if (esTardanza) return 'bg-orange-100 text-orange-800';
+        if (estado === 'Completo') return 'bg-green-100 text-green-800';
+        if (estado === 'Incompleto') return 'bg-yellow-100 text-yellow-800';
+        if (estado === 'Ausente') return 'bg-red-100 text-red-800';
+        return 'bg-gray-100';
     };
 
-    const getEstadoIcono = (estado, esTardanza) => {
-        if (esTardanza) return <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />;
-        switch (estado) {
-            case 'Completo':
-                return <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />;
-            case 'Incompleto':
-                return <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />;
-            case 'Ausente':
-                return <XCircle className="w-3 h-3 sm:w-4 sm:h-4" />;
-            default:
-                return null;
-        }
-    };
-
-    const formatearHoraPeru = (horaStr) => {
-        if (!horaStr) return '—';
-        if (typeof horaStr === 'string' && /^\d{2}:\d{2}:\d{2}$/.test(horaStr)) {
-            return horaStr.substring(0, 5);
-        }
-        return horaStr;
-    };
-
-    const indiceUltimo = paginaActual * itemsPorPagina;
-    const indicePrimero = indiceUltimo - itemsPorPagina;
-    const registrosPagina = registros.slice(indicePrimero, indiceUltimo);
     const totalPaginas = Math.ceil(registros.length / itemsPorPagina);
+    const startIndex = (paginaActual - 1) * itemsPorPagina;
+    const registrosPagina = registros.slice(startIndex, startIndex + itemsPorPagina);
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+        <div className="min-h-screen bg-gray-50 p-4">
+            <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
+                <div className="flex justify-between items-center mb-6">
                     <div>
-                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Panel de Asistencia</h1>
-                        <p className="text-sm sm:text-base text-gray-600">Monitoreo de marcaciones y control de tardanzas</p>
+                        <h1 className="text-2xl font-bold">Panel de Asistencia</h1>
+                        <p className="text-gray-500 text-sm">Control de horas extras y tardanzas</p>
                     </div>
                     <div className="flex gap-3">
-                        <button
-                            onClick={() => setMostrarFormulario(true)}
-                            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors text-sm sm:text-base"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span className="hidden sm:inline">Registrar Asistencia</span>
-                            <span className="sm:hidden">Registrar</span>
+                        <button onClick={() => setMostrarFormulario(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                            <Plus className="w-4 h-4" /> Registrar
                         </button>
-                        <button
-                            onClick={exportarExcel}
-                            disabled={registros.length === 0}
-                            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-                        >
-                            <Download className="w-4 h-4" />
-                            <span className="hidden sm:inline">Exportar Excel</span>
-                            <span className="sm:hidden">Exportar</span>
+                        <button onClick={exportarExcel} disabled={!registros.length} className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50">
+                            <Download className="w-4 h-4" /> Exportar
                         </button>
                     </div>
                 </div>
 
-                {/* Modal de Registro (mismo código) */}
+                {/* Modal Registrar */}
                 {mostrarFormulario && (
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-t-2xl px-6 py-4 sticky top-0">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                                            <User className="w-5 h-5 text-white" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-xl font-bold text-white">Registrar Asistencia Manual</h2>
-                                            <p className="text-blue-100 text-sm">Complete los datos del registro</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => setMostrarFormulario(false)}
-                                        className="text-white/80 hover:text-white p-2 hover:bg-white/20 rounded-xl transition-colors"
-                                    >
-                                        <X className="w-5 h-5" />
-                                    </button>
-                                </div>
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-md w-full p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold">Registrar Asistencia</h2>
+                                <button onClick={() => setMostrarFormulario(false)}><X className="w-5 h-5" /></button>
                             </div>
+                            <div className="space-y-3">
+                                <select value={nuevoRegistro.empId} onChange={e => setNuevoRegistro({...nuevoRegistro, empId: e.target.value})} className="w-full p-2 border rounded">
+                                    <option value="">Seleccionar empleado</option>
+                                    {empleados.map(e => <option key={e.EmpId} value={e.EmpId}>{e.Nombres} {e.Apellidos}</option>)}
+                                </select>
+                                <input type="date" value={nuevoRegistro.fecha} onChange={e => setNuevoRegistro({...nuevoRegistro, fecha: e.target.value})} className="w-full p-2 border rounded" />
+                                <input type="time" value={nuevoRegistro.horaEntrada} onChange={e => setNuevoRegistro({...nuevoRegistro, horaEntrada: e.target.value})} className="w-full p-2 border rounded" placeholder="Hora Entrada" />
+                                <input type="time" value={nuevoRegistro.horaSalidaAlmuerzo} onChange={e => setNuevoRegistro({...nuevoRegistro, horaSalidaAlmuerzo: e.target.value})} className="w-full p-2 border rounded" placeholder="Salida Almuerzo" />
+                                <input type="time" value={nuevoRegistro.horaRegresoAlmuerzo} onChange={e => setNuevoRegistro({...nuevoRegistro, horaRegresoAlmuerzo: e.target.value})} className="w-full p-2 border rounded" placeholder="Regreso Almuerzo" />
+                                <input type="time" value={nuevoRegistro.horaSalida} onChange={e => setNuevoRegistro({...nuevoRegistro, horaSalida: e.target.value})} className="w-full p-2 border rounded" placeholder="Hora Salida" />
+                                <textarea value={nuevoRegistro.observaciones} onChange={e => setNuevoRegistro({...nuevoRegistro, observaciones: e.target.value})} className="w-full p-2 border rounded" rows="2" placeholder="Observaciones"></textarea>
+                            </div>
+                            <div className="flex gap-3 mt-4">
+                                <button onClick={registrarAsistencia} disabled={registrando} className="flex-1 bg-blue-600 text-white py-2 rounded">Guardar</button>
+                                <button onClick={() => setMostrarFormulario(false)} className="flex-1 bg-gray-200 py-2 rounded">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-                            <div className="p-6">
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            <User className="w-4 h-4 inline mr-1" />
-                                            Empleado *
-                                        </label>
-                                        <select
-                                            value={nuevoRegistro.empId}
-                                            onChange={(e) => setNuevoRegistro({...nuevoRegistro, empId: e.target.value})}
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        >
-                                            <option value="">Seleccione un empleado</option>
-                                            {empleados.map(emp => (
-                                                <option key={emp.EmpId} value={emp.EmpId}>
-                                                    {emp.Nombres} {emp.Apellidos} - {emp.Codigo}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            <Calendar className="w-4 h-4 inline mr-1" />
-                                            Fecha *
-                                        </label>
-                                        <input
-                                            type="date"
-                                            value={nuevoRegistro.fecha}
-                                            onChange={(e) => setNuevoRegistro({...nuevoRegistro, fecha: e.target.value})}
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                <LogIn className="w-4 h-4 inline mr-1 text-green-600" />
-                                                Hora de Entrada *
-                                            </label>
-                                            <input
-                                                type="time"
-                                                value={nuevoRegistro.horaEntrada}
-                                                onChange={(e) => setNuevoRegistro({...nuevoRegistro, horaEntrada: e.target.value})}
-                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                <Coffee className="w-4 h-4 inline mr-1 text-yellow-600" />
-                                                Hora Salida Almuerzo
-                                            </label>
-                                            <input
-                                                type="time"
-                                                value={nuevoRegistro.horaSalidaAlmuerzo}
-                                                onChange={(e) => setNuevoRegistro({...nuevoRegistro, horaSalidaAlmuerzo: e.target.value})}
-                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                <Coffee className="w-4 h-4 inline mr-1 text-yellow-600" />
-                                                Hora Regreso Almuerzo
-                                            </label>
-                                            <input
-                                                type="time"
-                                                value={nuevoRegistro.horaRegresoAlmuerzo}
-                                                onChange={(e) => setNuevoRegistro({...nuevoRegistro, horaRegresoAlmuerzo: e.target.value})}
-                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                <LogOut className="w-4 h-4 inline mr-1 text-red-600" />
-                                                Hora de Salida
-                                            </label>
-                                            <input
-                                                type="time"
-                                                value={nuevoRegistro.horaSalida}
-                                                onChange={(e) => setNuevoRegistro({...nuevoRegistro, horaSalida: e.target.value})}
-                                                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Observaciones
-                                        </label>
-                                        <textarea
-                                            rows="3"
-                                            value={nuevoRegistro.observaciones}
-                                            onChange={(e) => setNuevoRegistro({...nuevoRegistro, observaciones: e.target.value})}
-                                            placeholder="Ej: Registro manual por falta de marcación, justificación de tardanza, etc."
-                                            className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                        />
-                                    </div>
+                {/* Modal Edición */}
+                {mostrarModalEdicion && editandoRegistro && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-md w-full p-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold">Editar Asistencia</h2>
+                                <button onClick={() => setMostrarModalEdicion(false)}><X className="w-5 h-5" /></button>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="bg-gray-50 p-2 rounded">
+                                    <p className="font-medium">{editandoRegistro.Nombres} {editandoRegistro.Apellidos}</p>
+                                    <p className="text-xs text-gray-500">{new Date(editandoRegistro.Fecha).toLocaleDateString('es-PE')}</p>
                                 </div>
-
-                                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
-                                    <button
-                                        onClick={() => setMostrarFormulario(false)}
-                                        className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-medium"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        onClick={registrarAsistencia}
-                                        disabled={registrando}
-                                        className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transition-all font-medium flex items-center justify-center gap-2 disabled:opacity-50"
-                                    >
-                                        {registrando ? (
-                                            <>
-                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                Registrando...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Save className="w-4 h-4" />
-                                                Guardar Registro
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
+                                <input type="time" value={editandoRegistro.HoraEntrada?.substring(0,5) || ''} onChange={e => setEditandoRegistro({...editandoRegistro, HoraEntrada: e.target.value})} className="w-full p-2 border rounded" />
+                                <input type="time" value={editandoRegistro.HoraSalidaAlmuerzo?.substring(0,5) || ''} onChange={e => setEditandoRegistro({...editandoRegistro, HoraSalidaAlmuerzo: e.target.value})} className="w-full p-2 border rounded" />
+                                <input type="time" value={editandoRegistro.HoraRegresoAlmuerzo?.substring(0,5) || ''} onChange={e => setEditandoRegistro({...editandoRegistro, HoraRegresoAlmuerzo: e.target.value})} className="w-full p-2 border rounded" />
+                                <input type="time" value={editandoRegistro.HoraSalida?.substring(0,5) || ''} onChange={e => setEditandoRegistro({...editandoRegistro, HoraSalida: e.target.value})} className="w-full p-2 border rounded" />
+                                <textarea value={editandoRegistro.Observaciones || ''} onChange={e => setEditandoRegistro({...editandoRegistro, Observaciones: e.target.value})} className="w-full p-2 border rounded" rows="2" placeholder="Observaciones"></textarea>
+                                {editandoRegistro.HorasExtras > 0 && (
+                                    <div className="bg-purple-50 p-2 rounded text-xs text-purple-600">
+                                        ⏱️ Horas extras: {formatearHorasExtras(editandoRegistro.HorasExtras)}
+                                    </div>
+                                )}
+                                {editandoRegistro.EsTardanza === 1 && (
+                                    <div className="bg-orange-50 p-2 rounded text-xs text-orange-600">
+                                        ⚠️ Tardanza: {formatearTardanza(editandoRegistro.MinutosTardanza, true)}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex gap-3 mt-4">
+                                <button onClick={guardarEdicion} disabled={registrando} className="flex-1 bg-blue-600 text-white py-2 rounded">Guardar</button>
+                                <button onClick={() => setMostrarModalEdicion(false)} className="flex-1 bg-gray-200 py-2 rounded">Cancelar</button>
                             </div>
                         </div>
                     </div>
                 )}
 
                 {/* Filtros */}
-                <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg mb-4 sm:mb-6">
-                    {viewport === 'mobile' && (
-                        <button
-                            onClick={() => setFiltrosAbiertos(!filtrosAbiertos)}
-                            className="w-full flex items-center justify-between p-4 text-gray-700 font-medium"
-                        >
-                            <span className="flex items-center gap-2">
-                                <Filter className="w-4 h-4" />
-                                Filtros de búsqueda
-                            </span>
-                            {filtrosAbiertos ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-                        </button>
-                    )}
-                    
-                    <div className={`${viewport === 'mobile' && !filtrosAbiertos ? 'hidden' : 'block'} p-4 sm:p-6`}>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                            <div>
-                                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                                    Fecha Inicio
-                                </label>
-                                <input
-                                    type="date"
-                                    value={fechaInicio}
-                                    onChange={(e) => setFechaInicio(e.target.value)}
-                                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                                    Fecha Fin
-                                </label>
-                                <input
-                                    type="date"
-                                    value={fechaFin}
-                                    onChange={(e) => setFechaFin(e.target.value)}
-                                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                                    Empleado
-                                </label>
-                                <select
-                                    value={empleadoFiltro}
-                                    onChange={(e) => setEmpleadoFiltro(e.target.value)}
-                                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                >
-                                    <option value="">Todos los empleados</option>
-                                    {empleados.map(emp => (
-                                        <option key={emp.EmpId} value={emp.EmpId}>
-                                            {emp.Nombres} {emp.Apellidos}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                                    Horario
-                                </label>
-                                <select
-                                    value={horarioFiltro}
-                                    onChange={(e) => setHorarioFiltro(e.target.value)}
-                                    className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                >
-                                    <option value="">Todos los horarios</option>
-                                    {horarios.map(horario => (
-                                        <option key={horario.HorarioId} value={horario.HorarioId}>
-                                            {horario.Nombre}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex items-end">
-                                <button
-                                    onClick={cargarReporte}
-                                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
-                                >
-                                    <Search className="w-4 h-4" />
-                                    Buscar
-                                </button>
-                            </div>
-                        </div>
+                <div className="bg-white rounded-lg shadow p-4 mb-6">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} className="p-2 border rounded" />
+                        <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="p-2 border rounded" />
+                        <select value={empleadoFiltro} onChange={e => setEmpleadoFiltro(e.target.value)} className="p-2 border rounded">
+                            <option value="">Todos los empleados</option>
+                            {empleados.map(e => <option key={e.EmpId} value={e.EmpId}>{e.Nombres} {e.Apellidos}</option>)}
+                        </select>
+                        <select value={horarioFiltro} onChange={e => setHorarioFiltro(e.target.value)} className="p-2 border rounded">
+                            <option value="">Todos los horarios</option>
+                            {horarios.map(h => <option key={h.HorarioId} value={h.HorarioId}>{h.Nombre}</option>)}
+                        </select>
+                        <button onClick={cargarReporte} className="bg-blue-600 text-white py-2 rounded">Buscar</button>
                     </div>
                 </div>
 
                 {/* Estadísticas */}
-                <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 mb-6">
-                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-blue-100 text-xs sm:text-sm">Total</p>
-                                <p className="text-xl sm:text-2xl font-bold">{estadisticas.total}</p>
-                            </div>
-                            <Users className="w-6 h-6 sm:w-8 sm:h-8 text-blue-200" />
-                        </div>
+                <div className="grid grid-cols-2 md:grid-cols-7 gap-3 mb-6">
+                    <div className="bg-blue-500 rounded-lg p-3 text-white text-center">
+                        <p className="text-xs">Total</p>
+                        <p className="text-xl font-bold">{estadisticas.total}</p>
                     </div>
-
-                    <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-green-100 text-xs sm:text-sm">Presentes</p>
-                                <p className="text-xl sm:text-2xl font-bold">{estadisticas.presentes}</p>
-                            </div>
-                            <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-200" />
-                        </div>
+                    <div className="bg-green-500 rounded-lg p-3 text-white text-center">
+                        <p className="text-xs">Presentes</p>
+                        <p className="text-xl font-bold">{estadisticas.presentes}</p>
                     </div>
-
-                    <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-orange-100 text-xs sm:text-sm">Tardanzas</p>
-                                <p className="text-xl sm:text-2xl font-bold">{estadisticas.tardanzas}</p>
-                                <p className="text-xs text-orange-200">{estadisticas.porcentajeTardanzas}%</p>
-                            </div>
-                            <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-orange-200" />
-                        </div>
+                    <div className="bg-orange-500 rounded-lg p-3 text-white text-center">
+                        <p className="text-xs">Tardanzas</p>
+                        <p className="text-xl font-bold">{estadisticas.tardanzas}</p>
+                        <p className="text-xs">{estadisticas.porcentajeTardanzas}%</p>
                     </div>
-
-                    <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-yellow-100 text-xs sm:text-sm">Min. Tardanza</p>
-                                <p className="text-xl sm:text-2xl font-bold">{estadisticas.minutosTardanzaPromedio}</p>
-                                <p className="text-xs text-yellow-200">min promedio</p>
-                            </div>
-                            <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-200" />
-                        </div>
+                    <div className="bg-yellow-500 rounded-lg p-3 text-white text-center">
+                        <p className="text-xs">Min Tardanza</p>
+                        <p className="text-xl font-bold">{estadisticas.minutosTardanzaPromedio}</p>
                     </div>
-
-                    <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-red-100 text-xs sm:text-sm">Ausentes</p>
-                                <p className="text-xl sm:text-2xl font-bold">{estadisticas.ausentes}</p>
-                            </div>
-                            <XCircle className="w-6 h-6 sm:w-8 sm:h-8 text-red-200" />
-                        </div>
+                    <div className="bg-red-500 rounded-lg p-3 text-white text-center">
+                        <p className="text-xs">Ausentes</p>
+                        <p className="text-xl font-bold">{estadisticas.ausentes}</p>
                     </div>
-
-                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white col-span-2 sm:col-span-2 lg:col-span-1">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-purple-100 text-xs sm:text-sm">Horas Promedio</p>
-                                <p className="text-xl sm:text-2xl font-bold">{estadisticas.horasPromedio}</p>
-                            </div>
-                            <BarChart className="w-6 h-6 sm:w-8 sm:h-8 text-purple-200" />
-                        </div>
+                    <div className="bg-purple-500 rounded-lg p-3 text-white text-center">
+                        <p className="text-xs">Horas Extras</p>
+                        <p className="text-xl font-bold">{estadisticas.horasExtras}</p>
+                    </div>
+                    <div className="bg-indigo-500 rounded-lg p-3 text-white text-center">
+                        <p className="text-xs">Empleados HE</p>
+                        <p className="text-xl font-bold">{estadisticas.empleadosConHorasExtras}</p>
                     </div>
                 </div>
 
-                {/* Tabla de registros */}
-                <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg overflow-hidden">
+                {/* Tabla */}
+                <div className="bg-white rounded-lg shadow overflow-hidden">
                     {cargando ? (
-                        <div className="flex justify-center items-center py-12">
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                        </div>
-                    ) : registros.length > 0 ? (
+                        <div className="text-center py-10">Cargando...</div>
+                    ) : registros.length === 0 ? (
+                        <div className="text-center py-10 text-gray-500">No hay registros</div>
+                    ) : (
                         <>
                             <div className="overflow-x-auto">
-                                <table className="min-w-full">
+                                <table className="w-full text-sm">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Empleado</th>
-                                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Horario</th>
-                                            {viewport !== 'mobile' && (
-                                                <>
-                                                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Entrada</th>
-                                                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Salida Alm.</th>
-                                                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Regreso Alm.</th>
-                                                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Salida</th>
-                                                </>
-                                            )}
-                                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Horas</th>
-                                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                                            <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Tardanza</th>
-                                            {viewport !== 'mobile' && (
-                                                <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-medium text-gray-500 uppercase">Método</th>
-                                            )}
+                                            <th className="p-3 text-left">Fecha</th>
+                                            <th className="p-3 text-left">Empleado</th>
+                                            <th className="p-3 text-left">Entrada</th>
+                                            <th className="p-3 text-left">Salida Alm.</th>
+                                            <th className="p-3 text-left">Regreso Alm.</th>
+                                            <th className="p-3 text-left">Salida</th>
+                                            <th className="p-3 text-left">Horas Trab.</th>
+                                            <th className="p-3 text-left">HE</th>
+                                            <th className="p-3 text-left">Estado</th>
+                                            <th className="p-3 text-left">Tardanza</th>
+                                            <th className="p-3 text-center">Acciones</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-200">
-                                        {registrosPagina.map((reg, idx) => (
-                                            <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                                                <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">
-                                                    {new Date(reg.Fecha).toLocaleDateString('es-PE')}
+                                    <tbody className="divide-y">
+                                        {registrosPagina.map((r, i) => (
+                                            <tr key={i} className="hover:bg-gray-50">
+                                                <td className="p-3">{new Date(r.Fecha).toLocaleDateString('es-PE')}</td>
+                                                <td className="p-3">
+                                                    <div className="font-medium">{r.Nombres} {r.Apellidos}</div>
+                                                    <div className="text-xs text-gray-500">{r.DocID}</div>
                                                 </td>
-                                                <td className="px-3 sm:px-6 py-3 sm:py-4">
-                                                    <div className="font-medium text-gray-900 text-xs sm:text-sm">
-                                                        {viewport === 'mobile' 
-                                                            ? `${reg.Nombres?.split(' ')[0] || ''} ${reg.Apellidos?.split(' ')[0] || ''}`
-                                                            : `${reg.Nombres || ''} ${reg.Apellidos || ''}`
-                                                        }
-                                                    </div>
-                                                    <div className="text-xs text-gray-500">{reg.Codigo}</div>
+                                                <td className="p-3 font-mono">{r.HoraEntrada?.substring(0,5) || '—'}</td>
+                                                <td className="p-3 font-mono">{r.HoraSalidaAlmuerzo?.substring(0,5) || '—'}</td>
+                                                <td className="p-3 font-mono">{r.HoraRegresoAlmuerzo?.substring(0,5) || '—'}</td>
+                                                <td className="p-3 font-mono">{r.HoraSalida?.substring(0,5) || '—'}</td>
+                                                <td className="p-3 font-mono">
+                                                    {r.HorasTrabajadas ? decimalToHourMinute(r.HorasTrabajadas) : '—'}
                                                 </td>
-                                                <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">
-                                                    <div className="flex items-center gap-1">
-                                                        {reg.EsTurnoNoche ? 
-                                                            <Moon className="w-3 h-3 text-indigo-500" /> : 
-                                                            <Sun className="w-3 h-3 text-yellow-500" />
-                                                        }
-                                                        <span className="text-xs">{reg.HorarioNombre || 'Sin horario'}</span>
-                                                    </div>
+                                                <td className="p-3 text-purple-600 font-medium">
+                                                    {formatearHorasExtras(r.HorasExtras)}
                                                 </td>
-                                                {viewport !== 'mobile' && (
-                                                    <>
-                                                        <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-xs sm:text-sm">
-                                                            {formatearHoraPeru(reg.HoraEntrada) || '—'}
-                                                        </td>
-                                                        <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-xs sm:text-sm">
-                                                            {formatearHoraPeru(reg.HoraSalidaAlmuerzo) || '—'}
-                                                        </td>
-                                                        <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-xs sm:text-sm">
-                                                            {formatearHoraPeru(reg.HoraRegresoAlmuerzo) || '—'}
-                                                        </td>
-                                                        <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono text-xs sm:text-sm">
-                                                            {formatearHoraPeru(reg.HoraSalida) || '—'}
-                                                        </td>
-                                                    </>
-                                                )}
-                                                <td className="px-3 sm:px-6 py-3 sm:py-4 font-mono font-medium text-xs sm:text-sm">
-                                                    {reg.HorasTrabajadas || '—'}
-                                                </td>
-                                                <td className="px-3 sm:px-6 py-3 sm:py-4">
-                                                    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(reg.Estado, reg.EsTardanza)}`}>
-                                                        {getEstadoIcono(reg.Estado, reg.EsTardanza)}
-                                                        <span className="hidden sm:inline">
-                                                            {reg.EsTardanza ? 'Tardanza' : reg.Estado}
-                                                        </span>
+                                                <td className="p-3">
+                                                    <span className={`px-2 py-1 rounded-full text-xs ${getEstadoColor(r.Estado, r.EsTardanza)}`}>
+                                                        {r.EsTardanza ? 'Tardanza' : r.Estado || '—'}
                                                     </span>
                                                 </td>
-                                                <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">
-                                                    {reg.EsTardanza ? (
-                                                        <span className="inline-flex items-center gap-1 text-orange-600 font-medium">
-                                                            <AlertCircle className="w-3 h-3" />
-                                                            {reg.MinutosTardanza} min
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-green-600">Puntual</span>
-                                                    )}
+                                                <td className="p-3">
+                                                    {formatearTardanza(r.MinutosTardanza, r.EsTardanza)}
                                                 </td>
-                                                {viewport !== 'mobile' && (
-                                                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                                                        {reg.MetodoValidacion && (
-                                                            <div className="flex items-center gap-1">
-                                                                {getMetodoIcono(reg.MetodoValidacion)}
-                                                                <span className="text-xs capitalize hidden sm:inline">{reg.MetodoValidacion}</span>
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                )}
+                                                <td className="p-3 text-center">
+                                                    <button onClick={() => abrirModalEdicion(r)} className="text-blue-600 hover:bg-blue-50 p-1 rounded">
+                                                        <Edit className="w-4 h-4" />
+                                                    </button>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
-
-                            {/* Paginación */}
-                            <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                <p className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
-                                    Mostrando {indicePrimero + 1} - {Math.min(indiceUltimo, registros.length)} de {registros.length} registros
-                                </p>
-                                <div className="flex justify-center sm:justify-end gap-1 sm:gap-2">
-                                    <button
-                                        onClick={() => setPaginaActual(paginaActual - 1)}
-                                        disabled={paginaActual === 1}
-                                        className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 transition-colors"
-                                    >
+                            {totalPaginas > 1 && (
+                                <div className="flex justify-center gap-2 p-4 border-t">
+                                    <button onClick={() => setPaginaActual(p => Math.max(1, p-1))} disabled={paginaActual === 1} className="px-3 py-1 bg-gray-100 rounded disabled:opacity-50">
                                         <ChevronLeft className="w-4 h-4" />
                                     </button>
-                                    {Array.from({ length: Math.min(5, totalPaginas) }, (_, i) => {
-                                        let pageNum;
-                                        if (totalPaginas <= 5) {
-                                            pageNum = i + 1;
-                                        } else if (paginaActual <= 3) {
-                                            pageNum = i + 1;
-                                        } else if (paginaActual >= totalPaginas - 2) {
-                                            pageNum = totalPaginas - 4 + i;
-                                        } else {
-                                            pageNum = paginaActual - 2 + i;
-                                        }
-                                        
-                                        return (
-                                            <button
-                                                key={pageNum}
-                                                onClick={() => setPaginaActual(pageNum)}
-                                                className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-colors ${
-                                                    paginaActual === pageNum
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                }`}
-                                            >
-                                                {pageNum}
-                                            </button>
-                                        );
-                                    })}
-                                    <button
-                                        onClick={() => setPaginaActual(paginaActual + 1)}
-                                        disabled={paginaActual === totalPaginas}
-                                        className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50 transition-colors"
-                                    >
+                                    <span className="px-3 py-1">Pág {paginaActual} de {totalPaginas}</span>
+                                    <button onClick={() => setPaginaActual(p => Math.min(totalPaginas, p+1))} disabled={paginaActual === totalPaginas} className="px-3 py-1 bg-gray-100 rounded disabled:opacity-50">
                                         <ChevronRight className="w-4 h-4" />
                                     </button>
                                 </div>
-                            </div>
+                            )}
                         </>
-                    ) : (
-                        <div className="text-center py-12">
-                            <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                            <h3 className="text-lg font-medium text-gray-700 mb-2">No hay registros</h3>
-                            <p className="text-gray-500 mb-4">No se encontraron marcaciones para el período seleccionado</p>
-                            <button
-                                onClick={() => setMostrarFormulario(true)}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 inline-flex items-center gap-2"
-                            >
-                                <Plus className="w-4 h-4" />
-                                Registrar primera asistencia
-                            </button>
-                        </div>
                     )}
                 </div>
             </div>

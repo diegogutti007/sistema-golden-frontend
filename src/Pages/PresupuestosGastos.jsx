@@ -15,7 +15,11 @@ import {
   PieChart,
   Bell,
   BellOff,
-  CheckSquare
+  CheckSquare,
+  Eye,
+  FileText,
+  Clock,
+  User
 } from "lucide-react";
 
 import { BACKEND_URL } from "../config";
@@ -28,6 +32,12 @@ const GestionPresupuestos = () => {
   const [error, setError] = useState(null);
   const [editandoId, setEditandoId] = useState(null);
   const [resumen, setResumen] = useState(null);
+  
+  // Estados para el modal de detalle
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedCategoria, setSelectedCategoria] = useState(null);
+  const [detalleGastos, setDetalleGastos] = useState([]);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
   
   const [editForm, setEditForm] = useState({
     presupuesto_mensual: 0,
@@ -81,6 +91,32 @@ const GestionPresupuestos = () => {
     }
   };
 
+  // Función para obtener detalle de gastos por categoría
+  const fetchDetalleGastos = async (categoria) => {
+    setLoadingDetalle(true);
+    setSelectedCategoria(categoria);
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/gastos-por-categoria`, {
+        params: { 
+          categoria_id: categoria.categoria_id,
+          periodo_id: periodoSelected,
+          limite: 50
+        }
+      });
+      if (response.data.success) {
+        setDetalleGastos(response.data.data || []);
+      } else {
+        setDetalleGastos([]);
+      }
+    } catch (err) {
+      console.error(err);
+      setDetalleGastos([]);
+    } finally {
+      setLoadingDetalle(false);
+      setShowDetailModal(true);
+    }
+  };
+
   const handleUpdate = async (id) => {
     setLoading(true);
     try {
@@ -116,6 +152,15 @@ const GestionPresupuestos = () => {
       style: "currency",
       currency: "PEN"
     }).format(num);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "Sin fecha";
+    return new Date(dateString).toLocaleDateString("es-PE", {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
   };
 
   // Función para determinar el estado según el porcentaje
@@ -189,13 +234,6 @@ const GestionPresupuestos = () => {
                 <RefreshCw className="w-4 h-4" />
                 Actualizar
               </button>
-{/*               <button
-                onClick={() => window.print()}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-all"
-              >
-                <Printer className="w-4 h-4" />
-                Imprimir
-              </button> */}
             </div>
           </div>
         </div>
@@ -334,11 +372,15 @@ const GestionPresupuestos = () => {
                             )}
                           </td>
                           
-                          <td className="px-4 py-3 text-right text-red-600">
-                            {formatMoney(categoria.gasto_real_mensual)}
-                            {categoria.cantidad_gastos > 0 && (
-                              <div className="text-xs text-gray-400">{categoria.cantidad_gastos} gastos</div>
-                            )}
+                          <td className="px-4 py-3 text-right">
+                            <div>
+                              <span className="font-medium text-red-600">
+                                {formatMoney(categoria.gasto_real_mensual)}
+                              </span>
+                              {categoria.cantidad_gastos > 0 && (
+                                <div className="text-xs text-gray-400">{categoria.cantidad_gastos} gastos</div>
+                              )}
+                            </div>
                           </td>
                           
                           <td className="px-4 py-3 text-right">
@@ -385,32 +427,41 @@ const GestionPresupuestos = () => {
                           </td>
                           
                           <td className="px-4 py-3 text-center">
-                            {editandoId === categoria.categoria_id ? (
-                              <div className="flex items-center justify-center gap-2">
-                                <button
-                                  onClick={() => handleUpdate(categoria.categoria_id)}
-                                  className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
-                                  title="Guardar"
-                                >
-                                  <Save className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={handleCancelEdit}
-                                  className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                  title="Cancelar"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-                            ) : (
+                            <div className="flex items-center justify-center gap-1">
                               <button
-                                onClick={() => handleEdit(categoria)}
-                                className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                title="Editar presupuesto"
+                                onClick={() => fetchDetalleGastos(categoria)}
+                                className="p-1 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                                title="Ver detalle de gastos"
                               >
-                                <Edit className="w-4 h-4" />
+                                <Eye className="w-4 h-4" />
                               </button>
-                            )}
+                              {editandoId === categoria.categoria_id ? (
+                                <>
+                                  <button
+                                    onClick={() => handleUpdate(categoria.categoria_id)}
+                                    className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                    title="Guardar"
+                                  >
+                                    <Save className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={handleCancelEdit}
+                                    className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                    title="Cancelar"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  onClick={() => handleEdit(categoria)}
+                                  className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                  title="Editar presupuesto"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -418,6 +469,133 @@ const GestionPresupuestos = () => {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Detalle de Gastos */}
+        {showDetailModal && selectedCategoria && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-3xl w-full max-h-[80vh] overflow-hidden shadow-xl">
+              {/* Header del Modal */}
+              <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-5 text-white">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-6 h-6" />
+                    <div>
+                      <h2 className="text-xl font-bold">{selectedCategoria.nombre}</h2>
+                      <p className="text-purple-200 text-sm">Detalle de gastos del periodo</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowDetailModal(false)}
+                    className="text-white/80 hover:text-white transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* Resumen de la categoría */}
+              <div className="p-5 border-b border-gray-100 bg-gray-50">
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500">Presupuesto</p>
+                    <p className="text-lg font-bold text-blue-600">{formatMoney(selectedCategoria.presupuesto_mensual)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500">Gasto Real</p>
+                    <p className={`text-lg font-bold ${(selectedCategoria.porcentaje_ejecucion || 0) > 100 ? 'text-red-600' : 'text-gray-800'}`}>
+                      {formatMoney(selectedCategoria.gasto_real_mensual)}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-gray-500">Ejecución</p>
+                    <p className={`text-lg font-bold ${
+                      (selectedCategoria.porcentaje_ejecucion || 0) > 100 ? 'text-red-600' :
+                      (selectedCategoria.porcentaje_ejecucion || 0) >= 80 ? 'text-yellow-600' : 'text-green-600'
+                    }`}>
+                      {(selectedCategoria.porcentaje_ejecucion || 0).toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Lista de gastos */}
+              <div className="p-5 overflow-y-auto max-h-[50vh]">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-gray-700 flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Lista de Gastos
+                  </h3>
+                  <span className="text-xs text-gray-500">
+                    {detalleGastos.length} gastos encontrados
+                  </span>
+                </div>
+                
+                {loadingDetalle ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  </div>
+                ) : detalleGastos.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <DollarSign className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                    <p>No hay gastos registrados en esta categoría</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {detalleGastos.map((gasto, index) => (
+                      <div key={gasto.gasto_id || index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-800">{gasto.descripcion}</span>
+                            {gasto.categoria && (
+                              <span className="text-xs px-2 py-0.5 bg-purple-100 text-purple-600 rounded-full">
+                                {gasto.categoria}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1">
+                            {gasto.fecha_gasto && (
+                              <span className="text-xs text-gray-400 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(gasto.fecha_gasto)}
+                              </span>
+                            )}
+                            {gasto.periodo_nombre && (
+                              <span className="text-xs text-gray-400">
+                                Periodo: {gasto.periodo_nombre}
+                              </span>
+                            )}
+                            {gasto.usuario && (
+                              <span className="text-xs text-gray-400 flex items-center gap-1">
+                                <User className="w-3 h-3" />
+                                {gasto.usuario}
+                              </span>
+                            )}
+                          </div>
+                          {gasto.observaciones && (
+                            <p className="text-xs text-gray-400 mt-1">{gasto.observaciones}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-red-600">{formatMoney(gasto.monto)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {/* Footer del Modal */}
+              <div className="border-t border-gray-100 p-4 bg-gray-50 flex justify-end">
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -433,6 +611,7 @@ const GestionPresupuestos = () => {
                 <li><strong>Cercano (🔔)</strong>: Gasto entre 80% y 99.9% del presupuesto</li>
                 <li><strong>Completado (✓)</strong>: Gasto igual al 100% del presupuesto</li>
                 <li><strong>Sobrepasado (⚠️)</strong>: Gasto supera el 100% del presupuesto</li>
+                <li>Haz clic en el ícono <Eye className="w-3 h-3 inline" /> para ver el detalle de gastos de cada categoría</li>
                 <li>Puedes editar el presupuesto para cada categoría haciendo clic en el ícono de editar</li>
                 <li>Los gastos reales se calculan automáticamente desde la tabla de gastos</li>
               </ul>
