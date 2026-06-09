@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 const PanelAsistencia = () => {
-    // Obtener fecha actual en la zona horaria local (Perú)
+    // Obtener fecha actual en formato YYYY-MM-DD usando la zona horaria local
     const getLocalDate = () => {
         const now = new Date();
         const year = now.getFullYear();
@@ -47,6 +47,56 @@ const PanelAsistencia = () => {
     const [isMobile, setIsMobile] = useState(false);
     const [isTablet, setIsTablet] = useState(false);
 
+    // 🔥 FUNCIÓN CRÍTICA: Extraer solo la fecha YYYY-MM-DD de cualquier formato ISO
+    const extraerFechaYYYYMMDD = (fechaISO) => {
+        if (!fechaISO) return '';
+        
+        // Si ya es YYYY-MM-DD, devolverlo directamente
+        if (/^\d{4}-\d{2}-\d{2}$/.test(fechaISO)) {
+            return fechaISO;
+        }
+        
+        // Para fechas ISO como "2026-06-09T05:00:00.000Z"
+        // Tomamos solo la parte antes de la T
+        const parteFecha = fechaISO.split('T')[0];
+        
+        // Validar que sea YYYY-MM-DD
+        if (/^\d{4}-\d{2}-\d{2}$/.test(parteFecha)) {
+            return parteFecha;
+        }
+        
+        // Si todo falla, intentar con Date
+        try {
+            const date = new Date(fechaISO);
+            if (!isNaN(date.getTime())) {
+                const year = date.getUTCFullYear();
+                const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+                const day = String(date.getUTCDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+        } catch (e) {
+            console.error('Error parseando fecha:', fechaISO);
+        }
+        
+        return fechaISO;
+    };
+
+    // Función para mostrar fecha en formato legible (dd/mm/yyyy)
+    const formatDisplayDate = (fechaISO) => {
+        if (!fechaISO) return '—';
+        
+        // Extraer la fecha en formato YYYY-MM-DD
+        const fechaYYYYMMDD = extraerFechaYYYYMMDD(fechaISO);
+        
+        // Dividir y reordenar a DD/MM/YYYY
+        const partes = fechaYYYYMMDD.split('-');
+        if (partes.length === 3) {
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+        
+        return fechaYYYYMMDD;
+    };
+
     // Función para convertir horas decimales a formato "Xh Ymin"
     const decimalToHourMinuteString = (horasDecimal) => {
         if (!horasDecimal || horasDecimal === 0) return '0h 0min';
@@ -58,34 +108,6 @@ const PanelAsistencia = () => {
         if (horas === 0) return `${minutos}min`;
         if (minutos === 0) return `${horas}h`;
         return `${horas}h ${minutos}min`;
-    };
-
-    // Función para sumar horas decimales y devolver formato legible
-    const sumarHorasExtras = (registrosData) => {
-        let totalHorasDecimal = 0;
-        
-        registrosData.forEach(registro => {
-            const horasExtras = parseFloat(registro.HorasExtras);
-            if (!isNaN(horasExtras) && horasExtras > 0) {
-                totalHorasDecimal += horasExtras;
-            }
-        });
-        
-        return decimalToHourMinuteString(totalHorasDecimal);
-    };
-
-    // Función para calcular el total de horas extras en minutos
-    const sumarHorasExtrasEnMinutos = (registrosData) => {
-        let totalMinutos = 0;
-        
-        registrosData.forEach(registro => {
-            const horasExtras = parseFloat(registro.HorasExtras);
-            if (!isNaN(horasExtras) && horasExtras > 0) {
-                totalMinutos += Math.round(horasExtras * 60);
-            }
-        });
-        
-        return totalMinutos;
     };
 
     // Función para formatear horas decimales a "HH:MM"
@@ -117,37 +139,6 @@ const PanelAsistencia = () => {
         if (horas > 0 && mins > 0) return `${horas}h ${mins}min`;
         if (horas > 0) return `${horas}h`;
         return `${mins}min`;
-    };
-
-    // Función para formatear fecha local a YYYY-MM-DD sin desfase UTC
-    const formatLocalDate = (dateString) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return dateString;
-        
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
-
-    // Función para mostrar fecha en formato legible local
-    const formatDisplayDate = (dateString) => {
-        if (!dateString) return '—';
-        const date = new Date(dateString);
-        if (isNaN(date.getTime())) return dateString;
-        
-        return date.toLocaleDateString('es-PE', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        });
-    };
-
-    // Función para enviar fecha al backend en formato correcto
-    const formatDateForBackend = (dateString) => {
-        if (!dateString) return '';
-        return dateString;
     };
 
     useEffect(() => {
@@ -203,18 +194,16 @@ const PanelAsistencia = () => {
     const cargarReporte = async () => {
         setCargando(true);
         try {
-            const inicio = formatDateForBackend(fechaInicio);
-            const fin = formatDateForBackend(fechaFin);
-            
-            let url = `${BACKEND_URL}/api/reportes/asistencia?fecha_inicio=${inicio}&fecha_fin=${fin}`;
+            let url = `${BACKEND_URL}/api/reportes/asistencia?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
             if (empleadoFiltro) url += `&empId=${empleadoFiltro}`;
             if (horarioFiltro) url += `&horario_id=${horarioFiltro}`;
             const res = await fetch(url);
             const data = await res.json();
             
+            // Procesar cada registro para extraer la fecha correctamente
             const registrosProcesados = data.map(registro => ({
                 ...registro,
-                Fecha: formatLocalDate(registro.Fecha)
+                Fecha: extraerFechaYYYYMMDD(registro.Fecha)
             }));
             
             setRegistros(registrosProcesados);
@@ -235,7 +224,6 @@ const PanelAsistencia = () => {
         const minutosTardanzaTotal = data.reduce((s, r) => s + (parseInt(r.MinutosTardanza) || 0), 0);
         const horasTotales = data.reduce((s, r) => s + (parseFloat(r.HorasTrabajadas) || 0), 0);
         
-        // Calcular total de horas extras correctamente
         const totalHorasExtrasDecimal = data.reduce((s, r) => s + (parseFloat(r.HorasExtras) || 0), 0);
         const horasExtrasFormateadas = decimalToHourMinuteString(totalHorasExtrasDecimal);
         
@@ -256,14 +244,11 @@ const PanelAsistencia = () => {
         }
         setRegistrando(true);
         try {
-            const fechaEnvio = formatDateForBackend(nuevoRegistro.fecha);
-            
             const res = await fetch(`${BACKEND_URL}/api/asistencia/registro-manual`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     ...nuevoRegistro, 
-                    fecha: fechaEnvio,
                     empId: parseInt(nuevoRegistro.empId), 
                     metodoValidacion: 'manual' 
                 })
@@ -304,7 +289,7 @@ const PanelAsistencia = () => {
             if (data.success) {
                 const registroData = {
                     ...data.data,
-                    Fecha: formatLocalDate(data.data.Fecha)
+                    Fecha: extraerFechaYYYYMMDD(data.data.Fecha)
                 };
                 setEditandoRegistro(registroData);
                 setMostrarModalEdicion(true);
@@ -534,7 +519,7 @@ const PanelAsistencia = () => {
                     </div>
                 </div>
 
-                {/* Estadísticas - Ahora con horas extras formateadas correctamente */}
+                {/* Estadísticas */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-3 mb-6">
                     <div className="bg-blue-500 rounded-lg p-3 text-white text-center shadow-sm">
                         <p className="text-xs sm:text-sm">Total</p>
