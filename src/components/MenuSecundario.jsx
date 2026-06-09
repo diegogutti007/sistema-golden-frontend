@@ -10,14 +10,28 @@ import {
   Calendar,
   Box,
   Truck,
-  X
+  X,
+  PieChart,
+  DollarSign,
+  Clock,
+  Tag,
+  CreditCard,
+  AlertCircle,
+  Layers,
+  Settings,
+  Award,
+  Target,
+  Zap,
+  Heart,
+  Sparkles,
+  LayoutDashboard,
+  Grid3x3,
+  Warehouse,
+  Gem
 } from "lucide-react";
 
-// ✅ COMPONENTE PARA OCULTAR ELEMENTOS SEGÚN ROL (mismo que en MenuPrincipal)
 const HideIfUnauthorized = ({ children, allowedRoles = [], userRole }) => {
-  if (!allowedRoles.includes(userRole)) {
-    return null;
-  }
+  if (!allowedRoles.includes(userRole)) return null;
   return children;
 };
 
@@ -25,8 +39,8 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
   const location = useLocation();
   const [activeSection, setActiveSection] = useState("Dashboard");
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [hoveredItem, setHoveredItem] = useState(null);
 
-  // ✅ DEFINIR ROLES (mismo que en MenuPrincipal)
   const ROLES = {
     ADMIN: 'admin',
     GERENTE: 'gerente',
@@ -34,7 +48,6 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
     EMPLEADO: 'empleado'
   };
 
-  // Obtener el rol del usuario
   const userRole = usuario?.rol || ROLES.EMPLEADO;
 
   useEffect(() => {
@@ -42,10 +55,9 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
       setWindowWidth(window.innerWidth);
     };
 
-    // Determinar sección activa basada en la ruta
     const path = location.pathname;
     if (path.includes('/dashboard')) setActiveSection("Dashboard");
-    else if (path.includes('/ventas')) setActiveSection("Ventas");
+    else if (path.includes('/maestro')) setActiveSection("Maestro");
     else if (path.includes('/inventario')) setActiveSection("Inventario");
 
     handleResize();
@@ -55,97 +67,139 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
 
   const isDesktop = windowWidth >= 1280;
 
-  // ✅ Estructura de menú con permisos integrados
   const menuItems = [
     {
       titulo: "Dashboard",
-      icon: BarChart3,
+      icon: LayoutDashboard,
+      iconColor: "text-purple-400",
+      bgColor: "bg-purple-500/10",
+      gradient: "from-purple-600/20 to-transparent",
       sub: [
         {
           nombre: "Ventas",
           ruta: "/dashboard/ventas",
           icon: TrendingUp,
-          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
+          iconColor: "text-emerald-400",
+          bgColor: "bg-emerald-500/10",
+          description: "Análisis de ventas",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO]
         },
         {
           nombre: "Comisiones",
           ruta: "/dashboard/comisiones",
-          icon: Users,
-          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR] // Solo admin, gerente y supervisor
+          icon: Award,
+          iconColor: "text-yellow-400",
+          bgColor: "bg-yellow-500/10",
+          description: "Comisiones del personal",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]
         },
         {
           nombre: "Citas",
           ruta: "/dashboard/citas",
           icon: Calendar,
-          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
+          iconColor: "text-pink-400",
+          bgColor: "bg-pink-500/10",
+          description: "Calendario de citas",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO]
+        },
+        {
+          nombre: "Rendimiento",
+          ruta: "/dashboard/rendimiento",
+          icon: Target,
+          iconColor: "text-orange-400",
+          bgColor: "bg-orange-500/10",
+          description: "Métricas de desempeño",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]
         },
       ],
     },
     {
       titulo: "Maestro",
-      icon: ShoppingCart,
+      icon: Grid3x3,
+      iconColor: "text-blue-400",
+      bgColor: "bg-blue-500/10",
+      gradient: "from-blue-600/20 to-transparent",
       sub: [
         {
           nombre: "Productos",
           ruta: "/maestro/productos",
           icon: Package,
-          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
+          iconColor: "text-cyan-400",
+          bgColor: "bg-cyan-500/10",
+          description: "Gestión de productos",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO]
         },
         {
           nombre: "Servicios",
           ruta: "/maestro/servicios",
-          icon: Users,
-          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
+          icon: Sparkles,
+          iconColor: "text-purple-400",
+          bgColor: "bg-purple-500/10",
+          description: "Catálogo de servicios",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO]
         },
         {
           nombre: "Clientes",
           ruta: "/maestro/clientes",
-          icon: ShoppingCart,
-          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
+          icon: Heart,
+          iconColor: "text-red-400",
+          bgColor: "bg-red-500/10",
+          description: "Base de clientes",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO]
+        },
+        {
+          nombre: "Categorías",
+          ruta: "/maestro/categorias",
+          icon: Tag,
+          iconColor: "text-indigo-400",
+          bgColor: "bg-indigo-500/10",
+          description: "Clasificación",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE]
         },
       ],
     },
-
-/*     {
-      titulo: "Empleado",
-      icon: ShoppingCart,
-      sub: [
-        {
-          nombre: "Marcación",
-          ruta: "/empleado/MarcacionEmpleados",
-          icon: Package,
-          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
-        },
-        {
-          nombre: "Asistencia",
-          ruta: "/empleado/PanelAsistencia",
-          icon: Users,
-          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
-        },
-        {
-          nombre: "Gestion Empleados",
-          ruta: "/empleado/GestionEmpleados",
-          icon: ShoppingCart,
-          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR, ROLES.EMPLEADO] // Todos pueden ver
-        },
-      ],
-    }, */
-
     {
       titulo: "Inventario",
-      icon: Package,
+      icon: Warehouse,
+      iconColor: "text-green-400",
+      bgColor: "bg-green-500/10",
+      gradient: "from-green-600/20 to-transparent",
       sub: [
         {
-          nombre: "Stock",
+          nombre: "Stock Actual",
           ruta: "/inventario/stock",
-          icon: Box,
-          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR] // Solo admin, gerente y supervisor
+          icon: Package,
+          iconColor: "text-green-400",
+          bgColor: "bg-green-500/10",
+          description: "Control de inventario",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]
+        },
+        {
+          nombre: "Movimientos",
+          ruta: "/inventario/movimientos",
+          icon: Truck,
+          iconColor: "text-blue-400",
+          bgColor: "bg-blue-500/10",
+          description: "Entradas y salidas",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]
         },
         {
           nombre: "Proveedores",
           ruta: "/inventario/proveedores",
           icon: Truck,
-          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE] // Solo admin y gerente
+          iconColor: "text-orange-400",
+          bgColor: "bg-orange-500/10",
+          description: "Gestión de proveedores",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE]
+        },
+        {
+          nombre: "Alertas Stock",
+          ruta: "/inventario/alertas",
+          icon: AlertCircle,
+          iconColor: "text-red-400",
+          bgColor: "bg-red-500/10",
+          description: "Productos por agotarse",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]
         },
       ],
     },
@@ -165,123 +219,171 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
     setActiveSection(activeSection === section ? "" : section);
   };
 
-  // Determinar si el menú debe mostrarse
   const shouldShow = isDesktop || (isMobile && isOpen);
 
   return (
     <>
-      {/* Overlay para móvil/tablet cuando el menú está abierto - SOLO PARA CERRAR */}
+      {/* Overlay para móvil/tablet */}
       {isMobile && isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-20"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 transition-all duration-300"
           onClick={onClose}
-          style={{
-            backdropFilter: 'blur(2px)',
-            WebkitBackdropFilter: 'blur(2px)'
-          }}
         />
       )}
 
       {/* Contenido del menú */}
       <aside className={`
         ${isDesktop
-          ? 'w-64 fixed top-16 left-0 h-[calc(100vh-64px)] z-30'
+          ? 'w-80 fixed top-16 left-0 h-[calc(100vh-64px)] z-30'
           : shouldShow
-            ? 'w-64 fixed top-16 left-0 h-[calc(100vh-64px)] z-30 translate-x-0'
-            : 'w-64 fixed top-16 left-0 h-[calc(100vh-64px)] z-30 -translate-x-full'
+            ? 'w-80 fixed top-16 left-0 h-[calc(100vh-64px)] z-30 translate-x-0'
+            : 'w-80 fixed top-16 left-0 h-[calc(100vh-64px)] z-30 -translate-x-full'
         }
-        bg-gradient-to-b from-gray-900 to-black border-r border-yellow-500/20
+        bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950
+        border-r border-yellow-500/20
         transition-transform duration-300 ease-in-out shadow-2xl
-        overflow-y-auto
+        flex flex-col
       `}
         style={{
-          WebkitOverflowScrolling: 'touch', // Scroll suave en iOS
+          WebkitOverflowScrolling: 'touch',
         }}>
-        {/* Header */}
-        <div className="p-4 border-b border-yellow-500/20">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 p-1.5 rounded-lg">
-                <div className="w-4 h-4 bg-black rounded-md flex items-center justify-center">
-                  <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full" />
+        
+        {/* Header llamativo */}
+        <div className="relative overflow-hidden flex-shrink-0">
+          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-transparent" />
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-yellow-500/5 rounded-full blur-2xl" />
+          
+          <div className="relative p-5 border-b border-yellow-500/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg transform rotate-45">
+                    <Gem className="w-5 h-5 text-black -rotate-45" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-gray-900 animate-pulse" />
+                </div>
+                
+                <div>
+                  <h2 className="text-base font-bold bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 bg-clip-text text-transparent">
+                    Golden Panel
+                  </h2>
+                  <p className="text-[9px] text-gray-500 uppercase tracking-wider mt-0.5">
+                    Control Executive
+                  </p>
                 </div>
               </div>
-              <div>
-                <h2 className="text-sm font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">
-                  Panel Control
-                </h2>
-                {isMobile && (
-                  <p className="text-xs text-gray-400 mt-0.5">Menú lateral</p>
-                )}
-              </div>
+
+              {isMobile && shouldShow && (
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-lg text-gray-400 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
             </div>
 
-            {/* Botón de cerrar solo en mobile/tablet */}
-            {isMobile && shouldShow && (
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+            <div className="absolute bottom-0 left-6 right-6 h-0.5 bg-gradient-to-r from-yellow-500/0 via-yellow-500/50 to-yellow-500/0" />
           </div>
         </div>
 
-        {/* Navegación con permisos */}
-        <nav className="p-4 space-y-4 overflow-y-auto" style={{ height: 'calc(100% - 140px)' }}>
+        {/* Navegación principal - con padding bottom para no tapar el footer */}
+        <nav className="flex-1 p-4 space-y-3 overflow-y-auto" style={{ paddingBottom: '60px' }}>
           {menuItems.map((section, sectionIndex) => {
-            // Filtrar los items del submenú según el rol
             const filteredSubItems = section.sub.filter(item =>
               item.allowedRoles.includes(userRole)
             );
 
-            // Si no hay items permitidos en esta sección, no mostrar la sección
             if (filteredSubItems.length === 0) return null;
+
+            const isActive = activeSection === section.titulo;
 
             return (
               <div key={sectionIndex} className="space-y-2">
                 <button
                   onClick={() => handleSectionClick(section.titulo)}
-                  className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-all duration-200 ${activeSection === section.titulo
-                    ? "bg-yellow-500/20 border border-yellow-500/30 text-yellow-400"
-                    : "text-gray-400 hover:text-yellow-400 hover:bg-gray-800/50 border border-transparent"
+                  onMouseEnter={() => setHoveredItem(section.titulo)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                  className={`relative overflow-hidden group w-full transition-all duration-300
+                    ${isActive
+                      ? 'bg-gradient-to-r ' + section.gradient
+                      : 'hover:bg-gray-800/30'
                     }`}
                 >
-                  <div className="flex items-center space-x-2">
-                    <section.icon className="w-4 h-4" />
-                    <span className="font-medium text-sm">{section.titulo}</span>
+                  <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all duration-200
+                    ${isActive
+                      ? `${section.bgColor} border ${section.iconColor.replace('text', 'border')}/30`
+                      : "border border-transparent"
+                    }
+                    ${hoveredItem === section.titulo ? 'transform translate-x-1' : ''}
+                  `}>
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-1.5 rounded-xl transition-all duration-200 
+                        ${isActive 
+                          ? section.bgColor 
+                          : 'bg-gray-800/50 group-hover:bg-yellow-500/10'
+                        }
+                        ${hoveredItem === section.titulo ? 'scale-110' : ''}
+                      `}>
+                        <section.icon className={`w-4 h-4 ${isActive ? section.iconColor : 'text-gray-500 group-hover:text-yellow-400'}`} />
+                      </div>
+                      <span className={`font-bold text-sm ${isActive ? section.iconColor : 'text-gray-300 group-hover:text-yellow-400'}`}>
+                        {section.titulo}
+                      </span>
+                    </div>
+                    <ChevronRight
+                      className={`w-4 h-4 transition-all duration-300 
+                        ${isActive ? "rotate-90 text-yellow-400" : "text-gray-600 group-hover:text-yellow-400"}
+                        ${hoveredItem === section.titulo ? 'translate-x-1' : ''}
+                      `}
+                    />
                   </div>
-                  <ChevronRight
-                    className={`w-3 h-3 transition-transform duration-200 ${activeSection === section.titulo ? "rotate-90 text-yellow-400" : "text-gray-600"
-                      }`}
-                  />
+                  
+                  {hoveredItem === section.titulo && (
+                    <div className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-yellow-500/0 via-yellow-500 to-yellow-500/0 animate-pulse" style={{ width: '100%' }} />
+                  )}
                 </button>
 
-                {activeSection === section.titulo && (
-                  <div className="space-y-1 ml-2">
-                    {filteredSubItems.map((item, itemIndex) => (
-                      <Link
-                        key={itemIndex}
-                        to={item.ruta}
-                        onClick={handleLinkClick}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm transition-all duration-200 group ${isLinkActive(item.ruta)
-                          ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"
-                          : "text-gray-300 hover:text-yellow-400 hover:bg-gray-800/30 border border-transparent"
-                          }`}
-                      >
-                        <div className={`w-6 h-6 rounded flex items-center justify-center transition-colors duration-200 ${isLinkActive(item.ruta)
-                          ? "bg-yellow-500/20"
-                          : "bg-gray-800 group-hover:bg-yellow-500/10"
-                          }`}>
-                          <item.icon className={`w-3 h-3 ${isLinkActive(item.ruta)
-                            ? "text-yellow-400"
-                            : "text-gray-400 group-hover:text-yellow-400"
-                            }`} />
-                        </div>
-                        <span className="font-medium">{item.nombre}</span>
-                      </Link>
-                    ))}
+                {isActive && (
+                  <div className="space-y-1 ml-3 pl-3 border-l-2 border-yellow-500/30 animate-fadeIn">
+                    {filteredSubItems.map((item, itemIndex) => {
+                      const active = isLinkActive(item.ruta);
+                      return (
+                        <Link
+                          key={itemIndex}
+                          to={item.ruta}
+                          onClick={handleLinkClick}
+                          onMouseEnter={() => setHoveredItem(item.nombre)}
+                          onMouseLeave={() => setHoveredItem(null)}
+                          className={`flex items-center space-x-3 px-3 py-2 rounded-xl text-sm transition-all duration-200 group
+                            ${active
+                              ? "bg-yellow-500/15 border border-yellow-500/30 shadow-lg"
+                              : "hover:bg-gray-800/30 border border-transparent"
+                            }
+                            ${hoveredItem === item.nombre ? 'transform translate-x-2' : ''}
+                          `}
+                        >
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200
+                            ${active
+                              ? `${item.bgColor} shadow-md`
+                              : "bg-gray-800/50 group-hover:bg-yellow-500/10"
+                            }
+                            ${hoveredItem === item.nombre ? 'scale-110' : ''}
+                          `}>
+                            <item.icon className={`w-3.5 h-3.5 ${active ? item.iconColor : 'text-gray-500 group-hover:text-yellow-400'}`} />
+                          </div>
+                          <div className="flex-1">
+                            <div className={`font-medium text-xs ${active ? 'text-yellow-400' : 'text-gray-300 group-hover:text-yellow-400'}`}>
+                              {item.nombre}
+                            </div>
+                            <div className="text-[10px] text-gray-500">{item.description}</div>
+                          </div>
+                          {active && (
+                            <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse shadow-glow" />
+                          )}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -289,16 +391,58 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-yellow-500/20 bg-gray-900/80">
-          <div className="text-center">
-            <div className="text-[10px] text-gray-500 mb-1">Golden Nails</div>
-            <div className="text-[8px] text-gray-600 uppercase tracking-wider">
-              Sistema de Gestión
+        {/* Footer compacto - No tapa el contenido */}
+        <div className="flex-shrink-0 px-4 py-2 border-t border-yellow-500/20 bg-gray-900/50 backdrop-blur-sm">
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-1 h-1 bg-yellow-500 rounded-full animate-pulse" />
+            <div className="text-[8px] text-gray-500 uppercase tracking-wider font-mono">
+              GOLDEN NAILS SPA
             </div>
+            <div className="w-1 h-1 bg-yellow-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
           </div>
         </div>
       </aside>
+
+      {/* Estilos de animación */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+        
+        .shadow-glow {
+          box-shadow: 0 0 8px rgba(234, 179, 8, 0.6);
+        }
+        
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar {
+          width: 4px;
+        }
+        
+        ::-webkit-scrollbar-track {
+          background: rgba(31, 41, 55, 0.5);
+          border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+          background: rgba(234, 179, 8, 0.4);
+          border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgba(234, 179, 8, 0.6);
+        }
+      `}</style>
     </>
   );
 };

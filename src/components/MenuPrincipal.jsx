@@ -16,65 +16,81 @@ import {
   Wallet,
   Target,
   ChevronDown,
-  PanelLeft // <-- AÑADIDO
+  PanelLeft,
+  Briefcase,
+  Clock,
+  CheckSquare,
+  FileText,
+  PieChart,
+  CreditCard,
+  Gift,
+  Settings,
+  Bell,
+  Shield,
+  Star,
+  Award,
+  ClipboardList,
+  AlertTriangle,
+  TrendingUp,
+  Percent,
+  Calculator,
+  FolderOpen,
+  Layers,
+  Timer,
+  MapPin
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useInactivity } from "../hooks/useInactivity";
-
-// Importar el logo
 import logo from "../logo.png";
 
-// ✅ Breakpoints optimizados
 const BREAKPOINTS = {
   MOBILE: 768,
   TABLET_LANDSCAPE: 1024,
   LAPTOP: 1280,
 };
 
-// ✅ COMPONENTE PARA OCULTAR ELEMENTOS SEGÚN ROL
 const HideIfUnauthorized = ({ children, allowedRoles = [], userRole }) => {
-  if (!allowedRoles.includes(userRole)) {
-    return null;
-  }
+  if (!allowedRoles.includes(userRole)) return null;
   return children;
 };
 
-// ✅ COMPONENTE DE ITEM DE SUBMENU
-const SubmenuItem = ({ to, onClick, icon: Icon, title, description, iconBg = "bg-yellow-500/10", iconColor = "text-yellow-400" }) => (
-  <Link
-    to={to}
-    onClick={onClick}
-    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 group"
-  >
-    <div className={`w-8 h-8 ${iconBg} rounded-lg flex items-center justify-center flex-shrink-0`}>
-      <Icon className={`w-4 h-4 ${iconColor}`} />
-    </div>
-    <div className="flex-1 min-w-0">
-      <div className="font-medium truncate">{title}</div>
-      <div className="text-xs text-gray-400 truncate">{description}</div>
-    </div>
-  </Link>
-);
+const SubmenuItem = ({ to, onClick, icon: Icon, title, description, iconBg, iconColor }) => {
+  const defaultIconBg = iconBg || "bg-gray-700/50";
+  const defaultIconColor = iconColor || "text-gray-300";
+  
+  return (
+    <Link
+      to={to}
+      onClick={onClick}
+      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 group"
+    >
+      <div className={`w-8 h-8 ${defaultIconBg} rounded-lg flex items-center justify-center flex-shrink-0 transition-all group-hover:scale-105`}>
+        <Icon className={`w-4 h-4 ${defaultIconColor} transition-colors group-hover:text-yellow-400`} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-medium truncate text-sm">{title}</div>
+        <div className="text-xs text-gray-400 truncate">{description}</div>
+      </div>
+    </Link>
+  );
+};
 
 const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
   const [empleadosOpen, setEmpleadosOpen] = useState(false);
   const [citasOpen, setCitasOpen] = useState(false);
   const [ventasOpen, setVentasOpen] = useState(false);
   const [gastosOpen, setGastosOpen] = useState(false);
+  const [horariosOpen, setHorariosOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const [windowHeight, setWindowHeight] = useState(window.innerHeight);
   const wrapperRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-
-  // ✅ USAR HOOK DE INACTIVIDAD
   const { handleUserActivity } = useInactivity(20);
 
-  // ✅ DEFINIR ROLES
   const ROLES = {
     ADMIN: 'admin',
     GERENTE: 'gerente',
@@ -82,45 +98,43 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
     EMPLEADO: 'empleado'
   };
 
-  // Obtener el rol del usuario
   const userRole = usuario?.rol || ROLES.EMPLEADO;
 
-  // ✅ DETECTAR TAMAÑO DE PANTALLA Y ORIENTACIÓN
+  // Función para obtener el texto del rol en español
+  const getRoleText = () => {
+    switch(userRole) {
+      case ROLES.ADMIN: return 'Administrador';
+      case ROLES.GERENTE: return 'Gerente';
+      case ROLES.SUPERVISOR: return 'Supervisor';
+      case ROLES.EMPLEADO: return 'Empleado';
+      default: return userRole;
+    }
+  };
+
   useEffect(() => {
     const handleResize = () => {
       const newWidth = window.innerWidth;
-      const newHeight = window.innerHeight;
-
       setWindowWidth(newWidth);
-      setWindowHeight(newHeight);
-
-      // Cerrar menú móvil cuando se cambia a escritorio
       if (newWidth >= BREAKPOINTS.LAPTOP && mobileMenuOpen) {
         setMobileMenuOpen(false);
       }
-
-      // Cerrar submenús en móvil
       if (newWidth < BREAKPOINTS.LAPTOP) {
         setEmpleadosOpen(false);
         setCitasOpen(false);
         setVentasOpen(false);
         setGastosOpen(false);
+        setHorariosOpen(false);
         setUserMenuOpen(false);
       }
     };
-
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [mobileMenuOpen]);
 
-  // ✅ CONTROLAR EL SCROLL DEL BODY CUANDO EL MENÚ MÓVIL ESTÁ ABIERTO
   useEffect(() => {
     if (mobileMenuOpen) {
-      // Guardar el scroll actual
       const scrollY = window.scrollY;
-
-      // Prevenir scroll del body
       document.body.style.position = 'fixed';
       document.body.style.top = `-${scrollY}px`;
       document.body.style.left = '0';
@@ -128,7 +142,6 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
       document.body.style.overflow = 'hidden';
       document.body.style.width = '100%';
     } else {
-      // Restaurar scroll del body
       const scrollY = document.body.style.top;
       document.body.style.position = '';
       document.body.style.top = '';
@@ -136,14 +149,11 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
       document.body.style.right = '';
       document.body.style.overflow = '';
       document.body.style.width = '';
-
       if (scrollY) {
         window.scrollTo(0, parseInt(scrollY || '0') * -1);
       }
     }
-
     return () => {
-      // Limpiar al desmontar
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.left = '';
@@ -153,11 +163,9 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
     };
   }, [mobileMenuOpen]);
 
-  // ✅ VERIFICACIÓN DE AUTENTICACIÓN
   useEffect(() => {
     const token = localStorage.getItem('token');
     const usuarioData = localStorage.getItem('usuario');
-
     if (!token || !usuarioData) {
       setIsAuthenticated(false);
       if (location.pathname !== '/login') {
@@ -171,7 +179,6 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
     }
   }, [location.pathname, navigate]);
 
-  // Cerrar submenus al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (!wrapperRef.current || !wrapperRef.current.contains(e.target)) {
@@ -179,6 +186,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
         setCitasOpen(false);
         setVentasOpen(false);
         setGastosOpen(false);
+        setHorariosOpen(false);
         setUserMenuOpen(false);
       }
     };
@@ -186,19 +194,16 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // ✅ FUNCIÓN DE LOGOUT
   const handleLogout = () => {
     setUserMenuOpen(false);
     setMobileMenuOpen(false);
     localStorage.removeItem("usuario");
     localStorage.removeItem("token");
     setIsAuthenticated(false);
-
     if (onLogout) onLogout();
     navigate('/login', { replace: true });
   };
 
-  // ✅ FUNCIONES DE NAVEGACIÓN
   const handleLogoClick = (e) => {
     e.preventDefault();
     navigate('/');
@@ -209,7 +214,6 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
     navigate('/');
   };
 
-  // ✅ FUNCIÓN PARA TOGGLE DEL MENÚ SECUNDARIO
   const handleToggleSecondaryMenu = () => {
     if (onToggleSecondaryMenu) {
       onToggleSecondaryMenu();
@@ -217,32 +221,41 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
     handleUserActivity();
   };
 
-  // ✅ SI NO ESTÁ AUTENTICADO, NO RENDERIZAR
   if (!isAuthenticated) return null;
 
-  // ✅ DETERMINAR TIPO DE DISPOSITIVO
   const isMobile = windowWidth < BREAKPOINTS.MOBILE;
   const isTablet = windowWidth >= BREAKPOINTS.MOBILE && windowWidth < BREAKPOINTS.LAPTOP;
   const isLaptop = windowWidth >= BREAKPOINTS.LAPTOP;
-
   const shouldUseMobileMenu = isMobile || isTablet;
   const shouldUseDesktopMenu = isLaptop;
+  const navbarHeight = isMobile ? 'h-14' : 'h-16';
 
-  // ✅ Obtener altura del navbar
-  const getNavbarHeight = () => {
-    if (isMobile) return 'h-14';
-    return 'h-16';
+  // Configuración de colores por módulo
+  const moduleColors = {
+    empleados: { bg: "bg-blue-500/10", icon: "text-blue-400", hover: "hover:bg-blue-500/20" },
+    citas: { bg: "bg-purple-500/10", icon: "text-purple-400", hover: "hover:bg-purple-500/20" },
+    ventas: { bg: "bg-green-500/10", icon: "text-green-400", hover: "hover:bg-green-500/20" },
+    gastos: { bg: "bg-red-500/10", icon: "text-red-400", hover: "hover:bg-red-500/20" },
+    horarios: { bg: "bg-teal-500/10", icon: "text-teal-400", hover: "hover:bg-teal-500/20" },
+    perfil: { bg: "bg-indigo-500/10", icon: "text-indigo-400", hover: "hover:bg-indigo-500/20" }
   };
 
-  // ✅ Obtener padding superior para contenido
-  const getContentPadding = () => {
-    if (isMobile) return 'pt-14';
-    return 'pt-16';
+  // Obtener nombre completo del usuario
+  const nombreCompleto = `${usuario?.nombre || ''} ${usuario?.apellido || ''}`.trim();
+  const primerNombre = nombreCompleto.split(' ')[0] || usuario?.usuario || "Usuario";
+
+  // Colores para el badge de rol
+  const getRoleBadgeColor = () => {
+    switch(userRole) {
+      case ROLES.ADMIN: return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+      case ROLES.GERENTE: return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case ROLES.SUPERVISOR: return 'bg-green-500/20 text-green-400 border-green-500/30';
+      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    }
   };
 
   return (
     <>
-      {/* Mobile Menu Overlay */}
       {mobileMenuOpen && shouldUseMobileMenu && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -252,47 +265,26 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
 
       <nav
         ref={wrapperRef}
-        className="bg-gradient-to-r from-gray-900 to-black border-b border-yellow-500/20 shadow-2xl w-full fixed top-0 left-0 right-0 z-50"
+        className="bg-gradient-to-r from-gray-900 via-gray-900 to-black border-b border-yellow-500/20 shadow-2xl w-full fixed top-0 left-0 right-0 z-50"
         onClick={handleUserActivity}
       >
-        <div className={`mx-auto ${isMobile ? 'px-3' :
-          isTablet ? 'px-6' :
-            'max-w-7xl px-8'
-          }`}>
-          <div className={`flex justify-between items-center ${getNavbarHeight()}`}>
-
-            {/* ✅ LOGO */}
+        <div className={`mx-auto ${isMobile ? 'px-3' : isTablet ? 'px-6' : 'max-w-7xl px-8'}`}>
+          <div className={`flex justify-between items-center ${navbarHeight}`}>
+            {/* Logo */}
             <div className="flex-shrink-0">
               <a
                 href="/"
                 onClick={handleLogoClick}
                 className="flex items-center space-x-2 group cursor-pointer"
               >
-                <div className={`${isMobile ? 'h-12 w-12' :
-                  'h-14 w-14'
-                  } relative rounded-full overflow-hidden shadow-lg transform group-hover:scale-105 transition-transform duration-200`}>
-                  <img
-                    src={logo}
-                    alt="Golden Nails Logo"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent pointer-events-none" />
+                <div className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} relative rounded-full overflow-hidden shadow-lg transform group-hover:scale-105 transition-transform duration-200`}>
+                  <img src={logo} alt="Golden Nails Logo" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/20 to-transparent pointer-events-none" />
                 </div>
-
-{/*                 {isMobile && windowWidth < 400 && (
-                  <div className="flex flex-col ml-2">
-                    <span className="text-xs font-bold font-bodoni bg-gradient-to-r from-yellow-400 to-yellow-500 bg-clip-text text-transparent">
-                      GOLDEN NAILS
-                    </span>
-                    <span className="text-[8px] text-gray-400 font-dancing italic">
-                      Tu mejor versión
-                    </span>
-                  </div>
-                )} */}
               </a>
             </div>
 
-            {/* ✅ BOTÓN PANEL LEFT PARA MOBILE/TABLET */}
+            {/* Botón Panel Left para móvil/tablet */}
             {shouldUseMobileMenu && onToggleSecondaryMenu && (
               <div className="flex items-center mr-2">
                 <button
@@ -305,25 +297,21 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
               </div>
             )}
 
-            {/* ✅ DESKTOP NAVIGATION */}
+            {/* Desktop Navigation */}
             {shouldUseDesktopMenu && (
-              <div className="flex items-center justify-center flex-1 mx-8 max-w-3xl">
-                <div className="flex items-center space-x-2">
-                  {/* Inicio */}
+              <div className="flex items-center justify-center flex-1 mx-8">
+                <div className="flex items-center space-x-1">
                   <a
                     href="/"
                     onClick={handleInicioClick}
-                    className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group cursor-pointer"
+                    className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group cursor-pointer"
                   >
                     <Home className="w-4 h-4" />
-                    <span>Inicio</span>
+                    <span className="text-sm">Inicio</span>
                   </a>
 
                   {/* Empleados Dropdown */}
-                  <HideIfUnauthorized
-                    userRole={userRole}
-                    allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}
-                  >
+                  <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}>
                     <div className="relative">
                       <button
                         onClick={() => {
@@ -331,27 +319,27 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                           setCitasOpen(false);
                           setVentasOpen(false);
                           setGastosOpen(false);
+                          setHorariosOpen(false);
                           setUserMenuOpen(false);
                           handleUserActivity();
                         }}
-                        className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
+                        className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
                       >
                         <Users className="w-4 h-4" />
-                        <span>Empleados</span>
-                        <ChevronDown className={`w-4 h-4 transition-transform ${empleadosOpen ? 'rotate-180' : ''}`} />
+                        <span className="text-sm">Empleados</span>
+                        <ChevronDown className={`w-3 h-3 transition-transform ${empleadosOpen ? 'rotate-180' : ''}`} />
                       </button>
 
                       {empleadosOpen && (
-                        <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl backdrop-blur-lg z-50 overflow-hidden animate-fadeIn">
+                        <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl z-50 overflow-hidden animate-fadeIn">
                           <div className="p-2">
-                            <HideIfUnauthorized
-                              userRole={userRole}
-                              allowedRoles={[ROLES.GERENTE]}
-                            >
+                            <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.GERENTE]}>
                               <SubmenuItem
                                 to="/NuevoEmpleados"
                                 onClick={() => setEmpleadosOpen(false)}
-                                icon={Users}
+                                icon={User}
+                                iconBg={moduleColors.empleados.bg}
+                                iconColor={moduleColors.empleados.icon}
                                 title="Nuevo Empleado"
                                 description="Registrar nuevo staff"
                               />
@@ -359,62 +347,97 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                                 to="/ListaEmpleado"
                                 onClick={() => setEmpleadosOpen(false)}
                                 icon={Users}
-                                iconBg="bg-blue-500/10"
-                                iconColor="text-blue-400"
+                                iconBg={moduleColors.empleados.bg}
+                                iconColor={moduleColors.empleados.icon}
                                 title="Gestión Empleado"
                                 description="Administrar equipo"
                               />
                             </HideIfUnauthorized>
-                            <HideIfUnauthorized
-                              userRole={userRole}
-                              allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}
-                            >
+                            <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}>
                               <SubmenuItem
                                 to="/ComisionDetalles"
                                 onClick={() => setEmpleadosOpen(false)}
-                                icon={DollarSign}
+                                icon={Percent}
                                 iconBg="bg-green-500/10"
                                 iconColor="text-green-400"
                                 title="Comisiones"
                                 description="Gestión de pagos"
                               />
-                              <SubmenuItem
-                                to="/GestionHorariosSemanales"
-                                onClick={() => setEmpleadosOpen(false)}
-                                icon={Calendar}
-                                iconBg="bg-purple-500/10"
-                                iconColor="text-purple-400"
-                                title="Gestión Horarios Semanales"
-                                description="Administrar horarios semanales"
-                              />
-                              <SubmenuItem
-                                to="/Asistencias"
-                                onClick={() => setEmpleadosOpen(false)}
-                                icon={Calendar}
-                                iconBg="bg-purple-500/10"
-                                iconColor="text-purple-400"
-                                title="Asistencias"
-                                description="Control horario"
-                              />
-                              <SubmenuItem
-                                to="/MarcacionEmpleados"
-                                onClick={() => setEmpleadosOpen(false)}
-                                icon={Calendar}
-                                iconBg="bg-purple-500/10"
-                                iconColor="text-purple-400"
-                                title="Marcación Empleados"
-                                description="Control Marcación"
-                              />
-                              <SubmenuItem
-                                to="/Horarios"
-                                onClick={() => setEmpleadosOpen(false)}
-                                icon={Calendar}
-                                iconBg="bg-purple-500/10"
-                                iconColor="text-purple-400"
-                                title="Horarios"
-                                description="Control horario"
-                              />
                             </HideIfUnauthorized>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </HideIfUnauthorized>
+
+                  {/* Horarios Dropdown */}
+                  <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}>
+                    <div className="relative">
+                      <button
+                        onClick={() => {
+                          setHorariosOpen(!horariosOpen);
+                          setEmpleadosOpen(false);
+                          setCitasOpen(false);
+                          setVentasOpen(false);
+                          setGastosOpen(false);
+                          setUserMenuOpen(false);
+                          handleUserActivity();
+                        }}
+                        className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
+                      >
+                        <Clock className="w-4 h-4" />
+                        <span className="text-sm">Horarios</span>
+                        <ChevronDown className={`w-3 h-3 transition-transform ${horariosOpen ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {horariosOpen && (
+                        <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl z-50 overflow-hidden animate-fadeIn">
+                          <div className="p-2">
+                            <SubmenuItem
+                              to="/GestionHorariosSemanales"
+                              onClick={() => setHorariosOpen(false)}
+                              icon={Calendar}
+                              iconBg={moduleColors.horarios.bg}
+                              iconColor={moduleColors.horarios.icon}
+                              title="Gestión Horarios"
+                              description="Administrar horarios semanales"
+                            />
+                            <SubmenuItem
+                              to="/Asistencias"
+                              onClick={() => setHorariosOpen(false)}
+                              icon={CheckSquare}
+                              iconBg="bg-teal-500/10"
+                              iconColor="text-teal-400"
+                              title="Asistencias"
+                              description="Control horario"
+                            />
+                            <SubmenuItem
+                              to="/MarcacionEmpleados"
+                              onClick={() => setHorariosOpen(false)}
+                              icon={Timer}
+                              iconBg="bg-orange-500/10"
+                              iconColor="text-orange-400"
+                              title="Marcación"
+                              description="Registro de entrada"
+                            />
+                            <SubmenuItem
+                              to="/Horarios"
+                              onClick={() => setHorariosOpen(false)}
+                              icon={Calendar}
+                              iconBg="bg-purple-500/10"
+                              iconColor="text-purple-400"
+                              title="Configurar Turnos"
+                              description="Definir horarios"
+                            />
+                            <SubmenuItem
+                              to="/PanelAsistencia"
+                              onClick={() => setHorariosOpen(false)}
+                              icon={BarChart3}
+                              iconBg="bg-blue-500/10"
+                              iconColor="text-blue-400"
+                              title="Panel Asistencia"
+                              description="Reporte de asistencia"
+                            />
                           </div>
                         </div>
                       )}
@@ -427,32 +450,32 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                       onClick={() => {
                         setCitasOpen(!citasOpen);
                         setEmpleadosOpen(false);
+                        setHorariosOpen(false);
                         setVentasOpen(false);
                         setGastosOpen(false);
                         setUserMenuOpen(false);
                         handleUserActivity();
                       }}
-                      className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
+                      className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
                     >
                       <Calendar className="w-4 h-4" />
-                      <span>Citas</span>
-                      <ChevronDown className={`w-4 h-4 transition-transform ${citasOpen ? 'rotate-180' : ''}`} />
+                      <span className="text-sm">Citas</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform ${citasOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {citasOpen && (
-                      <div className="absolute top-full left-0 mt-2 w-56 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl backdrop-blur-lg z-50 overflow-hidden animate-fadeIn">
+                      <div className="absolute top-full left-0 mt-2 w-56 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl z-50 overflow-hidden animate-fadeIn">
                         <div className="p-2">
                           <SubmenuItem
                             to="/citas"
                             onClick={() => setCitasOpen(false)}
                             icon={Calendar}
+                            iconBg={moduleColors.citas.bg}
+                            iconColor={moduleColors.citas.icon}
                             title="Agenda"
                             description="Calendario de citas"
                           />
-                          <HideIfUnauthorized
-                            userRole={userRole}
-                            allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}
-                          >
+                          <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}>
                             <SubmenuItem
                               to="/citas/Historial"
                               onClick={() => setCitasOpen(false)}
@@ -474,38 +497,38 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                       onClick={() => {
                         setVentasOpen(!ventasOpen);
                         setEmpleadosOpen(false);
+                        setHorariosOpen(false);
                         setCitasOpen(false);
                         setGastosOpen(false);
                         setUserMenuOpen(false);
                         handleUserActivity();
                       }}
-                      className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
+                      className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
                     >
                       <DollarSign className="w-4 h-4" />
-                      <span>Ventas</span>
-                      <ChevronDown className={`w-4 h-4 transition-transform ${ventasOpen ? 'rotate-180' : ''}`} />
+                      <span className="text-sm">Ventas</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform ${ventasOpen ? 'rotate-180' : ''}`} />
                     </button>
 
                     {ventasOpen && (
-                      <div className="absolute top-full left-0 mt-2 w-56 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl backdrop-blur-lg z-50 overflow-hidden animate-fadeIn">
+                      <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl z-50 overflow-hidden animate-fadeIn">
                         <div className="p-2">
                           <SubmenuItem
                             to="/Ventas"
                             onClick={() => setVentasOpen(false)}
                             icon={ShoppingCart}
+                            iconBg={moduleColors.ventas.bg}
+                            iconColor={moduleColors.ventas.icon}
                             title="Ventas"
                             description="Registro de ventas"
                           />
-                          <HideIfUnauthorized
-                            userRole={userRole}
-                            allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}
-                          >
+                          <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}>
                             <SubmenuItem
                               to="/Ventas/GestionVentas"
                               onClick={() => setVentasOpen(false)}
-                              icon={DollarSign}
-                              iconBg="bg-green-500/10"
-                              iconColor="text-green-400"
+                              icon={CreditCard}
+                              iconBg="bg-cyan-500/10"
+                              iconColor="text-cyan-400"
                               title="Gestión Ventas"
                               description="Administrar ventas"
                             />
@@ -516,39 +539,36 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                               iconBg="bg-yellow-500/10"
                               iconColor="text-yellow-400"
                               title="Cierre de Caja"
-                              description="Cierre de Caja Diario"
+                              description="Cierre diario"
                             />
                           </HideIfUnauthorized>
-                          <HideIfUnauthorized
-                            userRole={userRole}
-                            allowedRoles={[ROLES.GERENTE]}
-                          >
+                          <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.GERENTE]}>
                             <SubmenuItem
                               to="/Ventas/EstadoResultados"
                               onClick={() => setVentasOpen(false)}
-                              icon={DollarSign}
-                              iconBg="bg-yellow-500/10"
-                              iconColor="text-yellow-400"
-                              title="Estado de Resultados"
-                              description="Estado de Resultados Mensual"
+                              icon={TrendingUp}
+                              iconBg="bg-emerald-500/10"
+                              iconColor="text-emerald-400"
+                              title="Estado Resultados"
+                              description="Resultados mensuales"
                             />
                             <SubmenuItem
                               to="/Ventas/BalanceGeneral"
                               onClick={() => setVentasOpen(false)}
-                              icon={DollarSign}
-                              iconBg="bg-yellow-500/10"
-                              iconColor="text-yellow-400"
+                              icon={PieChart}
+                              iconBg="bg-indigo-500/10"
+                              iconColor="text-indigo-400"
                               title="Balance General"
-                              description="Balance General"
+                              description="Balance general"
                             />
                             <SubmenuItem
                               to="/Ventas/FlujoEfectivo"
                               onClick={() => setVentasOpen(false)}
-                              icon={DollarSign}
-                              iconBg="bg-yellow-500/10"
-                              iconColor="text-yellow-400"
-                              title="Flujo de Efectivo"
-                              description="Flujo de Efectivo"
+                              icon={Calculator}
+                              iconBg="bg-blue-500/10"
+                              iconColor="text-blue-400"
+                              title="Flujo Efectivo"
+                              description="Flujo de efectivo"
                             />
                           </HideIfUnauthorized>
                         </div>
@@ -557,41 +577,41 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                   </div>
 
                   {/* Gastos Dropdown */}
-                  <HideIfUnauthorized
-                    userRole={userRole}
-                    allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}
-                  >
+                  <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}>
                     <div className="relative">
                       <button
                         onClick={() => {
                           setGastosOpen(!gastosOpen);
                           setEmpleadosOpen(false);
+                          setHorariosOpen(false);
                           setCitasOpen(false);
                           setVentasOpen(false);
                           setUserMenuOpen(false);
                           handleUserActivity();
                         }}
-                        className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
+                        className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
                       >
                         <TrendingDown className="w-4 h-4" />
-                        <span>Gastos</span>
-                        <ChevronDown className={`w-4 h-4 transition-transform ${gastosOpen ? 'rotate-180' : ''}`} />
+                        <span className="text-sm">Gastos</span>
+                        <ChevronDown className={`w-3 h-3 transition-transform ${gastosOpen ? 'rotate-180' : ''}`} />
                       </button>
 
                       {gastosOpen && (
-                        <div className="absolute top-full left-0 mt-2 w-56 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl backdrop-blur-lg z-50 overflow-hidden animate-fadeIn">
+                        <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl z-50 overflow-hidden animate-fadeIn">
                           <div className="p-2">
                             <SubmenuItem
                               to="/gastos"
                               onClick={() => setGastosOpen(false)}
-                              icon={TrendingDown}
+                              icon={AlertTriangle}
+                              iconBg={moduleColors.gastos.bg}
+                              iconColor={moduleColors.gastos.icon}
                               title="Nuevo Gasto"
                               description="Registrar gasto"
                             />
                             <SubmenuItem
                               to="/gastos/GestionGastos"
                               onClick={() => setGastosOpen(false)}
-                              icon={DollarSign}
+                              icon={FolderOpen}
                               iconBg="bg-red-500/10"
                               iconColor="text-red-400"
                               title="Gestión Gastos"
@@ -601,15 +621,15 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                               to="/gastos/PresupuestosGastos"
                               onClick={() => setGastosOpen(false)}
                               icon={Target}
-                              iconBg="bg-blue-500/10"
-                              iconColor="text-blue-400"
-                              title="Presupuestos Gastos"
+                              iconBg="bg-amber-500/10"
+                              iconColor="text-amber-400"
+                              title="Presupuestos"
                               description="Gestionar presupuestos"
                             />
                             <SubmenuItem
                               to="/gastos/DashboardGastos"
                               onClick={() => setGastosOpen(false)}
-                              icon={Activity}
+                              icon={PieChart}
                               iconBg="bg-green-500/10"
                               iconColor="text-green-400"
                               title="Dashboard Gastos"
@@ -618,10 +638,10 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                             <SubmenuItem
                               to="/gastos/DashboardPagosPersonal"
                               onClick={() => setGastosOpen(false)}
-                              icon={Activity}
+                              icon={Users}
                               iconBg="bg-purple-500/10"
                               iconColor="text-purple-400"
-                              title="Dashboard Pagos Personal"
+                              title="Dashboard Pagos"
                               description="Resumen de pagos"
                             />
                           </div>
@@ -629,78 +649,68 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                       )}
                     </div>
                   </HideIfUnauthorized>
-
-                  {/* Reportes */}
-                  <HideIfUnauthorized
-                    userRole={userRole}
-                    allowedRoles={[ROLES.ADMIN, ROLES.GERENTE]}
-                  >
-                    <Link
-                      to="/reportes"
-                      onClick={handleUserActivity}
-                      className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
-                    >
-                      <BarChart3 className="w-4 h-4" />
-                      <span>Reportes</span>
-                    </Link>
-                  </HideIfUnauthorized>
                 </div>
               </div>
             )}
 
-            {/* ✅ USER SECTION */}
+            {/* User Section - Cargo alineado a la derecha */}
             <div className="flex items-center space-x-2 lg:space-x-4">
-              {/* Menú de Usuario - Solo para laptops */}
               {shouldUseDesktopMenu && (
                 <div className="relative">
                   <button
                     onClick={() => {
                       setUserMenuOpen(!userMenuOpen);
                       setEmpleadosOpen(false);
+                      setHorariosOpen(false);
                       setCitasOpen(false);
                       setVentasOpen(false);
                       setGastosOpen(false);
                       handleUserActivity();
                     }}
-                    className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group"
+                    className="flex items-center justify-between space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group min-w-[220px]"
                   >
-                    <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center border border-blue-500/30">
-                      <User className="w-4 h-4 text-blue-400" />
-                    </div>
-                    <div className="flex items-center gap-2 text-left">
-                      <div className="font-medium text-sm truncate max-w-[120px]">
-                        {(() => {
-                          const nombreCompleto = `${usuario?.nombre || ''} ${usuario?.apellido || ''}`.trim();
-                          const texto = nombreCompleto || usuario?.usuario || "Usuario";
-                          return texto.charAt(0).toUpperCase() + texto.slice(1);
-                        })()}
+                    {/* Parte izquierda: Avatar + Nombre */}
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center border-2 border-yellow-500/30">
+                        <User className="w-4 h-4 text-white" />
                       </div>
-                      <div className={`text-xs px-2 py-0.5 rounded-full capitalize ${userRole === ROLES.ADMIN ? 'bg-purple-500/20 text-purple-400' :
-                          userRole === ROLES.GERENTE ? 'bg-blue-500/20 text-blue-400' :
-                            userRole === ROLES.SUPERVISOR ? 'bg-green-500/20 text-green-400' :
-                              'bg-gray-500/20 text-gray-400'
-                        }`}>
-                        {userRole?.charAt(0).toUpperCase() + userRole?.slice(1).toLowerCase()}
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium text-sm">
+                          {nombreCompleto || usuario?.usuario || "Usuario"}
+                        </span>
                       </div>
                     </div>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                    
+                    {/* Parte derecha: Badge de cargo + Chevron */}
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs px-2 py-0.5 rounded-full capitalize font-medium border ${getRoleBadgeColor()}`}>
+                        {getRoleText()}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} />
+                    </div>
                   </button>
 
                   {userMenuOpen && (
-                    <div className="absolute top-full right-0 mt-2 w-56 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl backdrop-blur-lg z-50 overflow-hidden animate-fadeIn">
+                    <div className="absolute top-full right-0 mt-2 w-64 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl z-50 overflow-hidden animate-fadeIn">
                       <div className="p-2">
                         <div className="px-4 py-3 border-b border-gray-700/50">
-                          <div className="font-medium text-white truncate">
-                            {usuario?.nombre || "Usuario"} {usuario?.apellido || ""}
+                          <div className="font-medium text-white">
+                            {nombreCompleto || "Usuario"}
                           </div>
-                          <div className="text-sm text-gray-400 truncate">
+                          <div className="text-xs text-gray-400 truncate mt-1">
                             {usuario?.correo || "usuario@goldennails.com"}
+                          </div>
+                          <div className="mt-2 flex items-center gap-2">
+                            <Shield className="w-3 h-3 text-yellow-500" />
+                            <span className="text-xs text-yellow-500 capitalize">{getRoleText()}</span>
                           </div>
                         </div>
                         <SubmenuItem
                           to="/perfil"
                           onClick={() => setUserMenuOpen(false)}
-                          icon={User}
+                          icon={Settings}
+                          iconBg={moduleColors.perfil.bg}
+                          iconColor={moduleColors.perfil.icon}
                           title="Mi Perfil"
                           description="Configurar cuenta"
                         />
@@ -723,25 +733,25 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                 </div>
               )}
 
-              {/* Información del usuario para móvil/tablet */}
+              {/* Información usuario para móvil/tablet */}
               {shouldUseMobileMenu && (
-                <div className="flex items-center space-x-2 text-gray-400">
-                  <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-2 text-gray-400 bg-gray-800/50 px-3 py-1.5 rounded-lg">
+                  <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center">
                     <User className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-blue-400`} />
-                    <span className={`${isMobile ? 'text-xs' : 'text-sm'} truncate max-w-[100px]`}>
-                      {(() => {
-                        const text = usuario?.nombre + ' ' + usuario?.apellido || usuario?.usuario || "Usuario";
-                        return text.charAt(0).toUpperCase() + text.slice(1);
-                      })()}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium truncate max-w-[100px]`}>
+                      {primerNombre}
+                    </span>
+                    <span className={`${isMobile ? 'text-[9px]' : 'text-[10px]'} capitalize ${
+                      userRole === ROLES.ADMIN ? 'text-purple-400' :
+                      userRole === ROLES.GERENTE ? 'text-blue-400' :
+                      userRole === ROLES.SUPERVISOR ? 'text-green-400' :
+                      'text-gray-400'
+                    }`}>
+                      {getRoleText()}
                     </span>
                   </div>
-                  <span className={`${isMobile ? 'text-[10px]' : 'text-xs'} px-1.5 py-0.5 rounded-full capitalize ${userRole === ROLES.ADMIN ? 'bg-purple-500/20 text-purple-400' :
-                    userRole === ROLES.GERENTE ? 'bg-blue-500/20 text-blue-400' :
-                      userRole === ROLES.SUPERVISOR ? 'bg-green-500/20 text-green-400' :
-                        'bg-gray-500/20 text-gray-400'
-                    }`}>
-                    {userRole?.charAt(0).toUpperCase() + userRole?.slice(1).toLowerCase()}
-                  </span>
                 </div>
               )}
 
@@ -765,20 +775,19 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
           </div>
         </div>
 
-        {/* ✅ MOBILE & TABLET MENU - VERSIÓN CORREGIDA */}
+        {/* Mobile & Tablet Menu */}
         {shouldUseMobileMenu && (
           <div
             ref={mobileMenuRef}
-            className={`fixed top-${getNavbarHeight().split('-')[1]} left-0 right-0 bottom-0 bg-gray-900 transform transition-transform duration-300 ease-in-out z-40 overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-              }`}
+            className={`fixed left-0 right-0 bottom-0 bg-gradient-to-b from-gray-900 to-black transform transition-transform duration-300 ease-in-out z-40 overflow-y-auto ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}
             style={{
               WebkitOverflowScrolling: 'touch',
               overscrollBehavior: 'contain',
-              height: `calc(100vh - ${isMobile ? '3.5rem' : '4rem'})`, // Restar altura del navbar
+              height: `calc(100vh - ${isMobile ? '3.5rem' : '4rem'})`,
               top: isMobile ? '3.5rem' : '4rem',
             }}
           >
-            <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6'} space-y-${isMobile ? '3' : '4'} pb-8`}>
+            <div className={`${isMobile ? 'px-4 py-4' : 'px-6 py-6'} space-y-4 pb-8`}>
               {/* Inicio */}
               <a
                 href="/"
@@ -787,66 +796,37 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                   setMobileMenuOpen(false);
                   handleUserActivity();
                 }}
-                className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200 cursor-pointer"
+                className="flex items-center space-x-3 px-4 py-3 rounded-xl bg-gradient-to-r from-yellow-500/10 to-transparent border border-yellow-500/20 text-yellow-400 hover:bg-yellow-500/20 transition-all duration-200 cursor-pointer"
               >
-                <Home className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                <span className={`${isMobile ? 'text-base' : 'text-lg'}`}>Inicio</span>
+                <Home className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />
+                <div>
+                  <div className="font-semibold">Inicio</div>
+                  <div className="text-xs text-gray-400">Panel principal</div>
+                </div>
               </a>
 
-              {/* Empleados */}
-              <HideIfUnauthorized
-                userRole={userRole}
-                allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}
-              >
+              {/* Horarios */}
+              <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}>
                 <div className="space-y-2">
-                  <div className="px-4 py-2 text-gray-400 text-sm font-medium">Empleados</div>
-                  <HideIfUnauthorized
-                    userRole={userRole}
-                    allowedRoles={[ROLES.GERENTE]}
-                  >
-                    <Link
-                      to="/NuevoEmpleados"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                    >
-                      <Users className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                      <span>Nuevo Empleado</span>
-                    </Link>
-                    <Link
-                      to="/ListaEmpleado"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                    >
-                      <Users className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                      <span>Gestión Empleado</span>
-                    </Link>
-                  </HideIfUnauthorized>
-                  <HideIfUnauthorized
-                    userRole={userRole}
-                    allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}
-                  >
-                    <Link
-                      to="/ComisionDetalles"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                    >
-                      <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                      <span>Comisiones</span>
-                    </Link>
+                  <div className="flex items-center gap-2 px-4 py-2 text-gray-400 text-xs font-medium uppercase tracking-wider">
+                    <Clock className="w-4 h-4" />
+                    <span>Gestión de Horarios</span>
+                  </div>
+                  <div className="space-y-1 pl-4">
                     <Link
                       to="/GestionHorariosSemanales"
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                     >
-                      <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                      <span>Gestión Horarios Semanales</span>
+                      <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-purple-400`} />
+                      <span>Gestión Horarios</span>
                     </Link>
                     <Link
                       to="/Asistencias"
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                     >
-                      <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
+                      <CheckSquare className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-teal-400`} />
                       <span>Asistencias</span>
                     </Link>
                     <Link
@@ -854,175 +834,208 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                     >
-                      <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                      <span>Marcación Empleados</span>
+                      <Timer className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-orange-400`} />
+                      <span>Marcación</span>
                     </Link>
                     <Link
                       to="/Horarios"
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                     >
-                      <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                      <span>Horarios</span>
+                      <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-purple-400`} />
+                      <span>Configurar Turnos</span>
                     </Link>
-                  </HideIfUnauthorized>
+                    <Link
+                      to="/PanelAsistencia"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <BarChart3 className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-blue-400`} />
+                      <span>Panel Asistencia</span>
+                    </Link>
+                  </div>
+                </div>
+              </HideIfUnauthorized>
+
+              {/* Empleados */}
+              <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 px-4 py-2 text-gray-400 text-xs font-medium uppercase tracking-wider">
+                    <Users className="w-4 h-4" />
+                    <span>Gestión de Personal</span>
+                  </div>
+                  <div className="space-y-1 pl-4">
+                    <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.GERENTE]}>
+                      <Link
+                        to="/NuevoEmpleados"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                      >
+                        <User className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-blue-400`} />
+                        <span>Nuevo Empleado</span>
+                      </Link>
+                      <Link
+                        to="/ListaEmpleado"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                      >
+                        <Users className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-blue-400`} />
+                        <span>Gestión Empleado</span>
+                      </Link>
+                    </HideIfUnauthorized>
+                    <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}>
+                      <Link
+                        to="/ComisionDetalles"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                      >
+                        <Percent className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-green-400`} />
+                        <span>Comisiones</span>
+                      </Link>
+                    </HideIfUnauthorized>
+                  </div>
                 </div>
               </HideIfUnauthorized>
 
               {/* Citas */}
               <div className="space-y-2">
-                <div className="px-4 py-2 text-gray-400 text-sm font-medium">Citas</div>
-                <Link
-                  to="/citas"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                >
-                  <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                  <span>Agenda</span>
-                </Link>
-                <HideIfUnauthorized
-                  userRole={userRole}
-                  allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}
-                >
+                <div className="flex items-center gap-2 px-4 py-2 text-gray-400 text-xs font-medium uppercase tracking-wider">
+                  <Calendar className="w-4 h-4" />
+                  <span>Gestión de Citas</span>
+                </div>
+                <div className="space-y-1 pl-4">
                   <Link
-                    to="/citas/Historial"
+                    to="/citas"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                   >
-                    <History className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                    <span>Historial</span>
+                    <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-purple-400`} />
+                    <span>Agenda</span>
                   </Link>
-                </HideIfUnauthorized>
+                  <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}>
+                    <Link
+                      to="/citas/Historial"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <History className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-blue-400`} />
+                      <span>Historial</span>
+                    </Link>
+                  </HideIfUnauthorized>
+                </div>
               </div>
 
               {/* Ventas */}
               <div className="space-y-2">
-                <div className="px-4 py-2 text-gray-400 text-sm font-medium">Ventas</div>
-                <Link
-                  to="/Ventas"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                >
-                  <ShoppingCart className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                  <span>Ventas</span>
-                </Link>
-                <HideIfUnauthorized
-                  userRole={userRole}
-                  allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}
-                >
+                <div className="flex items-center gap-2 px-4 py-2 text-gray-400 text-xs font-medium uppercase tracking-wider">
+                  <DollarSign className="w-4 h-4" />
+                  <span>Gestión de Ventas</span>
+                </div>
+                <div className="space-y-1 pl-4">
                   <Link
-                    to="/Ventas/GestionVentas"
+                    to="/Ventas"
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                   >
-                    <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                    <span>Gestión Ventas</span>
+                    <ShoppingCart className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-green-400`} />
+                    <span>Ventas</span>
                   </Link>
-                  <Link
-                    to="/Ventas/CierreCaja"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                  >
-                    <Wallet className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                    <span>Cierre de Caja</span>
-                  </Link>
-                </HideIfUnauthorized>
-                <HideIfUnauthorized
-                  userRole={userRole}
-                  allowedRoles={[ROLES.GERENTE]}
-                >
-                  <Link
-                    to="/Ventas/EstadoResultados"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                  >
-                    <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                    <span>Estado de Resultados</span>
-                  </Link>
-                  <Link
-                    to="/Ventas/BalanceGeneral"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                  >
-                    <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                    <span>Balance General</span>
-                  </Link>
-                  <Link
-                    to="/Ventas/FlujoEfectivo"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                  >
-                    <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                    <span>Flujo de Efectivo</span>
-                  </Link>
-                </HideIfUnauthorized>
+                  <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}>
+                    <Link
+                      to="/Ventas/GestionVentas"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <CreditCard className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-cyan-400`} />
+                      <span>Gestión Ventas</span>
+                    </Link>
+                    <Link
+                      to="/Ventas/CierreCaja"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <Wallet className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-yellow-400`} />
+                      <span>Cierre de Caja</span>
+                    </Link>
+                  </HideIfUnauthorized>
+                  <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.GERENTE]}>
+                    <Link
+                      to="/Ventas/EstadoResultados"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <TrendingUp className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-emerald-400`} />
+                      <span>Estado de Resultados</span>
+                    </Link>
+                    <Link
+                      to="/Ventas/BalanceGeneral"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <PieChart className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-indigo-400`} />
+                      <span>Balance General</span>
+                    </Link>
+                    <Link
+                      to="/Ventas/FlujoEfectivo"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <Calculator className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-blue-400`} />
+                      <span>Flujo de Efectivo</span>
+                    </Link>
+                  </HideIfUnauthorized>
+                </div>
               </div>
 
               {/* Gastos */}
-              <HideIfUnauthorized
-                userRole={userRole}
-                allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}
-              >
+              <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]}>
                 <div className="space-y-2">
-                  <div className="px-4 py-2 text-gray-400 text-sm font-medium">Gastos</div>
-                  <Link
-                    to="/gastos"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                  >
-                    <TrendingDown className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                    <span>Nuevo Gasto</span>
-                  </Link>
-                  <Link
-                    to="/gastos/GestionGastos"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                  >
-                    <DollarSign className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                    <span>Gestión Gastos</span>
-                  </Link>
-                  <Link
-                    to="/gastos/PresupuestosGastos"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                  >
-                    <Target className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                    <span>Presupuestos Gastos</span>
-                  </Link>
-                  <Link
-                    to="/gastos/DashboardGastos"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                  >
-                    <Activity className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                    <span>Dashboard Gastos</span>
-                  </Link>
-                  <Link
-                    to="/gastos/DashboardPagosPersonal"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                  >
-                    <Activity className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                    <span>Dashboard Pagos Personal</span>
-                  </Link>
-                </div>
-              </HideIfUnauthorized>
-
-              {/* Reportes */}
-              <HideIfUnauthorized
-                userRole={userRole}
-                allowedRoles={[ROLES.ADMIN, ROLES.GERENTE]}
-              >
-                <div className="space-y-2">
-                  <div className="px-4 py-2 text-gray-400 text-sm font-medium">Reportes</div>
-                  <Link
-                    to="/reportes"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                  >
-                    <BarChart3 className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                    <span>Reportes</span>
-                  </Link>
+                  <div className="flex items-center gap-2 px-4 py-2 text-gray-400 text-xs font-medium uppercase tracking-wider">
+                    <TrendingDown className="w-4 h-4" />
+                    <span>Gestión de Gastos</span>
+                  </div>
+                  <div className="space-y-1 pl-4">
+                    <Link
+                      to="/gastos"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <AlertTriangle className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-red-400`} />
+                      <span>Nuevo Gasto</span>
+                    </Link>
+                    <Link
+                      to="/gastos/GestionGastos"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <FolderOpen className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-red-400`} />
+                      <span>Gestión Gastos</span>
+                    </Link>
+                    <Link
+                      to="/gastos/PresupuestosGastos"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <Target className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-amber-400`} />
+                      <span>Presupuestos Gastos</span>
+                    </Link>
+                    <Link
+                      to="/gastos/DashboardGastos"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <PieChart className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-green-400`} />
+                      <span>Dashboard Gastos</span>
+                    </Link>
+                    <Link
+                      to="/gastos/DashboardPagosPersonal"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <Users className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-purple-400`} />
+                      <span>Dashboard Pagos Personal</span>
+                    </Link>
+                  </div>
                 </div>
               </HideIfUnauthorized>
 
@@ -1033,8 +1046,11 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                 >
-                  <User className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                  <span>Mi Perfil</span>
+                  <Settings className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'} text-indigo-400`} />
+                  <div>
+                    <div className="font-medium">Mi Perfil</div>
+                    <div className="text-xs text-gray-400">Configura tu cuenta</div>
+                  </div>
                 </Link>
               </div>
 
@@ -1044,39 +1060,36 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                   onClick={handleLogout}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 w-full"
                 >
-                  <LogOut className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-                  <span className="font-medium">Cerrar Sesión</span>
+                  <LogOut className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />
+                  <div>
+                    <div className="font-medium">Cerrar Sesión</div>
+                    <div className="text-xs text-red-400/70">Salir del sistema</div>
+                  </div>
                 </button>
               </div>
             </div>
           </div>
         )}
       </nav>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+      `}</style>
     </>
   );
 };
-
-// ✅ AÑADIR ANIMACIONES CSS
-const styles = `
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .animate-fadeIn {
-    animation: fadeIn 0.2s ease-out;
-  }
-`;
-
-// ✅ INYECTAR ESTILOS
-const styleSheet = document.createElement("style");
-styleSheet.innerText = styles;
-document.head.appendChild(styleSheet);
 
 export default MenuPrincipal;
