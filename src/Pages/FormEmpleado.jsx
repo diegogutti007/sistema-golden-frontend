@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { User, UserPlus, Calendar, MapPin, DollarSign, IdCard, Briefcase } from "lucide-react";
+import { User, UserPlus, Calendar, MapPin, DollarSign, IdCard, Briefcase, Phone, Mail, Shield, AlertCircle } from "lucide-react";
 import { BACKEND_URL } from '../config';
 
 function FormEmpleado() {
@@ -14,21 +14,37 @@ function FormEmpleado() {
   const [fechaIngreso, setFechaIngreso] = useState("");
   const [direccion, setDireccion] = useState("");
   const [sueldo, setSueldo] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefono, setTelefono] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api/tipo-empleado`)
-      .then((res) => res.json())
-      .then((data) => setTipos(Array.isArray(data) ? data : []))
-      .catch((err) => console.error("❌ Error al obtener tipos:", err));
+    fetchTipos();
+    fetchCargos();
   }, []);
 
-  useEffect(() => {
-    fetch(`${BACKEND_URL}/api/cargos-empleado`)
-      .then((res) => res.json())
-      .then((data) => setCargos(Array.isArray(data) ? data : []))
-      .catch((err) => console.error("❌ Error al obtener cargos:", err));
-  }, []);
+  const fetchTipos = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/tipo-empleado`);
+      const data = await res.json();
+      setTipos(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("❌ Error al obtener tipos:", err);
+      setError("Error al cargar tipos de empleado");
+    }
+  };
+
+  const fetchCargos = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/cargos-empleado`);
+      const data = await res.json();
+      setCargos(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("❌ Error al obtener cargos:", err);
+      setError("Error al cargar cargos de empleado");
+    }
+  };
 
   const handleTipoChange = (e) => setTipoSeleccionado(e.target.value);
   const handleCargoChange = (e) => setCargoSeleccionado(e.target.value);
@@ -36,17 +52,63 @@ function FormEmpleado() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
+
+    // Validaciones
+    if (!nombres.trim()) {
+      setError("❌ El nombre es requerido");
+      setLoading(false);
+      return;
+    }
+    if (!apellidos.trim()) {
+      setError("❌ El apellido es requerido");
+      setLoading(false);
+      return;
+    }
+    if (!docId.trim()) {
+      setError("❌ El documento de identidad es requerido");
+      setLoading(false);
+      return;
+    }
+    if (!tipoSeleccionado) {
+      setError("❌ Seleccione un tipo de empleado");
+      setLoading(false);
+      return;
+    }
+    if (!cargoSeleccionado) {
+      setError("❌ Seleccione un cargo");
+      setLoading(false);
+      return;
+    }
+    if (!fechaNacimiento) {
+      setError("❌ La fecha de nacimiento es requerida");
+      setLoading(false);
+      return;
+    }
+    if (!fechaIngreso) {
+      setError("❌ La fecha de ingreso es requerida");
+      setLoading(false);
+      return;
+    }
+    if (!sueldo || parseFloat(sueldo) <= 0) {
+      setError("❌ Ingrese un sueldo válido");
+      setLoading(false);
+      return;
+    }
 
     const empleado = {
-      nombres,
-      apellidos,
-      docId,
-      tipo_EmpId: tipoSeleccionado,
-      cargo_EmpId: cargoSeleccionado,
+      nombres: nombres.trim(),
+      apellidos: apellidos.trim(),
+      docId: docId.trim(),
+      tipo_EmpId: parseInt(tipoSeleccionado),
+      cargo_EmpId: parseInt(cargoSeleccionado),
       fechaNacimiento,
       fechaIngreso,
-      direccion,
-      sueldo,
+      direccion: direccion.trim(),
+      sueldo: parseFloat(sueldo),
+      email: email.trim() || null,
+      telefono: telefono.trim() || null,
+      estado: 1 // Activo por defecto
     };
 
     try {
@@ -55,47 +117,62 @@ function FormEmpleado() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(empleado),
       });
-      console.log(empleado);
+      
       const data = await response.json();
-      alert(data.mensaje);
-
-      // Limpiar formulario
-      setNombres("");
-      setApellidos("");
-      setDocId("");
-      setTipoSeleccionado("");
-      setCargoSeleccionado("");
-      setFechaNacimiento("");
-      setFechaIngreso("");
-      setDireccion("");
-      setSueldo("");
+      
+      if (response.ok) {
+        alert(data.mensaje || "✅ Empleado registrado correctamente");
+        
+        // Limpiar formulario
+        setNombres("");
+        setApellidos("");
+        setDocId("");
+        setTipoSeleccionado("");
+        setCargoSeleccionado("");
+        setFechaNacimiento("");
+        setFechaIngreso("");
+        setDireccion("");
+        setSueldo("");
+        setEmail("");
+        setTelefono("");
+        setError("");
+      } else {
+        setError(data.mensaje || "❌ Error al registrar empleado");
+      }
     } catch (err) {
       console.error("❌ Error al registrar empleado:", err);
-      alert("Error al registrar empleado");
+      setError("❌ Error de conexión con el servidor");
     } finally {
       setLoading(false);
     }
   };
 
-  const inputClass = "w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 outline-none transition-all duration-200 bg-white";
+  const inputClass = "w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 outline-none transition-all duration-200 bg-white text-gray-700";
   const labelClass = "block text-gray-700 font-semibold mb-2 text-sm";
   const iconClass = "text-yellow-500";
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto p-4">
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-red-600">
+          <AlertCircle className="w-5 h-5" />
+          <span className="text-sm">{error}</span>
+        </div>
+      )}
+
       <form
         onSubmit={handleSubmit}
         className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden"
       >
         {/* Header del Formulario */}
-        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-4">
+        <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 px-6 py-5">
           <div className="flex items-center space-x-3">
-            <div className="bg-white p-2 rounded-xl">
+            <div className="bg-white p-2.5 rounded-xl shadow-md">
               <UserPlus className="w-6 h-6 text-yellow-600" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-white">Registro de Empleado</h2>
-              <p className="text-yellow-100 text-sm">Complete la información del nuevo empleado</p>
+              <p className="text-yellow-100 text-sm mt-0.5">Complete la información del nuevo empleado</p>
             </div>
           </div>
         </div>
@@ -104,13 +181,13 @@ function FormEmpleado() {
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Columna Izquierda */}
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Nombres */}
               <div>
                 <label className={labelClass}>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mb-1">
                     <User className={`w-4 h-4 ${iconClass}`} />
-                    <span>Nombres</span>
+                    <span>Nombres *</span>
                   </div>
                 </label>
                 <input
@@ -126,9 +203,9 @@ function FormEmpleado() {
               {/* Apellidos */}
               <div>
                 <label className={labelClass}>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mb-1">
                     <User className={`w-4 h-4 ${iconClass}`} />
-                    <span>Apellidos</span>
+                    <span>Apellidos *</span>
                   </div>
                 </label>
                 <input
@@ -144,9 +221,9 @@ function FormEmpleado() {
               {/* Documento de Identidad */}
               <div>
                 <label className={labelClass}>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mb-1">
                     <IdCard className={`w-4 h-4 ${iconClass}`} />
-                    <span>Documento de Identidad</span>
+                    <span>Documento de Identidad *</span>
                   </div>
                 </label>
                 <input
@@ -159,12 +236,49 @@ function FormEmpleado() {
                 />
               </div>
 
+              {/* Email */}
+              <div>
+                <label className={labelClass}>
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Mail className={`w-4 h-4 ${iconClass}`} />
+                    <span>Correo Electrónico</span>
+                  </div>
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="correo@empresa.com"
+                  className={inputClass}
+                />
+              </div>
+
+              {/* Teléfono */}
+              <div>
+                <label className={labelClass}>
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Phone className={`w-4 h-4 ${iconClass}`} />
+                    <span>Teléfono</span>
+                  </div>
+                </label>
+                <input
+                  type="tel"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                  placeholder="Ingrese número de teléfono"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
+            {/* Columna Derecha */}
+            <div className="space-y-5">
               {/* Tipo de Empleado */}
               <div>
                 <label className={labelClass}>
-                  <div className="flex items-center space-x-2">
-                    <User className={`w-4 h-4 ${iconClass}`} />
-                    <span>Tipo de Empleado</span>
+                  <div className="flex items-center space-x-2 mb-1">
+                    <Shield className={`w-4 h-4 ${iconClass}`} />
+                    <span>Tipo de Empleado *</span>
                   </div>
                 </label>
                 <select
@@ -176,18 +290,18 @@ function FormEmpleado() {
                   <option value="">-- Seleccionar tipo --</option>
                   {tipos.map((tipo) => (
                     <option key={tipo.Tipo_EmpId} value={tipo.Tipo_EmpId}>
-                      {tipo.Descripcion} {tipo.Comision && `- ${tipo.Comision}% comisión`}
+                      {tipo.Descripcion} {tipo.Comision ? `(${tipo.Comision}% comisión)` : ""}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* Cargo del Empleado - NUEVO COMBOBOX */}
+              {/* Cargo del Empleado */}
               <div>
                 <label className={labelClass}>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mb-1">
                     <Briefcase className={`w-4 h-4 ${iconClass}`} />
-                    <span>Cargo del Empleado</span>
+                    <span>Cargo del Empleado *</span>
                   </div>
                 </label>
                 <select
@@ -204,16 +318,13 @@ function FormEmpleado() {
                   ))}
                 </select>
               </div>
-            </div>
 
-            {/* Columna Derecha */}
-            <div className="space-y-4">
               {/* Fecha de Nacimiento */}
               <div>
                 <label className={labelClass}>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mb-1">
                     <Calendar className={`w-4 h-4 ${iconClass}`} />
-                    <span>Fecha de Nacimiento</span>
+                    <span>Fecha de Nacimiento *</span>
                   </div>
                 </label>
                 <input
@@ -228,9 +339,9 @@ function FormEmpleado() {
               {/* Fecha de Ingreso */}
               <div>
                 <label className={labelClass}>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mb-1">
                     <Calendar className={`w-4 h-4 ${iconClass}`} />
-                    <span>Fecha de Ingreso</span>
+                    <span>Fecha de Ingreso *</span>
                   </div>
                 </label>
                 <input
@@ -245,9 +356,9 @@ function FormEmpleado() {
               {/* Dirección */}
               <div>
                 <label className={labelClass}>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mb-1">
                     <MapPin className={`w-4 h-4 ${iconClass}`} />
-                    <span>Dirección</span>
+                    <span>Dirección *</span>
                   </div>
                 </label>
                 <input
@@ -263,9 +374,9 @@ function FormEmpleado() {
               {/* Sueldo */}
               <div>
                 <label className={labelClass}>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mb-1">
                     <DollarSign className={`w-4 h-4 ${iconClass}`} />
-                    <span>Sueldo Base</span>
+                    <span>Sueldo Base *</span>
                   </div>
                 </label>
                 <input
@@ -286,7 +397,7 @@ function FormEmpleado() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-semibold px-6 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2"
+              className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-semibold px-6 py-4 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-3"
             >
               {loading ? (
                 <>

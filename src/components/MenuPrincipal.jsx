@@ -270,12 +270,26 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
       >
         <div className={`mx-auto ${isMobile ? 'px-3' : isTablet ? 'px-6' : 'max-w-7xl px-8'}`}>
           <div className={`flex justify-between items-center ${navbarHeight}`}>
-            {/* Logo */}
-            <div className="flex-shrink-0">
+            {/* Logo y Botón Menú Secundario */}
+            <div className={`flex items-center ${isMobile || isTablet ? 'flex-1 justify-center' : 'space-x-2'}`}>
+              {/* Botón Menú Secundario - Visible en TODOS los dispositivos */}
+              <button
+                onClick={handleToggleSecondaryMenu}
+                className={`
+                  p-2 rounded-lg text-gray-400 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 z-50
+                  ${isMobile || isTablet ? 'absolute left-4' : 'relative'}
+                `}
+                style={isMobile || isTablet ? { left: '1rem' } : {}}
+                title="Abrir menú de navegación"
+              >
+                <PanelLeft className="w-5 h-5" />
+              </button>
+              
+              {/* Logo */}
               <a
                 href="/"
                 onClick={handleLogoClick}
-                className="flex items-center space-x-2 group cursor-pointer"
+                className={`flex items-center space-x-2 group cursor-pointer ${isMobile || isTablet ? 'mx-auto' : ''}`}
               >
                 <div className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} relative rounded-full overflow-hidden shadow-lg transform group-hover:scale-105 transition-transform duration-200`}>
                   <img src={logo} alt="Golden Nails Logo" className="w-full h-full object-cover" />
@@ -283,19 +297,6 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                 </div>
               </a>
             </div>
-
-            {/* Botón Panel Left para móvil/tablet */}
-            {shouldUseMobileMenu && onToggleSecondaryMenu && (
-              <div className="flex items-center mr-2">
-                <button
-                  onClick={handleToggleSecondaryMenu}
-                  className="p-2 rounded-lg text-gray-400 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200"
-                  title="Mostrar/Ocultar menú lateral"
-                >
-                  <PanelLeft className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />
-                </button>
-              </div>
-            )}
 
             {/* Desktop Navigation */}
             {shouldUseDesktopMenu && (
@@ -653,7 +654,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
               </div>
             )}
 
-            {/* User Section - Cargo alineado a la derecha */}
+            {/* User Section */}
             <div className="flex items-center space-x-2 lg:space-x-4">
               {shouldUseDesktopMenu && (
                 <div className="relative">
@@ -669,7 +670,6 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                     }}
                     className="flex items-center justify-between space-x-3 px-3 py-2 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200 group min-w-[220px]"
                   >
-                    {/* Parte izquierda: Avatar + Nombre */}
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center border-2 border-yellow-500/30">
                         <User className="w-4 h-4 text-white" />
@@ -681,7 +681,6 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                       </div>
                     </div>
                     
-                    {/* Parte derecha: Badge de cargo + Chevron */}
                     <div className="flex items-center gap-2">
                       <span className={`text-xs px-2 py-0.5 rounded-full capitalize font-medium border ${getRoleBadgeColor()}`}>
                         {getRoleText()}

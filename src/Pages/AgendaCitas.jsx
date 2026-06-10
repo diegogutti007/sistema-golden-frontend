@@ -1361,7 +1361,7 @@ const guardarCita = async (formData, e) => {
         isOpen={isVentaModalOpen}
         onClose={handleCloseVentaModal}
         onRequestClose={handleCloseVentaModal}
-        citaInfo={form}
+        citaInfo={form} 
         onSave={handleGuardarVenta}
       />
 

@@ -38,7 +38,6 @@ const HideIfUnauthorized = ({ children, allowedRoles = [], userRole }) => {
 const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
   const location = useLocation();
   const [activeSection, setActiveSection] = useState("Dashboard");
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   const [hoveredItem, setHoveredItem] = useState(null);
 
   const ROLES = {
@@ -51,21 +50,21 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
   const userRole = usuario?.rol || ROLES.EMPLEADO;
 
   useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-
     const path = location.pathname;
     if (path.includes('/dashboard')) setActiveSection("Dashboard");
     else if (path.includes('/maestro')) setActiveSection("Maestro");
     else if (path.includes('/inventario')) setActiveSection("Inventario");
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, [location.pathname]);
 
-  const isDesktop = windowWidth >= 1280;
+  const handleLinkClick = () => {
+    if (isMobile && onClose) {
+      onClose();
+    }
+  };
+
+  const handleSectionClick = (section) => {
+    setActiveSection(activeSection === section ? "" : section);
+  };
 
   const menuItems = [
     {
@@ -209,45 +208,31 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
     return location.pathname === ruta;
   };
 
-  const handleLinkClick = () => {
-    if (isMobile && onClose) {
-      onClose();
-    }
-  };
-
-  const handleSectionClick = (section) => {
-    setActiveSection(activeSection === section ? "" : section);
-  };
-
-  const shouldShow = isDesktop || (isMobile && isOpen);
-
   return (
     <>
-      {/* Overlay para móvil/tablet */}
+      {/* Overlay cuando el menú está abierto en móvil */}
       {isMobile && isOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-20 transition-all duration-300"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-all duration-300"
           onClick={onClose}
         />
       )}
 
-      {/* Contenido del menú */}
-      <aside className={`
-        ${isDesktop
-          ? 'w-80 fixed top-16 left-0 h-[calc(100vh-64px)] z-30'
-          : shouldShow
-            ? 'w-80 fixed top-16 left-0 h-[calc(100vh-64px)] z-30 translate-x-0'
-            : 'w-80 fixed top-16 left-0 h-[calc(100vh-64px)] z-30 -translate-x-full'
-        }
-        bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950
-        border-r border-yellow-500/20
-        transition-transform duration-300 ease-in-out shadow-2xl
-        flex flex-col
-      `}
+      {/* Contenido del menú lateral */}
+      <aside
+        id="menu-secundario"
+        className={`
+          fixed top-0 left-0 w-80 h-full z-50
+          bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950
+          border-r border-yellow-500/20
+          transition-transform duration-300 ease-in-out shadow-2xl
+          flex flex-col
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
         style={{
           WebkitOverflowScrolling: 'touch',
-        }}>
-        
+        }}
+      >
         {/* Header llamativo */}
         <div className="relative overflow-hidden flex-shrink-0">
           <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 to-transparent" />
@@ -273,22 +258,21 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
                 </div>
               </div>
 
-              {isMobile && shouldShow && (
-                <button
-                  onClick={onClose}
-                  className="p-2 rounded-lg text-gray-400 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              )}
+              {/* Botón de cerrar - visible en móvil y desktop */}
+              <button
+                onClick={onClose}
+                className="p-2 rounded-lg text-gray-400 hover:text-yellow-400 hover:bg-gray-800/50 transition-all duration-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
             <div className="absolute bottom-0 left-6 right-6 h-0.5 bg-gradient-to-r from-yellow-500/0 via-yellow-500/50 to-yellow-500/0" />
           </div>
         </div>
 
-        {/* Navegación principal - con padding bottom para no tapar el footer */}
-        <nav className="flex-1 p-4 space-y-3 overflow-y-auto" style={{ paddingBottom: '60px' }}>
+        {/* Navegación principal */}
+        <nav className="flex-1 p-4 space-y-3 overflow-y-auto">
           {menuItems.map((section, sectionIndex) => {
             const filteredSubItems = section.sub.filter(item =>
               item.allowedRoles.includes(userRole)
@@ -391,8 +375,8 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
           })}
         </nav>
 
-        {/* Footer compacto - No tapa el contenido */}
-        <div className="flex-shrink-0 px-4 py-2 border-t border-yellow-500/20 bg-gray-900/50 backdrop-blur-sm">
+        {/* Footer compacto */}
+        <div className="flex-shrink-0 px-4 py-3 border-t border-yellow-500/20 bg-gray-900/50 backdrop-blur-sm">
           <div className="flex items-center justify-center gap-2">
             <div className="w-1 h-1 bg-yellow-500 rounded-full animate-pulse" />
             <div className="text-[8px] text-gray-500 uppercase tracking-wider font-mono">
