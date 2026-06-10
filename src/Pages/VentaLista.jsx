@@ -27,7 +27,8 @@ export default function VentaLista() {
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [cargando, setCargando] = useState(false);
   const [ventaSeleccionada, setVentaSeleccionada] = useState(null);
-  const [modo, setModo] = useState("");
+  const [mostrarDetalleModal, setMostrarDetalleModal] = useState(false);
+  const [mostrarEditarModal, setMostrarEditarModal] = useState(false);
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [mostrarFiltros, setMostrarFiltros] = useState(false);
@@ -43,7 +44,6 @@ export default function VentaLista() {
 
   // Función para cargar las ventas con paginación
   const cargarVentas = async (forzarCarga = false) => {
-    // Si es primera carga y no hay filtros, no cargar
     if (primeraCarga && !forzarCarga && !tieneFiltros()) {
       return;
     }
@@ -63,9 +63,7 @@ export default function VentaLista() {
       const data = await res.json();
       setVentas(data.ventas || []);
       setTotalPaginas(data.totalPaginas || 1);
-      console.log('datoooo', data.ventas);
 
-      // Marcar que ya no es la primera carga
       if (primeraCarga) {
         setPrimeraCarga(false);
       }
@@ -77,9 +75,8 @@ export default function VentaLista() {
     }
   };
 
-  // Función para cargar estadísticas - SOLO CON FILTROS
+  // Función para cargar estadísticas
   const cargarEstadisticas = async (forzarCarga = false) => {
-    // Si es primera carga y no hay filtros, no cargar estadísticas
     if (primeraCarga && !forzarCarga && !tieneFiltros()) {
       return;
     }
@@ -93,8 +90,6 @@ export default function VentaLista() {
 
       const url = `${BACKEND_URL}/api/estadisticas/ventas?${params.toString()}`;
 
-      console.log('📊 Solicitando estadísticas desde:', url);
-
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -102,16 +97,14 @@ export default function VentaLista() {
       }
 
       const data = await response.json();
-      console.log('📊 Estadísticas cargadas:', data);
       setEstadisticas(data);
 
-      // Marcar que ya no es la primera carga
       if (primeraCarga) {
         setPrimeraCarga(false);
       }
 
     } catch (error) {
-      console.warn('⚠️ Endpoint de estadísticas no disponible, usando cálculo local:', error.message);
+      console.warn('⚠️ Endpoint de estadísticas no disponible:', error.message);
       calcularEstadisticasLocales();
     } finally {
       setCargandoEstadisticas(false);
@@ -147,15 +140,7 @@ export default function VentaLista() {
     }
   };
 
-
   const aplicarFiltros = () => {
-    console.log('🎯 APLICANDO FILTROS:', {
-      busqueda: busqueda || '(vacío)',
-      fechaInicio: fechaInicio || '(no definida)',
-      fechaFin: fechaFin || '(no definida)'
-    });
-
-    // Validar fechas
     if (fechaInicio && fechaFin) {
       const inicio = new Date(fechaInicio);
       const fin = new Date(fechaFin);
@@ -167,31 +152,20 @@ export default function VentaLista() {
 
     setPagina(1);
     setPrimeraCarga(false);
-
-    // Forzar recarga de ambos
     cargarVentas(true);
     cargarEstadisticas(true);
   };
 
-  // Función para verificar filtros activos
   const tieneFiltros = () => {
-    const hayFiltros = !!(busqueda || fechaInicio || fechaFin);
-    console.log('🔍 Verificando filtros:', {
-      busqueda,
-      fechaInicio,
-      fechaFin,
-      hayFiltros
-    });
-    return hayFiltros;
+    return !!(busqueda || fechaInicio || fechaFin);
   };
 
-  // Función para limpiar filtros
   const limpiarFiltros = () => {
     setFechaInicio("");
     setFechaFin("");
     setBusqueda("");
     setPagina(1);
-    setPrimeraCarga(true); // Resetear a estado inicial
+    setPrimeraCarga(true);
     setEstadisticas({
       totalVentas: 0,
       ventasPagadas: 0,
@@ -200,14 +174,12 @@ export default function VentaLista() {
     setVentas([]);
   };
 
-  // Cargar datos solo cuando cambie la página (no por filtros automáticos)
   useEffect(() => {
     if (!primeraCarga) {
       cargarVentas();
     }
   }, [pagina]);
 
-  // Función para eliminar venta
   const eliminarVenta = async (ventaID) => {
     if (!window.confirm("¿Seguro que deseas eliminar esta venta?")) return;
 
@@ -217,7 +189,6 @@ export default function VentaLista() {
       });
       if (res.ok) {
         alert("✅ Venta eliminada correctamente");
-        // Recargar solo si ya hay datos cargados
         if (!primeraCarga) {
           cargarVentas(true);
           cargarEstadisticas(true);
@@ -231,57 +202,45 @@ export default function VentaLista() {
     }
   };
 
-  // Funciones de formato
   const formatearFecha = (fechaStr) => {
     if (!fechaStr) return '';
 
-    // Extraer solo la parte de la fecha (YYYY-MM-DD)
     let fechaParte = fechaStr;
-
-    // Si viene con T (formato ISO: 2026-03-16T05:00:00.000Z)
     if (fechaStr.includes('T')) {
-      fechaParte = fechaStr.split('T')[0]; // Tomar solo lo que está antes de T
+      fechaParte = fechaStr.split('T')[0];
     }
 
-    // Ahora fechaParte debe ser "2026-03-16"
     if (fechaParte.includes('-')) {
       const partes = fechaParte.split('-');
       if (partes.length === 3) {
-        const año = partes[0];
-        const mes = partes[1];
-        const dia = partes[2];
-
-        // Reordenar a DD-MM-YYYY
-        return `${dia}-${mes}-${año}`;
+        return `${partes[2]}-${partes[1]}-${partes[0]}`;
       }
     }
-
-    return fechaStr; // Si no tiene el formato esperado, devolver original
+    return fechaStr;
   };
 
-  const formatearMoneda = (n) =>
-    `S/ ${Number(n || 0).toFixed(2)}`;
+  const formatearMoneda = (n) => `S/ ${Number(n || 0).toFixed(2)}`;
 
-  // Funciones para modales
-  const abrirEdicion = (ventaID) => {
-    console.log("📝 Abriendo edición para venta:", ventaID);
-    setModo("editar");
-    setVentaSeleccionada(ventaID);
-  };
-
+  // Funciones para abrir modales
   const abrirDetalle = (ventaID) => {
     console.log("👁️ Abriendo detalle para venta:", ventaID);
-    setModo("");
     setVentaSeleccionada(ventaID);
+    setMostrarDetalleModal(true);
+  };
+
+  const abrirEdicion = (ventaID) => {
+    console.log("📝 Abriendo edición para venta:", ventaID);
+    setVentaSeleccionada(ventaID);
+    setMostrarEditarModal(true);
   };
 
   const cerrarModales = () => {
     console.log("🚪 Cerrando modales");
     setVentaSeleccionada(null);
-    setModo("");
+    setMostrarDetalleModal(false);
+    setMostrarEditarModal(false);
   };
 
-  // Función para recargar todo (solo si hay datos cargados)
   const recargarTodo = () => {
     if (!primeraCarga || tieneFiltros()) {
       cargarVentas(true);
@@ -305,7 +264,6 @@ export default function VentaLista() {
 
         {/* Cards de Estadísticas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
-          {/* Total Ventas */}
           <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-4 text-white shadow-lg">
             <div className="flex items-center justify-between">
               <div>
@@ -319,15 +277,11 @@ export default function VentaLista() {
                     formatearMoneda(estadisticas.totalVentas)
                   )}
                 </p>
-                {tieneFiltros() && (
-                  <p className="text-blue-200 text-xs mt-1">Filtros aplicados</p>
-                )}
               </div>
               <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 text-blue-200" />
             </div>
           </div>
 
-          {/* Ventas Pagadas */}
           <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-4 text-white shadow-lg">
             <div className="flex items-center justify-between">
               <div>
@@ -341,15 +295,11 @@ export default function VentaLista() {
                     estadisticas.ventasPagadas.toLocaleString()
                   )}
                 </p>
-                {tieneFiltros() && (
-                  <p className="text-green-200 text-xs mt-1">Filtros aplicados</p>
-                )}
               </div>
               <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-green-200" />
             </div>
           </div>
 
-          {/* Ventas Anuladas */}
           <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-2xl p-4 text-white shadow-lg">
             <div className="flex items-center justify-between">
               <div>
@@ -363,9 +313,6 @@ export default function VentaLista() {
                     estadisticas.ventasAnuladas.toLocaleString()
                   )}
                 </p>
-                {tieneFiltros() && (
-                  <p className="text-red-200 text-xs mt-1">Filtros aplicados</p>
-                )}
               </div>
               <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-red-200" />
             </div>
@@ -376,7 +323,6 @@ export default function VentaLista() {
       {/* Filtros y Búsqueda */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 mb-4 sm:mb-6">
         <div className="space-y-4">
-          {/* Búsqueda */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1 relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -391,7 +337,6 @@ export default function VentaLista() {
               />
             </div>
 
-            {/* Botón para mostrar/ocultar filtros */}
             <button
               onClick={() => setMostrarFiltros(!mostrarFiltros)}
               className={`flex items-center space-x-2 px-4 py-2 sm:py-3 rounded-xl border transition-all duration-200 ${mostrarFiltros || tieneFiltros()
@@ -406,7 +351,6 @@ export default function VentaLista() {
               )}
             </button>
 
-            {/* Botón Aplicar Filtros */}
             <button
               onClick={aplicarFiltros}
               disabled={cargando || cargandoEstadisticas}
@@ -426,7 +370,6 @@ export default function VentaLista() {
             </button>
           </div>
 
-          {/* Filtros de Fecha - Se muestran condicionalmente */}
           {mostrarFiltros && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
               <div>
@@ -466,7 +409,6 @@ export default function VentaLista() {
             </div>
           )}
 
-          {/* Botón Actualizar */}
           <div className="flex gap-3">
             <button
               onClick={recargarTodo}
@@ -496,139 +438,107 @@ export default function VentaLista() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
           </div>
         ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+                <tr>
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase">Venta</th>
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase">Cliente</th>
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase">Detalle</th>
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase">Fecha</th>
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase">Total</th>
+                  <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase">Estado</th>
+                  <th className="py-4 px-6 text-center text-xs font-semibold text-gray-600 uppercase">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {ventas.length === 0 ? (
                   <tr>
-                    <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Venta
-                    </th>
-                    <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Cliente
-                    </th>
-                    {/* 🔹 NUEVA COLUMNA DETALLE */}
-                    <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      <div className="flex items-center gap-1">
-                        <FileTextIcon className="w-3 h-3" />
-                        Detalle
+                    <td colSpan="7" className="py-12 text-center">
+                      <div className="flex flex-col items-center text-gray-500">
+                        <ShoppingCart className="w-16 h-16 mb-4 text-gray-300" />
+                        <p className="text-lg font-medium">No se encontraron ventas</p>
+                        <p className="text-sm">Intenta con otros términos de búsqueda</p>
                       </div>
-                    </th>
-                    <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Fecha
-                    </th>
-                    <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Total
-                    </th>
-                    <th className="py-4 px-6 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Estado
-                    </th>
-                    <th className="py-4 px-6 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Acciones
-                    </th>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {ventas.length === 0 ? (
-                    <tr>
-                      <td colSpan="7" className="py-12 text-center">
-                        <div className="flex flex-col items-center text-gray-500">
-                          <ShoppingCart className="w-16 h-16 mb-4 text-gray-300" />
-                          <p className="text-lg font-medium">No se encontraron ventas</p>
-                          <p className="text-sm">Intenta con otros términos de búsqueda</p>
+                ) : (
+                  ventas.map((v) => (
+                    <tr key={v.VentaID} className="hover:bg-gray-50 transition-colors">
+                      <td className="py-4 px-6">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
+                            #{v.VentaID}
+                          </div>
+                          <div className="text-sm text-gray-500">ID: {v.VentaID}</div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center">
+                          <User className="w-4 h-4 text-gray-400 mr-2" />
+                          <span className="font-medium text-gray-900">{v.ClienteNombre || "—"}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-start">
+                          <FileTextIcon className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm text-gray-700 truncate max-w-xs" title={v.detalle || ''}>
+                            {v.detalle || "Sin detalle"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center text-gray-700">
+                          <Calendar className="w-4 h-4 text-gray-400 mr-2" />
+                          {formatearFecha(v.FechaVenta)}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex items-center text-gray-900 font-bold">
+                          <DollarSign className="w-4 h-4 text-green-500 mr-1" />
+                          {formatearMoneda(v.Total)}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                          v.Estado === "Pagada" ? "bg-green-100 text-green-800" :
+                          v.Estado === "Anulada" ? "bg-red-100 text-red-800" :
+                          "bg-yellow-100 text-yellow-800"
+                        }`}>
+                          {v.Estado}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex justify-center space-x-2">
+                          <button
+                            onClick={() => abrirDetalle(v.VentaID)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Ver detalle"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => abrirEdicion(v.VentaID)}
+                            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
+                            title="Editar"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => eliminarVenta(v.VentaID)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
-                  ) : (
-                    ventas.map((v) => (
-                      <tr
-                        key={v.VentaID}
-                        className="hover:bg-gray-50 transition-colors duration-150"
-                      >
-                        <td className="py-4 px-6">
-                          <div className="flex items-center">
-                            <div className="w-10 h-10 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
-                              #{v.VentaID}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              ID: {v.VentaID}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center">
-                            <User className="w-4 h-4 text-gray-400 mr-2" />
-                            <span className="font-medium text-gray-900">
-                              {v.ClienteNombre || "—"}
-                            </span>
-                          </div>
-                        </td>
-                        {/* 🔹 NUEVA CELDA DETALLE */}
-                        <td className="py-4 px-6">
-                          <div className="flex items-start">
-                            <FileTextIcon className="w-4 h-4 text-gray-400 mr-2 mt-0.5 flex-shrink-0" />
-                            <span
-                              className={`text-sm max-w-xs truncate ${v.detalle ? 'text-gray-700' : 'text-red-500 font-medium'}`}
-                              title={v.detalle || ''}
-                            >
-                              {v.detalle || "No se encontró la cita"}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center text-gray-700">
-                            <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                            {formatearFecha(v.FechaVenta)}
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex items-center text-gray-900 font-bold">
-                            <DollarSign className="w-4 h-4 text-green-500 mr-1" />
-                            {formatearMoneda(v.Total)}
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${v.Estado === "Pagada"
-                            ? "bg-green-100 text-green-800"
-                            : v.Estado === "Anulada"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-yellow-100 text-yellow-800"
-                            }`}>
-                            {v.Estado}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex justify-center space-x-2">
-                            <button
-                              onClick={() => abrirDetalle(v.VentaID)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
-                              title="Ver detalle"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => abrirEdicion(v.VentaID)}
-                              className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors duration-200"
-                              title="Editar"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => eliminarVenta(v.VentaID)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                              title="Eliminar"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -641,31 +551,26 @@ export default function VentaLista() {
         ) : ventas.length > 0 ? (
           ventas.map((v) => (
             <div key={v.VentaID} className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4">
-              {/* Header de la tarjeta */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-400 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                     #{v.VentaID}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900 text-sm">
-                      {v.ClienteNombre || "—"}
-                    </h3>
+                    <h3 className="font-semibold text-gray-900 text-sm">{v.ClienteNombre || "—"}</h3>
                     <p className="text-xs text-gray-500">ID: {v.VentaID}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => abrirDetalle(v.VentaID)}
-                  className="p-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transform hover:scale-105 transition-all duration-200"
+                  className="p-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all"
                   title="Ver detalle"
                 >
                   <Eye className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Información detallada */}
               <div className="grid grid-cols-2 gap-3 text-xs">
-                {/* 🔹 NUEVA FILA DETALLE - OCUPA TODAS LAS COLUMNAS */}
                 <div className="col-span-2 flex items-start space-x-2 bg-gray-50 p-2 rounded-lg mb-1">
                   <FileTextIcon className="w-3 h-3 text-gray-500 mt-0.5 flex-shrink-0" />
                   <span className="text-gray-600 flex-1 break-words">
@@ -685,29 +590,27 @@ export default function VentaLista() {
                 </div>
                 <div className="flex items-center space-x-2 col-span-2">
                   <span className="text-gray-600">Estado:</span>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${v.Estado === "Pagada"
-                    ? "bg-green-100 text-green-800"
-                    : v.Estado === "Anulada"
-                      ? "bg-red-100 text-red-800"
-                      : "bg-yellow-100 text-yellow-800"
-                    }`}>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                    v.Estado === "Pagada" ? "bg-green-100 text-green-800" :
+                    v.Estado === "Anulada" ? "bg-red-100 text-red-800" :
+                    "bg-yellow-100 text-yellow-800"
+                  }`}>
                     {v.Estado}
                   </span>
                 </div>
               </div>
 
-              {/* Acciones */}
               <div className="flex justify-end space-x-2 pt-3 mt-3 border-t border-gray-200">
                 <button
                   onClick={() => abrirEdicion(v.VentaID)}
-                  className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors duration-200"
+                  className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
                   title="Editar"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => eliminarVenta(v.VentaID)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                   title="Eliminar"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -725,7 +628,7 @@ export default function VentaLista() {
       </div>
 
       {/* Modal de detalle */}
-      {ventaSeleccionada && !modo && (
+      {mostrarDetalleModal && ventaSeleccionada && (
         <ModalVentaDetalle
           ventaId={ventaSeleccionada}
           onClose={cerrarModales}
@@ -733,14 +636,14 @@ export default function VentaLista() {
       )}
 
       {/* Modal de edición */}
-      {ventaSeleccionada && modo === "editar" && (
+      {mostrarEditarModal && ventaSeleccionada && (
         <ModalVentaEditar
           ventaId={ventaSeleccionada}
           onClose={cerrarModales}
           onGuardado={() => {
             cerrarModales();
-            cargarVentas();
-            cargarEstadisticas();
+            cargarVentas(true);
+            cargarEstadisticas(true);
           }}
         />
       )}

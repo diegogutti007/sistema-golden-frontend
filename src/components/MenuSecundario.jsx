@@ -27,7 +27,15 @@ import {
   LayoutDashboard,
   Grid3x3,
   Warehouse,
-  Gem
+  Gem,
+  TrendingDown,
+  Receipt,
+  Wallet,
+  LineChart,
+  BarChart,
+  Activity,
+  Briefcase,
+  UserCheck
 } from "lucide-react";
 
 const HideIfUnauthorized = ({ children, allowedRoles = [], userRole }) => {
@@ -54,6 +62,7 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
     if (path.includes('/dashboard')) setActiveSection("Dashboard");
     else if (path.includes('/maestro')) setActiveSection("Maestro");
     else if (path.includes('/inventario')) setActiveSection("Inventario");
+    else if (path.includes('/reportes')) setActiveSection("Reportes Financieros");
   }, [location.pathname]);
 
   const handleLinkClick = () => {
@@ -199,6 +208,69 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
           bgColor: "bg-red-500/10",
           description: "Productos por agotarse",
           allowedRoles: [ROLES.ADMIN, ROLES.GERENTE, ROLES.SUPERVISOR]
+        },
+      ],
+    },
+    {
+      titulo: "Reportes Financieros",
+      icon: BarChart3,
+      iconColor: "text-cyan-400",
+      bgColor: "bg-cyan-500/10",
+      gradient: "from-cyan-600/20 to-transparent",
+      sub: [
+        {
+          nombre: "Gastos",
+          ruta: "/gastos/DashboardGastos",
+          icon: Receipt,
+          iconColor: "text-red-400",
+          bgColor: "bg-red-500/10",
+          description: "Análisis y resumen de gastos",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE]
+        },
+        {
+          nombre: "Pagos Personal",
+          ruta: "/gastos/DashboardPagosPersonal",
+          icon: UserCheck,
+          iconColor: "text-purple-400",
+          bgColor: "bg-purple-500/10",
+          description: "Resumen de pagos a empleados",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE]
+        },
+/*         {
+          nombre: "Presupuestos",
+          ruta: "/gastos/PresupuestosGastos",
+          icon: Wallet,
+          iconColor: "text-amber-400",
+          bgColor: "bg-amber-500/10",
+          description: "Gestión de presupuestos",
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE]
+        }, */
+        {
+          nombre: "Estado de Resultados",
+          ruta: "/Ventas/EstadoResultados",
+          icon: LineChart,
+          iconColor: "text-emerald-400",
+          bgColor: "bg-emerald-500/10",
+          description: "Resultados mensuales",
+          allowedRoles: [ROLES.GERENTE]
+        },
+        {
+          nombre: "Balance General",
+          ruta: "/Ventas/BalanceGeneral",
+          icon: BarChart,
+          iconColor: "text-indigo-400",
+          bgColor: "bg-indigo-500/10",
+          description: "Balance general",
+          allowedRoles: [ROLES.GERENTE]
+        },
+        {
+          nombre: "Flujo de Efectivo",
+          ruta: "/Ventas/FlujoEfectivo",
+          icon: Activity,
+          iconColor: "text-blue-400",
+          bgColor: "bg-blue-500/10",
+          description: "Flujo de efectivo",
+          allowedRoles: [ROLES.GERENTE]
         },
       ],
     },

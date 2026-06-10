@@ -57,7 +57,7 @@ const HideIfUnauthorized = ({ children, allowedRoles = [], userRole }) => {
 const SubmenuItem = ({ to, onClick, icon: Icon, title, description, iconBg, iconColor }) => {
   const defaultIconBg = iconBg || "bg-gray-700/50";
   const defaultIconColor = iconColor || "text-gray-300";
-  
+
   return (
     <Link
       to={to}
@@ -102,7 +102,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
 
   // Función para obtener el texto del rol en español
   const getRoleText = () => {
-    switch(userRole) {
+    switch (userRole) {
       case ROLES.ADMIN: return 'Administrador';
       case ROLES.GERENTE: return 'Gerente';
       case ROLES.SUPERVISOR: return 'Supervisor';
@@ -246,7 +246,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
 
   // Colores para el badge de rol
   const getRoleBadgeColor = () => {
-    switch(userRole) {
+    switch (userRole) {
       case ROLES.ADMIN: return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
       case ROLES.GERENTE: return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
       case ROLES.SUPERVISOR: return 'bg-green-500/20 text-green-400 border-green-500/30';
@@ -284,7 +284,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
               >
                 <PanelLeft className="w-5 h-5" />
               </button>
-              
+
               {/* Logo */}
               <a
                 href="/"
@@ -395,6 +395,15 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                         <div className="absolute top-full left-0 mt-2 w-64 bg-gray-900 border border-yellow-500/20 rounded-xl shadow-2xl z-50 overflow-hidden animate-fadeIn">
                           <div className="p-2">
                             <SubmenuItem
+                              to="/Horarios"
+                              onClick={() => setHorariosOpen(false)}
+                              icon={Calendar}
+                              iconBg="bg-purple-500/10"
+                              iconColor="text-purple-400"
+                              title="Configurar Turnos"
+                              description="Definir horarios"
+                            />
+                            <SubmenuItem
                               to="/GestionHorariosSemanales"
                               onClick={() => setHorariosOpen(false)}
                               icon={Calendar}
@@ -409,7 +418,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                               icon={CheckSquare}
                               iconBg="bg-teal-500/10"
                               iconColor="text-teal-400"
-                              title="Asistencias"
+                              title="Panel de Asistencias"
                               description="Control horario"
                             />
                             <SubmenuItem
@@ -421,16 +430,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                               title="Marcación"
                               description="Registro de entrada"
                             />
-                            <SubmenuItem
-                              to="/Horarios"
-                              onClick={() => setHorariosOpen(false)}
-                              icon={Calendar}
-                              iconBg="bg-purple-500/10"
-                              iconColor="text-purple-400"
-                              title="Configurar Turnos"
-                              description="Definir horarios"
-                            />
-                            <SubmenuItem
+                            {/*                             <SubmenuItem
                               to="/PanelAsistencia"
                               onClick={() => setHorariosOpen(false)}
                               icon={BarChart3}
@@ -438,7 +438,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                               iconColor="text-blue-400"
                               title="Panel Asistencia"
                               description="Reporte de asistencia"
-                            />
+                            /> */}
                           </div>
                         </div>
                       )}
@@ -543,7 +543,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                               description="Cierre diario"
                             />
                           </HideIfUnauthorized>
-                          <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.GERENTE]}>
+                         {/*  <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.GERENTE]}>
                             <SubmenuItem
                               to="/Ventas/EstadoResultados"
                               onClick={() => setVentasOpen(false)}
@@ -571,7 +571,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                               title="Flujo Efectivo"
                               description="Flujo de efectivo"
                             />
-                          </HideIfUnauthorized>
+                          </HideIfUnauthorized> */}
                         </div>
                       </div>
                     )}
@@ -627,7 +627,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                               title="Presupuestos"
                               description="Gestionar presupuestos"
                             />
-                            <SubmenuItem
+{/*                             <SubmenuItem
                               to="/gastos/DashboardGastos"
                               onClick={() => setGastosOpen(false)}
                               icon={PieChart}
@@ -644,7 +644,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                               iconColor="text-purple-400"
                               title="Dashboard Pagos"
                               description="Resumen de pagos"
-                            />
+                            /> */}
                           </div>
                         </div>
                       )}
@@ -680,7 +680,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <span className={`text-xs px-2 py-0.5 rounded-full capitalize font-medium border ${getRoleBadgeColor()}`}>
                         {getRoleText()}
@@ -742,12 +742,11 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                     <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium truncate max-w-[100px]`}>
                       {primerNombre}
                     </span>
-                    <span className={`${isMobile ? 'text-[9px]' : 'text-[10px]'} capitalize ${
-                      userRole === ROLES.ADMIN ? 'text-purple-400' :
+                    <span className={`${isMobile ? 'text-[9px]' : 'text-[10px]'} capitalize ${userRole === ROLES.ADMIN ? 'text-purple-400' :
                       userRole === ROLES.GERENTE ? 'text-blue-400' :
-                      userRole === ROLES.SUPERVISOR ? 'text-green-400' :
-                      'text-gray-400'
-                    }`}>
+                        userRole === ROLES.SUPERVISOR ? 'text-green-400' :
+                          'text-gray-400'
+                      }`}>
                       {getRoleText()}
                     </span>
                   </div>
@@ -813,6 +812,14 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                   </div>
                   <div className="space-y-1 pl-4">
                     <Link
+                      to="/Horarios"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
+                    >
+                      <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-purple-400`} />
+                      <span>Configurar Turnos</span>
+                    </Link>
+                    <Link
                       to="/GestionHorariosSemanales"
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
@@ -826,7 +833,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                       className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                     >
                       <CheckSquare className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-teal-400`} />
-                      <span>Asistencias</span>
+                      <span>Panel de Asistencias</span>
                     </Link>
                     <Link
                       to="/MarcacionEmpleados"
@@ -836,22 +843,14 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                       <Timer className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-orange-400`} />
                       <span>Marcación</span>
                     </Link>
-                    <Link
-                      to="/Horarios"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
-                    >
-                      <Calendar className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-purple-400`} />
-                      <span>Configurar Turnos</span>
-                    </Link>
-                    <Link
+{/*                     <Link
                       to="/PanelAsistencia"
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
                     >
                       <BarChart3 className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-blue-400`} />
                       <span>Panel Asistencia</span>
-                    </Link>
+                    </Link> */}
                   </div>
                 </div>
               </HideIfUnauthorized>
@@ -958,7 +957,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                     </Link>
                   </HideIfUnauthorized>
                   <HideIfUnauthorized userRole={userRole} allowedRoles={[ROLES.GERENTE]}>
-                    <Link
+{/*                     <Link
                       to="/Ventas/EstadoResultados"
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
@@ -981,7 +980,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                     >
                       <Calculator className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-blue-400`} />
                       <span>Flujo de Efectivo</span>
-                    </Link>
+                    </Link> */}
                   </HideIfUnauthorized>
                 </div>
               </div>
@@ -1018,7 +1017,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                       <Target className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-amber-400`} />
                       <span>Presupuestos Gastos</span>
                     </Link>
-                    <Link
+{/*                     <Link
                       to="/gastos/DashboardGastos"
                       onClick={() => setMobileMenuOpen(false)}
                       className="flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-300 hover:text-yellow-400 hover:bg-gray-800/80 transition-all duration-200"
@@ -1033,7 +1032,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                     >
                       <Users className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-purple-400`} />
                       <span>Dashboard Pagos Personal</span>
-                    </Link>
+                    </Link> */}
                   </div>
                 </div>
               </HideIfUnauthorized>
