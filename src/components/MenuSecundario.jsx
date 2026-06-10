@@ -252,7 +252,7 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
           iconColor: "text-emerald-400",
           bgColor: "bg-emerald-500/10",
           description: "Resultados mensuales",
-          allowedRoles: [ROLES.GERENTE]
+          allowedRoles: [ROLES.ADMIN, ROLES.GERENTE]
         },
         {
           nombre: "Balance General",
