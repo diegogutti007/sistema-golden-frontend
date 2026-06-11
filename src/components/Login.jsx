@@ -10,14 +10,14 @@ export default function Login({ onLogin }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("🔍 Login montado");
+    //console.log("🔍 Login montado");
     
     // Solo verificar si ya está autenticado
     const token = localStorage.getItem("token");
     const usuarioData = localStorage.getItem("usuario");
     
     if (token && usuarioData) {
-      console.log("✅ Ya autenticado, redirigiendo...");
+      //console.log("✅ Ya autenticado, redirigiendo...");
       navigate('/');
     }
   }, [navigate]);
@@ -34,7 +34,7 @@ export default function Login({ onLogin }) {
     setError("");
 
     try {
-      console.log("🔐 Enviando login a:", `${BACKEND_URL}/api/auth/login`);
+      //console.log("🔐 Enviando login a:", `${BACKEND_URL}/api/auth/login`);
       
       const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
         method: 'POST',
@@ -47,7 +47,7 @@ export default function Login({ onLogin }) {
         }),
       });
 
-      console.log("📡 Status respuesta:", response.status);
+      //console.log("📡 Status respuesta:", response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -56,14 +56,14 @@ export default function Login({ onLogin }) {
       }
 
       const data = await response.json();
-      console.log("✅ Respuesta recibida:", data);
+      //console.log("✅ Respuesta recibida:", data);
 
       if (data.success && data.token) {
         // Guardar en localStorage
         localStorage.setItem("token", data.token);
         localStorage.setItem("usuario", JSON.stringify(data.user));
         
-        console.log("✅ Login exitoso, llamando onLogin");
+        //console.log("✅ Login exitoso, llamando onLogin");
         
         // Llamar a la función del padre
         onLogin(data.user);

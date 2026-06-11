@@ -460,7 +460,7 @@ const MenuSecundario = ({ onClose, isMobile, isOpen, usuario }) => {
       </aside>
 
       {/* Estilos de animación */}
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;

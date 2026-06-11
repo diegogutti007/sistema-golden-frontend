@@ -181,8 +181,6 @@ export default function ListaGastos() {
     setModalVisible(true);
     // Prevenir scroll del body
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
   };
 
   const closeModal = () => {
@@ -190,16 +188,12 @@ export default function ListaGastos() {
     setModalVisible(false);
     // Restaurar scroll del body
     document.body.style.overflow = '';
-    document.body.style.position = '';
-    document.body.style.width = '';
   };
 
   const openFormulario = (gasto = null) => {
     setSelectedGasto(gasto);
     setShowForm(true);
     document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
   };
 
   const closeFormulario = () => {
@@ -207,8 +201,6 @@ export default function ListaGastos() {
     setShowForm(false);
     cargarGastos();
     document.body.style.overflow = '';
-    document.body.style.position = '';
-    document.body.style.width = '';
   };
 
   const filtrosActivos = Object.values(filtros).filter(val => val !== "").length;
@@ -680,14 +672,16 @@ export default function ListaGastos() {
         )}
       </div>
 
-      {/* MODAL DE DETALLE MEJORADO - Z-INDEX MÁXIMO */}
+      {/* MODAL DE DETALLE */}
       {modalVisible && selectedGasto && (
         <div 
           className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4 overflow-y-auto"
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeModal();
+          }}
         >
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-auto relative my-8" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
-            {/* Header con gradiente mejorado */}
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-auto relative" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
+            {/* Header con gradiente */}
             <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-t-2xl px-6 py-5 sticky top-0 z-10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -729,7 +723,6 @@ export default function ListaGastos() {
 
               {/* Grid de información - 2 columnas */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                {/* Categoría */}
                 <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-start space-x-3">
                     <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center shadow-md">
@@ -742,7 +735,6 @@ export default function ListaGastos() {
                   </div>
                 </div>
 
-                {/* Período */}
                 <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-start space-x-3">
                     <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center shadow-md">
@@ -755,7 +747,6 @@ export default function ListaGastos() {
                   </div>
                 </div>
 
-                {/* Fecha del gasto */}
                 <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-start space-x-3">
                     <div className="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center shadow-md">
@@ -768,7 +759,6 @@ export default function ListaGastos() {
                   </div>
                 </div>
 
-                {/* Método de pago */}
                 <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-start space-x-3">
                     <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center shadow-md">
@@ -781,7 +771,6 @@ export default function ListaGastos() {
                   </div>
                 </div>
 
-                {/* Empleado */}
                 <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow md:col-span-2">
                   <div className="flex items-start space-x-3">
                     <div className="w-10 h-10 bg-indigo-500 rounded-lg flex items-center justify-center shadow-md">
@@ -800,7 +789,7 @@ export default function ListaGastos() {
                 </div>
               </div>
 
-              {/* Observaciones - Sección destacada */}
+              {/* Observaciones */}
               <div className="mb-6">
                 <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200 overflow-hidden">
                   <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-5 py-3 border-b border-amber-200">
@@ -869,19 +858,12 @@ export default function ListaGastos() {
         </div>
       )}
 
-      {/* Modal de Formulario con z-index máximo */}
+      {/* MODAL DE FORMULARIO - CORREGIDO: Sin wrapper adicional */}
       {showForm && (
-        <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[9999] p-4 overflow-y-auto"
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-        >
-          <div style={{ maxHeight: '90vh', overflowY: 'auto' }}>
-            <ModalFormularioGasto
-              gastoSeleccionado={selectedGasto}
-              onClose={closeFormulario}
-            />
-          </div>
-        </div>
+        <ModalFormularioGasto
+          gastoSeleccionado={selectedGasto}
+          onClose={closeFormulario}
+        />
       )}
     </div>
   );

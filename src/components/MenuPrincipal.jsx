@@ -37,7 +37,8 @@ import {
   FolderOpen,
   Layers,
   Timer,
-  MapPin
+  MapPin,
+  QrCode
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useInactivity } from "../hooks/useInactivity";
@@ -365,6 +366,36 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
                                 description="Gestión de pagos"
                               />
                             </HideIfUnauthorized>
+
+                            <SubmenuItem
+                              to="/GenerarQREmpleado"
+                              onClick={() => setEmpleadosOpen(false)}
+                              icon={QrCode}
+                              iconBg="bg-blue-500/10"
+                              iconColor="text-blue-400"
+                              title="Generar QR Empleado"
+                              description="Crear códigos QR para empleados"
+                            />
+                            <SubmenuItem
+                              to="/EscanearQRMarcacion"
+                              onClick={() => setEmpleadosOpen(false)}
+                              icon={QrCode}
+                              iconBg="bg-blue-500/10"
+                              iconColor="text-blue-400"
+                              title="Escanear QR Marcación"
+                              description="Leer códigos QR para marcar asistencia"
+                            />
+                            <SubmenuItem
+                              to="/SeleccionarEmpleadoQR"
+                              onClick={() => setEmpleadosOpen(false)}
+                              icon={QrCode}
+                              iconBg="bg-blue-500/10"
+                              iconColor="text-blue-400"
+                              title="Seleccionar Empleado QR"
+                              description="Elegir empleado para escanear QR"
+                            />
+
+
                           </div>
                         </div>
                       )}
@@ -1070,7 +1101,7 @@ const MenuPrincipal = ({ onLogout, usuario, onToggleSecondaryMenu }) => {
         )}
       </nav>
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeIn {
           from {
             opacity: 0;

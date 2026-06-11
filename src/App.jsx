@@ -29,6 +29,9 @@ import DashboardPagosPersonal from "./Pages/DashboardPagosPersonal";
 import MarcacionEmpleados from "./Pages/MarcacionEmpleados";
 import GestionHorarios from "./Pages/GestionHorarios";
 import GestionHorariosSemanales from "./Pages/GestionHorariosSemanales";
+import SeleccionarEmpleadoQR from "./Pages/SeleccionarEmpleadoQR";
+import EscanearQRMarcacion from "./Pages/EscanearQRMarcacion";
+import GenerarQREmpleado from "./Pages/GenerarQREmpleado";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -123,6 +126,11 @@ function App() {
         <Route path="/GestionHorariosSemanales" element={<ProtectedRoute><GestionHorariosSemanales /></ProtectedRoute>} />
         <Route path="/Asistencias" element={<ProtectedRoute><Asistencia /></ProtectedRoute>} />
         <Route path="/Horarios" element={<ProtectedRoute><GestionHorarios /></ProtectedRoute>} />
+        <Route path="/SeleccionarEmpleadoQR" element={<ProtectedRoute><SeleccionarEmpleadoQR /></ProtectedRoute>} />
+        <Route path="/EscanearQRMarcacion" element={<ProtectedRoute><EscanearQRMarcacion /></ProtectedRoute>} />
+        <Route path="/GenerarQREmpleado" element={<ProtectedRoute><GenerarQREmpleado /></ProtectedRoute>} />
+
+
         {/* Citas */}
         <Route path="/citas" element={<ProtectedRoute><AgendaCitas /></ProtectedRoute>} />
         <Route path="/citas/Historial" element={<ProtectedRoute><HistorialCitas /></ProtectedRoute>} />
