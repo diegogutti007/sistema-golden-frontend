@@ -83,11 +83,10 @@ const PanelAsistencia = () => {
         return fechaYYYYMMDD;
     };
 
-    // ========== FUNCIONES CORREGIDAS PARA MANEJO DE HORAS Y MINUTOS ==========
+    // ========== FUNCIONES PARA MANEJO DE HORAS Y MINUTOS ==========
     
     /**
      * Convierte minutos a formato "HH:MM"
-     * Ejemplo: 717 minutos -> "11:57"
      */
     const minutosAHorasFormato = (minutos) => {
         if (!minutos || minutos === 0) return '0:00';
@@ -97,44 +96,11 @@ const PanelAsistencia = () => {
     };
 
     /**
-     * Convierte minutos a horas decimales para cálculos (con 2 decimales exactos)
-     * Ejemplo: 717 minutos = 717 / 60 = 11.95
+     * Convierte horas decimales a minutos (con redondeo exacto)
      */
-    const minutosADecimal = (minutos) => {
-        if (!minutos || minutos === 0) return 0;
-        return parseFloat((minutos / 60).toFixed(2));
-    };
-
-    /**
-     * Convierte formato "HH:MM" a minutos totales
-     */
-    const horaMinutoAMinutos = (horaMinuto) => {
-        if (!horaMinuto) return 0;
-        const [horas, minutos] = horaMinuto.split(':').map(Number);
-        return (horas * 60) + (minutos || 0);
-    };
-
-    /**
-     * Suma múltiples valores en formato "HH:MM" y devuelve "HH:MM"
-     */
-    const sumarTiempos = (tiempos) => {
-        let totalMinutos = 0;
-        tiempos.forEach(tiempo => {
-            if (tiempo && tiempo !== '—') {
-                totalMinutos += horaMinutoAMinutos(tiempo);
-            }
-        });
-        return minutosAHorasFormato(totalMinutos);
-    };
-
-    /**
-     * Resta dos tiempos en formato "HH:MM" y devuelve la diferencia en minutos
-     */
-    const diferenciaEnMinutos = (inicio, fin) => {
-        if (!inicio || !fin) return 0;
-        const minutosInicio = horaMinutoAMinutos(inicio);
-        const minutosFin = horaMinutoAMinutos(fin);
-        return minutosFin - minutosInicio;
+    const horasDecimalAMinutos = (horasDecimal) => {
+        if (!horasDecimal || horasDecimal === 0) return 0;
+        return Math.round(horasDecimal * 60);
     };
 
     // Función para formatear horas extras individuales (formato HH:MM)
@@ -146,7 +112,7 @@ const PanelAsistencia = () => {
         return `${horas}:${mins.toString().padStart(2, '0')}`;
     };
 
-    // Función para formatear tardanza (formato HH:MM)
+    // Función para formatear tardanza (formato HH:MM o X min)
     const formatearTardanza = (minutos, esTardanza) => {
         if (!esTardanza) return 'Puntual';
         if (!minutos || minutos === 0) return 'Puntual';
@@ -200,7 +166,7 @@ const PanelAsistencia = () => {
             const res = await fetch(`${BACKEND_URL}/api/horario/activos`);
             if (res.ok) {
                 const data = await res.json();
-                setHorarios(data.map(h => ({ HorarioId: h.HorarioId, Nombre: h.Nombre })));
+                setHorarios(data.map(h => ({ HorarioId: h.HorarioId, Nombre: h.Nombre, HorasLaborales: h.HorasLaborales || 8 })));
             }
         } catch (error) {
             console.error('Error cargando horarios:', error);
@@ -215,7 +181,12 @@ const PanelAsistencia = () => {
             if (horarioFiltro) url += `&horario_id=${horarioFiltro}`;
             const res = await fetch(url);
             const data = await res.json();
-            const registrosProcesados = data.map(registro => ({ ...registro, Fecha: extraerFechaYYYYMMDD(registro.Fecha) }));
+            const registrosProcesados = data.map(registro => ({ 
+                ...registro, 
+                Fecha: extraerFechaYYYYMMDD(registro.Fecha),
+                // Asegurar que HorasLaborales sea un número, si viene null usar 8 como valor por defecto
+                HorasLaborales: parseFloat(registro.HorasLaborales) || 8
+            }));
             setRegistros(registrosProcesados);
             calcularEstadisticas(registrosProcesados);
             setPaginaActual(1);
@@ -231,33 +202,47 @@ const PanelAsistencia = () => {
         const tardanzas = data.filter(r => r.EsTardanza === 1).length;
         const ausentes = data.filter(r => r.Estado === 'Ausente').length;
         
-        // Calcular total de MINUTOS trabajados
+        // Calcular total de MINUTOS trabajados y minutos esperados (según horario de cada registro)
         let totalMinutosTrabajados = 0;
         let totalMinutosExtras = 0;
+        let totalMinutosEsperados = 0;
         
         data.forEach(r => {
+            // Si tiene horas trabajadas registradas
             if (r.HorasTrabajadas > 0) {
                 const minutosTrabajados = Math.round(parseFloat(r.HorasTrabajadas) * 60);
                 totalMinutosTrabajados += minutosTrabajados;
+                
+                // Usar las horas laborales del horario del empleado (puede ser 8, 6, etc.)
+                // Si no tiene HorasLaborales, usar 8 como valor por defecto
+                const horasLaborales = parseFloat(r.HorasLaborales) || 8;
+                const minutosEsperadosParaEsteDia = horasLaborales * 60;
+                totalMinutosEsperados += minutosEsperadosParaEsteDia;
             }
+            
+            // Horas extras
             if (r.HorasExtras > 0) {
                 const minutosExtras = Math.round(parseFloat(r.HorasExtras) * 60);
                 totalMinutosExtras += minutosExtras;
             }
         });
         
-        const diasConHoras = data.filter(r => r.HorasTrabajadas > 0).length;
-        const minutosEsperados = diasConHoras * 8 * 60;
-        const minutosFaltantes = Math.max(0, minutosEsperados - totalMinutosTrabajados);
-        const porcentajeCumplimiento = minutosEsperados > 0 ? (totalMinutosTrabajados / minutosEsperados) * 100 : 0;
-        const diferenciaMinutos = totalMinutosTrabajados - minutosEsperados;
+        // Horas faltantes (lo que falta para cumplir las horas esperadas)
+        const minutosFaltantes = Math.max(0, totalMinutosEsperados - totalMinutosTrabajados);
+        
+        // Porcentaje de cumplimiento
+        const porcentajeCumplimiento = totalMinutosEsperados > 0 ? (totalMinutosTrabajados / totalMinutosEsperados) * 100 : 0;
+        
+        // Diferencia (total trabajado - esperado)
+        const diferenciaMinutos = totalMinutosTrabajados - totalMinutosEsperados;
+        
         const porcentajeTardanzas = total > 0 ? ((tardanzas / total) * 100).toFixed(1) : 0;
         
         setEstadisticas({
             total,
             totalHorasTrabajadas: minutosAHorasFormato(totalMinutosTrabajados),
             totalHorasExtras: minutosAHorasFormato(totalMinutosExtras),
-            horasEsperadas: minutosAHorasFormato(minutosEsperados),
+            horasEsperadas: minutosAHorasFormato(totalMinutosEsperados),
             horasFaltantes: minutosAHorasFormato(minutosFaltantes),
             porcentajeCumplimiento: porcentajeCumplimiento.toFixed(1),
             diferenciaHoras: minutosAHorasFormato(Math.abs(diferenciaMinutos)),
@@ -510,7 +495,7 @@ const PanelAsistencia = () => {
                     <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
                         <div className="flex items-center gap-2 mb-2"><Clock className="w-5 h-5 text-gray-500" /><p className="text-sm font-medium text-gray-700">Horas Esperadas</p></div>
                         <p className="text-2xl font-bold text-gray-800">{estadisticas.horasEsperadas}</p>
-                        <p className="text-xs text-gray-500 mt-1">Base 8 horas por día laborado</p>
+                        <p className="text-xs text-gray-500 mt-1">Según horario de cada empleado</p>
                     </div>
                 </div>
 
