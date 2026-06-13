@@ -35,12 +35,12 @@ const PanelAsistencia = () => {
     
     const [estadisticas, setEstadisticas] = useState({
         total: 0,
-        totalHorasTrabajadas: '0.00',
-        totalHorasExtras: '0.00',
-        horasEsperadas: '0.00',
-        horasFaltantes: '0.00',
+        totalHorasTrabajadas: '0:00',
+        totalHorasExtras: '0:00',
+        horasEsperadas: '0:00',
+        horasFaltantes: '0:00',
         porcentajeCumplimiento: 0,
-        diferenciaHoras: '0.00',
+        diferenciaHoras: '0:00',
         diferenciaHorasValor: 0,
         tardanzas: 0,
         ausentes: 0,
@@ -83,32 +83,84 @@ const PanelAsistencia = () => {
         return fechaYYYYMMDD;
     };
 
-    // Función para formatear horas decimales con 2 decimales
-    const formatHoras = (horas) => {
-        if (!horas || horas === 0) return '0.00';
-        return horas.toFixed(2);
+    // ========== FUNCIONES CORREGIDAS PARA MANEJO DE HORAS Y MINUTOS ==========
+    
+    /**
+     * Convierte minutos a formato "HH:MM"
+     * Ejemplo: 717 minutos -> "11:57"
+     */
+    const minutosAHorasFormato = (minutos) => {
+        if (!minutos || minutos === 0) return '0:00';
+        const horas = Math.floor(minutos / 60);
+        const mins = minutos % 60;
+        return `${horas}:${mins.toString().padStart(2, '0')}`;
     };
 
-    // Función para convertir horas decimales a "HH:MM"
-    const decimalToHourMinute = (horasDecimal) => {
-        if (!horasDecimal || horasDecimal === 0) return '—';
-        const horas = Math.floor(horasDecimal);
-        const minutos = Math.round((horasDecimal - horas) * 60);
-        if (minutos === 60) return `${horas + 1}:00`;
-        return `${horas.toString().padStart(2, '0')}:${minutos.toString().padStart(2, '0')}`;
+    /**
+     * Convierte minutos a horas decimales para cálculos (con 2 decimales exactos)
+     * Ejemplo: 717 minutos = 717 / 60 = 11.95
+     */
+    const minutosADecimal = (minutos) => {
+        if (!minutos || minutos === 0) return 0;
+        return parseFloat((minutos / 60).toFixed(2));
     };
 
-    // Función para formatear horas extras individuales
+    /**
+     * Convierte formato "HH:MM" a minutos totales
+     */
+    const horaMinutoAMinutos = (horaMinuto) => {
+        if (!horaMinuto) return 0;
+        const [horas, minutos] = horaMinuto.split(':').map(Number);
+        return (horas * 60) + (minutos || 0);
+    };
+
+    /**
+     * Suma múltiples valores en formato "HH:MM" y devuelve "HH:MM"
+     */
+    const sumarTiempos = (tiempos) => {
+        let totalMinutos = 0;
+        tiempos.forEach(tiempo => {
+            if (tiempo && tiempo !== '—') {
+                totalMinutos += horaMinutoAMinutos(tiempo);
+            }
+        });
+        return minutosAHorasFormato(totalMinutos);
+    };
+
+    /**
+     * Resta dos tiempos en formato "HH:MM" y devuelve la diferencia en minutos
+     */
+    const diferenciaEnMinutos = (inicio, fin) => {
+        if (!inicio || !fin) return 0;
+        const minutosInicio = horaMinutoAMinutos(inicio);
+        const minutosFin = horaMinutoAMinutos(fin);
+        return minutosFin - minutosInicio;
+    };
+
+    // Función para formatear horas extras individuales (formato HH:MM)
     const formatearHorasExtrasIndividual = (horasDecimal) => {
         if (!horasDecimal || horasDecimal === 0) return '—';
-        return `${horasDecimal.toFixed(2)} h`;
+        const minutos = Math.round(horasDecimal * 60);
+        const horas = Math.floor(minutos / 60);
+        const mins = minutos % 60;
+        return `${horas}:${mins.toString().padStart(2, '0')}`;
     };
 
+    // Función para formatear tardanza (formato HH:MM)
     const formatearTardanza = (minutos, esTardanza) => {
         if (!esTardanza) return 'Puntual';
         if (!minutos || minutos === 0) return 'Puntual';
-        const horas = (minutos / 60).toFixed(2);
-        return `${horas} h`;
+        const horas = Math.floor(minutos / 60);
+        const mins = minutos % 60;
+        if (horas === 0) return `${mins} min`;
+        return `${horas}:${mins.toString().padStart(2, '0')}`;
+    };
+
+    // Formatear horas trabajadas para mostrar en la tabla
+    const formatearHorasTrabajadas = (horasDecimal) => {
+        if (!horasDecimal || horasDecimal === 0) return '—';
+        const minutos = Math.round(horasDecimal * 60);
+        return minutosAHorasFormato(minutos);
     };
 
     useEffect(() => {
@@ -178,38 +230,38 @@ const PanelAsistencia = () => {
         const total = data.length;
         const tardanzas = data.filter(r => r.EsTardanza === 1).length;
         const ausentes = data.filter(r => r.Estado === 'Ausente').length;
-        const registrosConHoras = data.filter(r => r.HorasTrabajadas > 0);
         
-        // Calcular total de horas trabajadas
-        const totalHorasTrabajadas = registrosConHoras.reduce((s, r) => s + (parseFloat(r.HorasTrabajadas) || 0), 0);
+        // Calcular total de MINUTOS trabajados
+        let totalMinutosTrabajados = 0;
+        let totalMinutosExtras = 0;
         
-        // Calcular total de horas extras
-        const totalHorasExtras = registrosConHoras.reduce((s, r) => s + (parseFloat(r.HorasExtras) || 0), 0);
+        data.forEach(r => {
+            if (r.HorasTrabajadas > 0) {
+                const minutosTrabajados = Math.round(parseFloat(r.HorasTrabajadas) * 60);
+                totalMinutosTrabajados += minutosTrabajados;
+            }
+            if (r.HorasExtras > 0) {
+                const minutosExtras = Math.round(parseFloat(r.HorasExtras) * 60);
+                totalMinutosExtras += minutosExtras;
+            }
+        });
         
-        // Días con horas
-        const diasConHoras = registrosConHoras.length;
-        const horasEsperadas = diasConHoras * 8;
-        
-        // Horas faltantes
-        const horasFaltantes = Math.max(0, horasEsperadas - totalHorasTrabajadas);
-        
-        // Porcentaje de cumplimiento
-        const porcentajeCumplimiento = horasEsperadas > 0 ? (totalHorasTrabajadas / horasEsperadas) * 100 : 0;
-        
-        // Diferencia
-        const diferenciaHoras = totalHorasTrabajadas - horasEsperadas;
-        
+        const diasConHoras = data.filter(r => r.HorasTrabajadas > 0).length;
+        const minutosEsperados = diasConHoras * 8 * 60;
+        const minutosFaltantes = Math.max(0, minutosEsperados - totalMinutosTrabajados);
+        const porcentajeCumplimiento = minutosEsperados > 0 ? (totalMinutosTrabajados / minutosEsperados) * 100 : 0;
+        const diferenciaMinutos = totalMinutosTrabajados - minutosEsperados;
         const porcentajeTardanzas = total > 0 ? ((tardanzas / total) * 100).toFixed(1) : 0;
         
         setEstadisticas({
             total,
-            totalHorasTrabajadas: formatHoras(totalHorasTrabajadas),
-            totalHorasExtras: formatHoras(totalHorasExtras),
-            horasEsperadas: formatHoras(horasEsperadas),
-            horasFaltantes: formatHoras(horasFaltantes),
+            totalHorasTrabajadas: minutosAHorasFormato(totalMinutosTrabajados),
+            totalHorasExtras: minutosAHorasFormato(totalMinutosExtras),
+            horasEsperadas: minutosAHorasFormato(minutosEsperados),
+            horasFaltantes: minutosAHorasFormato(minutosFaltantes),
             porcentajeCumplimiento: porcentajeCumplimiento.toFixed(1),
-            diferenciaHoras: formatHoras(diferenciaHoras),
-            diferenciaHorasValor: diferenciaHoras,
+            diferenciaHoras: minutosAHorasFormato(Math.abs(diferenciaMinutos)),
+            diferenciaHorasValor: diferenciaMinutos,
             tardanzas,
             ausentes,
             porcentajeTardanzas
@@ -231,8 +283,8 @@ const PanelAsistencia = () => {
             const data = await res.json();
             if (res.ok) {
                 let mensaje = `✅ ${data.message}`;
-                if (data.data?.horasExtras > 0) mensaje += `\n📊 Horas extras: ${data.data.horasExtras.toFixed(2)} h`;
-                if (data.data?.horasTrabajadas > 0) mensaje += `\n⏱️ Horas trabajadas: ${decimalToHourMinute(data.data.horasTrabajadas)}`;
+                if (data.data?.horasExtras > 0) mensaje += `\n📊 Horas extras: ${formatearHorasExtrasIndividual(data.data.horasExtras)}`;
+                if (data.data?.horasTrabajadas > 0) mensaje += `\n⏱️ Horas trabajadas: ${formatearHorasTrabajadas(data.data.horasTrabajadas)}`;
                 if (data.data?.esTardanza) mensaje += `\n⚠️ Tardanza: ${formatearTardanza(data.data.minutosTardanza, true)}`;
                 alert(mensaje);
                 setMostrarFormulario(false);
@@ -279,7 +331,7 @@ const PanelAsistencia = () => {
             const data = await res.json();
             if (res.ok) {
                 let mensaje = `✅ ${data.message}`;
-                if (data.data?.horasExtras > 0) mensaje += `\n📊 Horas extras: ${data.data.horasExtras.toFixed(2)} h`;
+                if (data.data?.horasExtras > 0) mensaje += `\n📊 Horas extras: ${formatearHorasExtrasIndividual(data.data.horasExtras)}`;
                 alert(mensaje);
                 setMostrarModalEdicion(false);
                 setEditandoRegistro(null);
@@ -300,7 +352,7 @@ const PanelAsistencia = () => {
             formatDisplayDate(r.Fecha), `${r.Nombres} ${r.Apellidos}`, r.DocID,
             r.HoraEntrada?.substring(0,5) || '—', r.HoraSalidaAlmuerzo?.substring(0,5) || '—',
             r.HoraRegresoAlmuerzo?.substring(0,5) || '—', r.HoraSalida?.substring(0,5) || '—',
-            decimalToHourMinute(r.HorasTrabajadas), formatearHorasExtrasIndividual(r.HorasExtras),
+            formatearHorasTrabajadas(r.HorasTrabajadas), formatearHorasExtrasIndividual(r.HorasExtras),
             r.Estado || '—', formatearTardanza(r.MinutosTardanza, r.EsTardanza)
         ]);
         const csv = [headers, ...rows].map(row => row.map(c => `"${c}"`).join(',')).join('\n');
@@ -357,7 +409,7 @@ const PanelAsistencia = () => {
                 <div className="bg-gray-50 p-2 rounded"><p className="text-xs text-gray-500">Salida</p><p className="font-mono font-medium">{registro.HoraSalida?.substring(0,5) || '—'}</p></div>
             </div>
             <div className="flex justify-between mt-3 pt-2 border-t">
-                <div><p className="text-xs text-gray-500">Horas Trab.</p><p className="text-sm font-medium">{decimalToHourMinute(registro.HorasTrabajadas)}</p></div>
+                <div><p className="text-xs text-gray-500">Horas Trab.</p><p className="text-sm font-medium">{formatearHorasTrabajadas(registro.HorasTrabajadas)}</p></div>
                 <div><p className="text-xs text-gray-500">Horas Extras</p><p className="text-sm font-medium text-purple-600">{formatearHorasExtrasIndividual(registro.HorasExtras)}</p></div>
                 <div><p className="text-xs text-gray-500">Tardanza</p><p className="text-sm font-medium">{formatearTardanza(registro.MinutosTardanza, registro.EsTardanza)}</p></div>
             </div>
@@ -417,28 +469,28 @@ const PanelAsistencia = () => {
                     </div>
                 </div>
 
-                {/* Estadísticas - 5 tarjetas con 2 decimales */}
+                {/* Estadísticas - 5 tarjetas con formato HH:MM */}
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
                     <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-4 text-white shadow-sm">
                         <div className="flex items-center justify-between mb-2"><p className="text-xs sm:text-sm opacity-90">Total Horas Trabajadas</p><Clock className="w-5 h-5 opacity-80" /></div>
-                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.totalHorasTrabajadas} h</p>
+                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.totalHorasTrabajadas}</p>
                         <p className="text-xs opacity-80 mt-1">Horas registradas</p>
                     </div>
                     <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white shadow-sm">
                         <div className="flex items-center justify-between mb-2"><p className="text-xs sm:text-sm opacity-90">Horas Extras</p><Zap className="w-5 h-5 opacity-80" /></div>
-                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.totalHorasExtras} h</p>
+                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.totalHorasExtras}</p>
                         <p className="text-xs opacity-80 mt-1">Horas adicionales</p>
                     </div>
                     <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-4 text-white shadow-sm">
                         <div className="flex items-center justify-between mb-2"><p className="text-xs sm:text-sm opacity-90">Cumplimiento de Horas</p><Target className="w-5 h-5 opacity-80" /></div>
                         <p className="text-xl sm:text-2xl font-bold">{estadisticas.porcentajeCumplimiento}%</p>
-                        <p className="text-xs opacity-80 mt-1">Faltan: {estadisticas.horasFaltantes} h</p>
+                        <p className="text-xs opacity-80 mt-1">Faltan: {estadisticas.horasFaltantes}</p>
                     </div>
                     <div className={`bg-gradient-to-br rounded-lg p-4 text-white shadow-sm ${estadisticas.diferenciaHorasValor < 0 ? 'from-red-500 to-red-600' : estadisticas.diferenciaHorasValor > 0 ? 'from-emerald-500 to-emerald-600' : 'from-gray-500 to-gray-600'}`}>
                         <div className="flex items-center justify-between mb-2"><p className="text-xs sm:text-sm opacity-90">Diferencia (Debe/Haber)</p>
                             {estadisticas.diferenciaHorasValor < 0 ? <TrendingDown className="w-5 h-5 opacity-80" /> : estadisticas.diferenciaHorasValor > 0 ? <TrendingUp className="w-5 h-5 opacity-80" /> : <Target className="w-5 h-5 opacity-80" />}
                         </div>
-                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.diferenciaHoras} h</p>
+                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.diferenciaHoras}</p>
                         <p className="text-xs opacity-80 mt-1">{estadisticas.diferenciaHorasValor < 0 ? 'Debe horas a la empresa' : estadisticas.diferenciaHorasValor > 0 ? 'A favor del empleado' : 'Horas exactas'}</p>
                     </div>
                     <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-4 text-white shadow-sm">
@@ -457,7 +509,7 @@ const PanelAsistencia = () => {
                     </div>
                     <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
                         <div className="flex items-center gap-2 mb-2"><Clock className="w-5 h-5 text-gray-500" /><p className="text-sm font-medium text-gray-700">Horas Esperadas</p></div>
-                        <p className="text-2xl font-bold text-gray-800">{estadisticas.horasEsperadas} h</p>
+                        <p className="text-2xl font-bold text-gray-800">{estadisticas.horasEsperadas}</p>
                         <p className="text-xs text-gray-500 mt-1">Base 8 horas por día laborado</p>
                     </div>
                 </div>
@@ -472,7 +524,19 @@ const PanelAsistencia = () => {
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead className="bg-gray-50">
-                                    <tr><th className="p-3 text-left text-xs sm:text-sm">Fecha</th><th className="p-3 text-left text-xs sm:text-sm">Empleado</th><th className="p-3 text-left text-xs sm:text-sm hidden md:table-cell">Entrada</th><th className="p-3 text-left text-xs sm:text-sm hidden lg:table-cell">Salida Alm.</th><th className="p-3 text-left text-xs sm:text-sm hidden lg:table-cell">Regreso Alm.</th><th className="p-3 text-left text-xs sm:text-sm">Salida</th><th className="p-3 text-left text-xs sm:text-sm">Horas Trab.</th><th className="p-3 text-left text-xs sm:text-sm">HE</th><th className="p-3 text-left text-xs sm:text-sm">Estado</th><th className="p-3 text-left text-xs sm:text-sm hidden md:table-cell">Tardanza</th><th className="p-3 text-center text-xs sm:text-sm">Acciones</th></tr>
+                                    <tr>
+                                        <th className="p-3 text-left text-xs sm:text-sm">Fecha</th>
+                                        <th className="p-3 text-left text-xs sm:text-sm">Empleado</th>
+                                        <th className="p-3 text-left text-xs sm:text-sm hidden md:table-cell">Entrada</th>
+                                        <th className="p-3 text-left text-xs sm:text-sm hidden lg:table-cell">Salida Alm.</th>
+                                        <th className="p-3 text-left text-xs sm:text-sm hidden lg:table-cell">Regreso Alm.</th>
+                                        <th className="p-3 text-left text-xs sm:text-sm">Salida</th>
+                                        <th className="p-3 text-left text-xs sm:text-sm">Horas Trab.</th>
+                                        <th className="p-3 text-left text-xs sm:text-sm">HE</th>
+                                        <th className="p-3 text-left text-xs sm:text-sm">Estado</th>
+                                        <th className="p-3 text-left text-xs sm:text-sm hidden md:table-cell">Tardanza</th>
+                                        <th className="p-3 text-center text-xs sm:text-sm">Acciones</th>
+                                    </tr>
                                 </thead>
                                 <tbody className="divide-y">
                                     {registrosPagina.map((r, i) => (
@@ -483,7 +547,7 @@ const PanelAsistencia = () => {
                                             <td className="p-3 font-mono text-xs sm:text-sm hidden lg:table-cell">{r.HoraSalidaAlmuerzo?.substring(0,5) || '—'}</td>
                                             <td className="p-3 font-mono text-xs sm:text-sm hidden lg:table-cell">{r.HoraRegresoAlmuerzo?.substring(0,5) || '—'}</td>
                                             <td className="p-3 font-mono text-xs sm:text-sm">{r.HoraSalida?.substring(0,5) || '—'}</td>
-                                            <td className="p-3 font-mono text-xs sm:text-sm">{r.HorasTrabajadas ? decimalToHourMinute(r.HorasTrabajadas) : '—'}</td>
+                                            <td className="p-3 font-mono text-xs sm:text-sm">{formatearHorasTrabajadas(r.HorasTrabajadas)}</td>
                                             <td className="p-3 text-purple-600 font-medium text-xs sm:text-sm">{formatearHorasExtrasIndividual(r.HorasExtras)}</td>
                                             <td className="p-3"><span className={`px-2 py-1 rounded-full text-xs ${getEstadoColor(r.Estado, r.EsTardanza)}`}>{r.EsTardanza ? 'Tardanza' : r.Estado || '—'}</span></td>
                                             <td className="p-3 text-xs sm:text-sm hidden md:table-cell">{formatearTardanza(r.MinutosTardanza, r.EsTardanza)}</td>
@@ -491,7 +555,7 @@ const PanelAsistencia = () => {
                                         </tr>
                                     ))}
                                 </tbody>
-                            </table>
+                             </table>
                         </div>
                     ) : (
                         <div className="p-4">{registrosPagina.map((r, i) => <TarjetaRegistro key={i} registro={r} />)}</div>
