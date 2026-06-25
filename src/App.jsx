@@ -32,6 +32,8 @@ import GestionHorariosSemanales from "./Pages/GestionHorariosSemanales";
 import SeleccionarEmpleadoQR from "./Pages/SeleccionarEmpleadoQR";
 import EscanearQRMarcacion from "./Pages/EscanearQRMarcacion";
 import GenerarQREmpleado from "./Pages/GenerarQREmpleado";
+import PreNominaPlanilla from "./Pages/PreNominaPlanilla";
+import DashboardVentas from "./Pages/DashboardVentas";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -140,6 +142,7 @@ function App() {
         <Route path="/gastos/PresupuestosGastos" element={<ProtectedRoute><PresupuestosGastos /></ProtectedRoute>} />
         <Route path="/gastos/DashboardGastos" element={<ProtectedRoute><DashboardGastos /></ProtectedRoute>} />
         <Route path="/gastos/DashboardPagosPersonal" element={<ProtectedRoute><DashboardPagosPersonal /></ProtectedRoute>} />
+        <Route path="/gastos/PreNominaPlanilla" element={<ProtectedRoute><PreNominaPlanilla /></ProtectedRoute>} />
         {/* ventas */}
         <Route path="/Ventas" element={<ProtectedRoute><VentaFormulario /></ProtectedRoute>} />
         <Route path="/Ventas/GestionVentas" element={<ProtectedRoute><VentaLista /></ProtectedRoute>} />
@@ -152,12 +155,13 @@ function App() {
         <Route path="/configuracion" element={<ProtectedRoute><div className="p-6">Configuración - En desarrollo</div></ProtectedRoute>} />
 
         {/* Rutas del menú secundario */}
-        <Route path="/dashboard/ventas" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard Ventas</h1><p>Estadísticas de ventas</p></div></ProtectedRoute>} />
+        <Route path="/dashboard/ventas" element={<ProtectedRoute><DashboardVentas /></ProtectedRoute>} />
         <Route path="/dashboard/comisiones" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard Comisiones</h1><p>Estadísticas de comisiones</p></div></ProtectedRoute>} />
         <Route path="/dashboard/citas" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard Citas</h1><p>Estadísticas de citas</p></div></ProtectedRoute>} />
         <Route path="/maestro/productos" element={<ProtectedRoute><GestionProductos /></ProtectedRoute>} />
         <Route path="/maestro/servicios" element={<ProtectedRoute><GestionServicios /></ProtectedRoute>} />
         <Route path="/maestro/clientes" element={<ProtectedRoute><GestionClientes /></ProtectedRoute>} />
+        
 {/*         <Route path="/empleado/MarcacionEmpleados" element={<ProtectedRoute><MarcacionEmpleados /></ProtectedRoute>} />
         <Route path="/empleado/PanelAsistencia" element={<ProtectedRoute><PanelAsistencia /></ProtectedRoute>} /> */}
         <Route path="/empleado/GestionEmpleados" element={<ProtectedRoute><GestionEmpleados /></ProtectedRoute>} />
