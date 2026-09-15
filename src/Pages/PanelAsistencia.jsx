@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { BACKEND_URL } from '../config';
 import {
-    Calendar, Users, Clock, Download, Search, Filter, ChevronLeft, ChevronRight,
-    MapPin, Wifi, Smartphone, AlertCircle, CheckCircle, XCircle, Menu, X,
-    TrendingUp, TrendingDown, Sun, Moon, Plus, Save, User, Coffee, Zap, Timer, Award, Edit, Target
+    Calendar, Clock, Download, Filter, ChevronLeft, ChevronRight,
+    AlertCircle, CheckCircle, XCircle, X, TrendingUp, TrendingDown,
+    Plus, Edit, Target, Zap, Timer, Award
 } from 'lucide-react';
 
 const PanelAsistencia = () => {
-    // Obtener fecha actual en formato YYYY-MM-DD usando la zona horaria local
+    // ============================================================
+    // HELPERS
+    // ============================================================
     const getLocalDate = () => {
         const now = new Date();
         const year = now.getFullYear();
@@ -16,46 +18,6 @@ const PanelAsistencia = () => {
         return `${year}-${month}-${day}`;
     };
 
-    const [fechaInicio, setFechaInicio] = useState(getLocalDate());
-    const [fechaFin, setFechaFin] = useState(getLocalDate());
-    const [registros, setRegistros] = useState([]);
-    const [empleados, setEmpleados] = useState([]);
-    const [horarios, setHorarios] = useState([]);
-    const [empleadoFiltro, setEmpleadoFiltro] = useState('');
-    const [horarioFiltro, setHorarioFiltro] = useState('');
-    const [cargando, setCargando] = useState(false);
-    const [paginaActual, setPaginaActual] = useState(1);
-    const [itemsPorPagina, setItemsPorPagina] = useState(10);
-    const [mostrarFormulario, setMostrarFormulario] = useState(false);
-    const [registrando, setRegistrando] = useState(false);
-    const [editandoRegistro, setEditandoRegistro] = useState(null);
-    const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
-    const [mostrarFiltrosMovil, setMostrarFiltrosMovil] = useState(false);
-    const [modoVista, setModoVista] = useState('tabla');
-    
-    const [estadisticas, setEstadisticas] = useState({
-        total: 0,
-        totalHorasTrabajadas: '0:00',
-        totalHorasExtras: '0:00',
-        horasEsperadas: '0:00',
-        horasFaltantes: '0:00',
-        porcentajeCumplimiento: 0,
-        diferenciaHoras: '0:00',
-        diferenciaHorasValor: 0,
-        tardanzas: 0,
-        ausentes: 0,
-        porcentajeTardanzas: 0
-    });
-
-    const [nuevoRegistro, setNuevoRegistro] = useState({
-        empId: '', fecha: getLocalDate(),
-        horaEntrada: '', horaSalidaAlmuerzo: '', horaRegresoAlmuerzo: '', horaSalida: '', observaciones: ''
-    });
-
-    const [isMobile, setIsMobile] = useState(false);
-    const [isTablet, setIsTablet] = useState(false);
-
-    // Extraer solo la fecha YYYY-MM-DD de cualquier formato ISO
     const extraerFechaYYYYMMDD = (fechaISO) => {
         if (!fechaISO) return '';
         if (/^\d{4}-\d{2}-\d{2}$/.test(fechaISO)) return fechaISO;
@@ -77,33 +39,21 @@ const PanelAsistencia = () => {
 
     const formatDisplayDate = (fechaISO) => {
         if (!fechaISO) return '—';
-        const fechaYYYYMMDD = extraerFechaYYYYMMDD(fechaISO);
-        const partes = fechaYYYYMMDD.split('-');
+        const f = extraerFechaYYYYMMDD(fechaISO);
+        const partes = f.split('-');
         if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
-        return fechaYYYYMMDD;
+        return f;
     };
 
-    // ========== FUNCIONES PARA MANEJO DE HORAS Y MINUTOS ==========
-    
-    /**
-     * Convierte minutos a formato "HH:MM"
-     */
     const minutosAHorasFormato = (minutos) => {
         if (!minutos || minutos === 0) return '0:00';
-        const horas = Math.floor(minutos / 60);
-        const mins = minutos % 60;
-        return `${horas}:${mins.toString().padStart(2, '0')}`;
+        const signo = minutos < 0 ? '-' : '';
+        const abs = Math.abs(minutos);
+        const horas = Math.floor(abs / 60);
+        const mins = abs % 60;
+        return `${signo}${horas}:${mins.toString().padStart(2, '0')}`;
     };
 
-    /**
-     * Convierte horas decimales a minutos (con redondeo exacto)
-     */
-    const horasDecimalAMinutos = (horasDecimal) => {
-        if (!horasDecimal || horasDecimal === 0) return 0;
-        return Math.round(horasDecimal * 60);
-    };
-
-    // Función para formatear horas extras individuales (formato HH:MM)
     const formatearHorasExtrasIndividual = (horasDecimal) => {
         if (!horasDecimal || horasDecimal === 0) return '—';
         const minutos = Math.round(horasDecimal * 60);
@@ -112,28 +62,106 @@ const PanelAsistencia = () => {
         return `${horas}:${mins.toString().padStart(2, '0')}`;
     };
 
-    // Función para formatear tardanza (formato HH:MM o X min)
     const formatearTardanza = (minutos, esTardanza) => {
-        if (!esTardanza) return 'Puntual';
-        if (!minutos || minutos === 0) return 'Puntual';
+        if (!esTardanza || !minutos || minutos === 0) return 'Puntual';
         const horas = Math.floor(minutos / 60);
         const mins = minutos % 60;
         if (horas === 0) return `${mins} min`;
         return `${horas}:${mins.toString().padStart(2, '0')}`;
     };
 
-    // Formatear horas trabajadas para mostrar en la tabla
     const formatearHorasTrabajadas = (horasDecimal) => {
         if (!horasDecimal || horasDecimal === 0) return '—';
         const minutos = Math.round(horasDecimal * 60);
         return minutosAHorasFormato(minutos);
     };
 
+    // ============================================================
+    // ESTADOS
+    // ============================================================
+    const [fechaInicio, setFechaInicio] = useState(getLocalDate());
+    const [fechaFin, setFechaFin] = useState(getLocalDate());
+    const [registros, setRegistros] = useState([]);
+    const [empleados, setEmpleados] = useState([]);
+    const [horarios, setHorarios] = useState([]);
+    const [empleadoFiltro, setEmpleadoFiltro] = useState('');
+    const [horarioFiltro, setHorarioFiltro] = useState('');
+    const [cargando, setCargando] = useState(false);
+    const [paginaActual, setPaginaActual] = useState(1);
+    const [itemsPorPagina, setItemsPorPagina] = useState(10);
+    const [mostrarFormulario, setMostrarFormulario] = useState(false);
+    const [registrando, setRegistrando] = useState(false);
+    const [editandoRegistro, setEditandoRegistro] = useState(null);
+    const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
+    const [mostrarFiltrosMovil, setMostrarFiltrosMovil] = useState(false);
+    const [modoVista, setModoVista] = useState('tabla');
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Estados cobro HE
+    const [mostrarModalCobro, setMostrarModalCobro] = useState(false);
+    const [mostrarHistorialCobros, setMostrarHistorialCobros] = useState(false);
+    const [historialCobros, setHistorialCobros] = useState([]);
+    const [cargandoHistorial, setCargandoHistorial] = useState(false);
+
+    // 🔥 NUEVO: resumen específico del empleado seleccionado en el modal de cobro
+    const [resumenCobro, setResumenCobro] = useState({
+        cargando: false,
+        diferenciaBruta: '0:00',
+        diferenciaBrutaValor: 0,
+        minutosCobrados: 0,
+        horasCobradas: '0:00',
+        saldoDisponible: '0:00',
+        saldoDisponibleValor: 0,
+        porcentajeCumplimiento: 0,
+        totalHorasTrabajadas: '0:00',
+        horasEsperadas: '0:00'
+    });
+
+    const [nuevoCobro, setNuevoCobro] = useState({
+        empId: '',
+        fechaCobro: getLocalDate(),
+        horasCobradas: '',
+        tipoCobro: 'PAGO',
+        observaciones: ''
+    });
+
+    const [estadisticas, setEstadisticas] = useState({
+        total: 0,
+        totalHorasTrabajadas: '0:00',
+        totalHorasExtras: '0:00',
+        horasEsperadas: '0:00',
+        horasFaltantes: '0:00',
+        porcentajeCumplimiento: 0,
+        diferenciaHoras: '0:00',
+        diferenciaHorasValor: 0,
+        diferenciaBruta: '0:00',
+        diferenciaBrutaValor: 0,
+        minutosCobrados: 0,
+        horasCobradas: '0:00',
+        tardanzas: 0,
+        ausentes: 0,
+        porcentajeTardanzas: 0
+    });
+
+    const [nuevoRegistro, setNuevoRegistro] = useState({
+        empId: '',
+        fecha: getLocalDate(),
+        horaEntrada: '',
+        horaSalidaAlmuerzo: '',
+        horaRegresoAlmuerzo: '',
+        horaSalida: '',
+        observaciones: ''
+    });
+
+    // ============================================================
+    // EFECTOS
+    // ============================================================
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth < 640);
-            setIsTablet(window.innerWidth >= 640 && window.innerWidth < 1024);
-            setItemsPorPagina(window.innerWidth < 640 ? 5 : window.innerWidth < 1024 ? 8 : 10);
+            setItemsPorPagina(
+                window.innerWidth < 640 ? 5 : window.innerWidth < 1024 ? 8 : 10
+            );
         };
         handleResize();
         window.addEventListener('resize', handleResize);
@@ -149,12 +177,29 @@ const PanelAsistencia = () => {
         cargarReporte();
     }, [fechaInicio, fechaFin, empleadoFiltro, horarioFiltro]);
 
+    // 🔥 NUEVO: cuando cambia el empleado en el modal de cobro, cargar su resumen
+    useEffect(() => {
+        if (nuevoCobro.empId) {
+            cargarResumenCobro(nuevoCobro.empId);
+        }
+    }, [nuevoCobro.empId, fechaInicio, fechaFin]);
+
+    // ============================================================
+    // CARGA DE DATOS
+    // ============================================================
     const cargarEmpleados = async () => {
         try {
             const res = await fetch(`${BACKEND_URL}/api/listaempleadoactivo`);
             const data = await res.json();
             if (Array.isArray(data)) {
-                setEmpleados(data.map(emp => ({ EmpId: emp.EmpId, Nombres: emp.Nombres, Apellidos: emp.Apellidos, Codigo: emp.DocID })));
+                setEmpleados(
+                    data.map(emp => ({
+                        EmpId: emp.EmpId,
+                        Nombres: emp.Nombres,
+                        Apellidos: emp.Apellidos,
+                        Codigo: emp.DocID
+                    }))
+                );
             }
         } catch (error) {
             console.error('Error cargando empleados:', error);
@@ -166,7 +211,13 @@ const PanelAsistencia = () => {
             const res = await fetch(`${BACKEND_URL}/api/horario/activos`);
             if (res.ok) {
                 const data = await res.json();
-                setHorarios(data.map(h => ({ HorarioId: h.HorarioId, Nombre: h.Nombre, HorasLaborales: h.HorasLaborales || 8 })));
+                setHorarios(
+                    data.map(h => ({
+                        HorarioId: h.HorarioId,
+                        Nombre: h.Nombre,
+                        HorasLaborales: h.HorasLaborales || 8
+                    }))
+                );
             }
         } catch (error) {
             console.error('Error cargando horarios:', error);
@@ -179,16 +230,32 @@ const PanelAsistencia = () => {
             let url = `${BACKEND_URL}/api/reportes/asistencia?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
             if (empleadoFiltro) url += `&empId=${empleadoFiltro}`;
             if (horarioFiltro) url += `&horario_id=${horarioFiltro}`;
+
             const res = await fetch(url);
             const data = await res.json();
-            const registrosProcesados = data.map(registro => ({ 
-                ...registro, 
+            const registrosProcesados = data.map(registro => ({
+                ...registro,
                 Fecha: extraerFechaYYYYMMDD(registro.Fecha),
-                // Asegurar que HorasLaborales sea un número, si viene null usar 8 como valor por defecto
                 HorasLaborales: parseFloat(registro.HorasLaborales) || 8
             }));
             setRegistros(registrosProcesados);
-            calcularEstadisticas(registrosProcesados);
+
+            let minutosCobradosPeriodo = 0;
+            if (empleadoFiltro) {
+                try {
+                    const resCobros = await fetch(
+                        `${BACKEND_URL}/api/horas-extras/acumulado/${empleadoFiltro}?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`
+                    );
+                    const dataCobros = await resCobros.json();
+                    if (dataCobros.success) {
+                        minutosCobradosPeriodo = dataCobros.data.minutosCobrados || 0;
+                    }
+                } catch (e) {
+                    console.error('Error cargando cobros:', e);
+                }
+            }
+
+            calcularEstadisticas(registrosProcesados, minutosCobradosPeriodo);
             setPaginaActual(1);
         } catch (error) {
             console.error('Error cargando reporte:', error);
@@ -197,47 +264,36 @@ const PanelAsistencia = () => {
         }
     };
 
-    const calcularEstadisticas = (data) => {
+    const calcularEstadisticas = (data, minutosCobradosPeriodo = 0) => {
         const total = data.length;
         const tardanzas = data.filter(r => r.EsTardanza === 1).length;
         const ausentes = data.filter(r => r.Estado === 'Ausente').length;
-        
-        // Calcular total de MINUTOS trabajados y minutos esperados (según horario de cada registro)
+
         let totalMinutosTrabajados = 0;
         let totalMinutosExtras = 0;
         let totalMinutosEsperados = 0;
-        
+
         data.forEach(r => {
-            // Si tiene horas trabajadas registradas
             if (r.HorasTrabajadas > 0) {
-                const minutosTrabajados = Math.round(parseFloat(r.HorasTrabajadas) * 60);
-                totalMinutosTrabajados += minutosTrabajados;
-                
-                // Usar las horas laborales del horario del empleado (puede ser 8, 6, etc.)
-                // Si no tiene HorasLaborales, usar 8 como valor por defecto
+                totalMinutosTrabajados += Math.round(parseFloat(r.HorasTrabajadas) * 60);
                 const horasLaborales = parseFloat(r.HorasLaborales) || 8;
-                const minutosEsperadosParaEsteDia = horasLaborales * 60;
-                totalMinutosEsperados += minutosEsperadosParaEsteDia;
+                totalMinutosEsperados += horasLaborales * 60;
             }
-            
-            // Horas extras
             if (r.HorasExtras > 0) {
-                const minutosExtras = Math.round(parseFloat(r.HorasExtras) * 60);
-                totalMinutosExtras += minutosExtras;
+                totalMinutosExtras += Math.round(parseFloat(r.HorasExtras) * 60);
             }
         });
-        
-        // Horas faltantes (lo que falta para cumplir las horas esperadas)
+
         const minutosFaltantes = Math.max(0, totalMinutosEsperados - totalMinutosTrabajados);
-        
-        // Porcentaje de cumplimiento
-        const porcentajeCumplimiento = totalMinutosEsperados > 0 ? (totalMinutosTrabajados / totalMinutosEsperados) * 100 : 0;
-        
-        // Diferencia (total trabajado - esperado)
-        const diferenciaMinutos = totalMinutosTrabajados - totalMinutosEsperados;
-        
+        const porcentajeCumplimiento =
+            totalMinutosEsperados > 0
+                ? (totalMinutosTrabajados / totalMinutosEsperados) * 100
+                : 0;
+
+        const diferenciaBrutaMinutos = totalMinutosTrabajados - totalMinutosEsperados;
+        const diferenciaNetaMinutos = diferenciaBrutaMinutos - minutosCobradosPeriodo;
         const porcentajeTardanzas = total > 0 ? ((tardanzas / total) * 100).toFixed(1) : 0;
-        
+
         setEstadisticas({
             total,
             totalHorasTrabajadas: minutosAHorasFormato(totalMinutosTrabajados),
@@ -245,14 +301,93 @@ const PanelAsistencia = () => {
             horasEsperadas: minutosAHorasFormato(totalMinutosEsperados),
             horasFaltantes: minutosAHorasFormato(minutosFaltantes),
             porcentajeCumplimiento: porcentajeCumplimiento.toFixed(1),
-            diferenciaHoras: minutosAHorasFormato(Math.abs(diferenciaMinutos)),
-            diferenciaHorasValor: diferenciaMinutos,
+            diferenciaHoras: minutosAHorasFormato(Math.abs(diferenciaNetaMinutos)),
+            diferenciaHorasValor: diferenciaNetaMinutos,
+            diferenciaBruta: minutosAHorasFormato(Math.abs(diferenciaBrutaMinutos)),
+            diferenciaBrutaValor: diferenciaBrutaMinutos,
+            minutosCobrados: minutosCobradosPeriodo,
+            horasCobradas: minutosAHorasFormato(minutosCobradosPeriodo),
             tardanzas,
             ausentes,
             porcentajeTardanzas
         });
     };
 
+    // 🔥 NUEVA: obtiene asistencia + cobros del empleado en el rango de fechas
+    const cargarResumenCobro = async (empId) => {
+        if (!empId) {
+            setResumenCobro({
+                cargando: false,
+                diferenciaBruta: '0:00',
+                diferenciaBrutaValor: 0,
+                minutosCobrados: 0,
+                horasCobradas: '0:00',
+                saldoDisponible: '0:00',
+                saldoDisponibleValor: 0,
+                porcentajeCumplimiento: 0,
+                totalHorasTrabajadas: '0:00',
+                horasEsperadas: '0:00'
+            });
+            return;
+        }
+
+        setResumenCobro(prev => ({ ...prev, cargando: true }));
+
+        try {
+            const urlAsist = `${BACKEND_URL}/api/reportes/asistencia?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}&empId=${empId}`;
+            const resAsist = await fetch(urlAsist);
+            const dataAsist = await resAsist.json();
+
+            let totalMinutosTrabajados = 0;
+            let totalMinutosEsperados = 0;
+
+            (Array.isArray(dataAsist) ? dataAsist : []).forEach(r => {
+                if (r.HorasTrabajadas > 0) {
+                    totalMinutosTrabajados += Math.round(parseFloat(r.HorasTrabajadas) * 60);
+                    const horasLaborales = parseFloat(r.HorasLaborales) || 8;
+                    totalMinutosEsperados += horasLaborales * 60;
+                }
+            });
+
+            const diferenciaBrutaMinutos = totalMinutosTrabajados - totalMinutosEsperados;
+
+            const resCobros = await fetch(
+                `${BACKEND_URL}/api/horas-extras/acumulado/${empId}?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`
+            );
+            const dataCobros = await resCobros.json();
+            const minutosCobrados = dataCobros.success
+                ? dataCobros.data.minutosCobrados
+                : 0;
+
+            const saldoDisponible = diferenciaBrutaMinutos - minutosCobrados;
+
+            setResumenCobro({
+                cargando: false,
+                diferenciaBruta: minutosAHorasFormato(Math.abs(diferenciaBrutaMinutos)),
+                diferenciaBrutaValor: diferenciaBrutaMinutos,
+                minutosCobrados,
+                horasCobradas: minutosAHorasFormato(minutosCobrados),
+                saldoDisponible: minutosAHorasFormato(Math.abs(saldoDisponible)),
+                saldoDisponibleValor: saldoDisponible,
+                porcentajeCumplimiento:
+                    totalMinutosEsperados > 0
+                        ? (
+                              (totalMinutosTrabajados / totalMinutosEsperados) *
+                              100
+                          ).toFixed(1)
+                        : '0.0',
+                totalHorasTrabajadas: minutosAHorasFormato(totalMinutosTrabajados),
+                horasEsperadas: minutosAHorasFormato(totalMinutosEsperados)
+            });
+        } catch (error) {
+            console.error('Error cargando resumen de cobro:', error);
+            setResumenCobro(prev => ({ ...prev, cargando: false }));
+        }
+    };
+
+    // ============================================================
+    // ASISTENCIA: registrar / editar
+    // ============================================================
     const registrarAsistencia = async () => {
         if (!nuevoRegistro.empId || !nuevoRegistro.horaEntrada) {
             alert('❌ Complete los campos requeridos');
@@ -263,17 +398,32 @@ const PanelAsistencia = () => {
             const res = await fetch(`${BACKEND_URL}/api/asistencia/registro-manual`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...nuevoRegistro, empId: parseInt(nuevoRegistro.empId), metodoValidacion: 'manual' })
+                body: JSON.stringify({
+                    ...nuevoRegistro,
+                    empId: parseInt(nuevoRegistro.empId),
+                    metodoValidacion: 'manual'
+                })
             });
             const data = await res.json();
             if (res.ok) {
                 let mensaje = `✅ ${data.message}`;
-                if (data.data?.horasExtras > 0) mensaje += `\n📊 Horas extras: ${formatearHorasExtrasIndividual(data.data.horasExtras)}`;
-                if (data.data?.horasTrabajadas > 0) mensaje += `\n⏱️ Horas trabajadas: ${formatearHorasTrabajadas(data.data.horasTrabajadas)}`;
-                if (data.data?.esTardanza) mensaje += `\n⚠️ Tardanza: ${formatearTardanza(data.data.minutosTardanza, true)}`;
+                if (data.data?.horasExtras > 0)
+                    mensaje += `\n📊 Horas extras: ${formatearHorasExtrasIndividual(data.data.horasExtras)}`;
+                if (data.data?.horasTrabajadas > 0)
+                    mensaje += `\n⏱️ Horas trabajadas: ${formatearHorasTrabajadas(data.data.horasTrabajadas)}`;
+                if (data.data?.esTardanza)
+                    mensaje += `\n⚠️ Tardanza: ${formatearTardanza(data.data.minutosTardanza, true)}`;
                 alert(mensaje);
                 setMostrarFormulario(false);
-                setNuevoRegistro({ empId: '', fecha: getLocalDate(), horaEntrada: '', horaSalidaAlmuerzo: '', horaRegresoAlmuerzo: '', horaSalida: '', observaciones: '' });
+                setNuevoRegistro({
+                    empId: '',
+                    fecha: getLocalDate(),
+                    horaEntrada: '',
+                    horaSalidaAlmuerzo: '',
+                    horaRegresoAlmuerzo: '',
+                    horaSalida: '',
+                    observaciones: ''
+                });
                 cargarReporte();
             } else {
                 alert(`❌ ${data.message}`);
@@ -287,10 +437,15 @@ const PanelAsistencia = () => {
 
     const abrirModalEdicion = async (registro) => {
         try {
-            const res = await fetch(`${BACKEND_URL}/api/asistencia/registro/${registro.AsistenciaID}`);
+            const res = await fetch(
+                `${BACKEND_URL}/api/asistencia/registro/${registro.AsistenciaID}`
+            );
             const data = await res.json();
             if (data.success) {
-                setEditandoRegistro({ ...data.data, Fecha: extraerFechaYYYYMMDD(data.data.Fecha) });
+                setEditandoRegistro({
+                    ...data.data,
+                    Fecha: extraerFechaYYYYMMDD(data.data.Fecha)
+                });
                 setMostrarModalEdicion(true);
             }
         } catch (error) {
@@ -302,21 +457,27 @@ const PanelAsistencia = () => {
         if (!editandoRegistro) return;
         setRegistrando(true);
         try {
-            const res = await fetch(`${BACKEND_URL}/api/asistencia/registro/${editandoRegistro.AsistenciaID}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    horaEntrada: editandoRegistro.HoraEntrada?.substring(0,5) || '',
-                    horaSalidaAlmuerzo: editandoRegistro.HoraSalidaAlmuerzo?.substring(0,5) || '',
-                    horaRegresoAlmuerzo: editandoRegistro.HoraRegresoAlmuerzo?.substring(0,5) || '',
-                    horaSalida: editandoRegistro.HoraSalida?.substring(0,5) || '',
-                    observaciones: editandoRegistro.Observaciones || ''
-                })
-            });
+            const res = await fetch(
+                `${BACKEND_URL}/api/asistencia/registro/${editandoRegistro.AsistenciaID}`,
+                {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        horaEntrada: editandoRegistro.HoraEntrada?.substring(0, 5) || '',
+                        horaSalidaAlmuerzo:
+                            editandoRegistro.HoraSalidaAlmuerzo?.substring(0, 5) || '',
+                        horaRegresoAlmuerzo:
+                            editandoRegistro.HoraRegresoAlmuerzo?.substring(0, 5) || '',
+                        horaSalida: editandoRegistro.HoraSalida?.substring(0, 5) || '',
+                        observaciones: editandoRegistro.Observaciones || ''
+                    })
+                }
+            );
             const data = await res.json();
             if (res.ok) {
                 let mensaje = `✅ ${data.message}`;
-                if (data.data?.horasExtras > 0) mensaje += `\n📊 Horas extras: ${formatearHorasExtrasIndividual(data.data.horasExtras)}`;
+                if (data.data?.horasExtras > 0)
+                    mensaje += `\n📊 Horas extras: ${formatearHorasExtrasIndividual(data.data.horasExtras)}`;
                 alert(mensaje);
                 setMostrarModalEdicion(false);
                 setEditandoRegistro(null);
@@ -331,17 +492,160 @@ const PanelAsistencia = () => {
         }
     };
 
+    // ============================================================
+    // COBRO DE HORAS EXTRAS
+    // ============================================================
+    const resetResumenCobro = () => {
+        setResumenCobro({
+            cargando: false,
+            diferenciaBruta: '0:00',
+            diferenciaBrutaValor: 0,
+            minutosCobrados: 0,
+            horasCobradas: '0:00',
+            saldoDisponible: '0:00',
+            saldoDisponibleValor: 0,
+            porcentajeCumplimiento: 0,
+            totalHorasTrabajadas: '0:00',
+            horasEsperadas: '0:00'
+        });
+    };
+
+    const cargarHistorialCobros = async (empId) => {
+        if (!empId) return;
+        setCargandoHistorial(true);
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/horas-extras/historial/${empId}`);
+            const data = await res.json();
+            setHistorialCobros(data.success ? data.data : []);
+        } catch (error) {
+            console.error('Error cargando historial:', error);
+            setHistorialCobros([]);
+        } finally {
+            setCargandoHistorial(false);
+        }
+    };
+
+    const registrarCobroHorasExtras = async () => {
+        if (!nuevoCobro.empId || !nuevoCobro.horasCobradas) {
+            alert('❌ Complete los campos requeridos');
+            return;
+        }
+
+        const horasDecimal = parseFloat(nuevoCobro.horasCobradas);
+        if (isNaN(horasDecimal) || horasDecimal <= 0) {
+            alert('❌ Ingrese una cantidad válida de horas');
+            return;
+        }
+
+        const minutosSolicitados = Math.round(horasDecimal * 60);
+
+        if (resumenCobro.diferenciaBrutaValor <= 0) {
+            alert('❌ El empleado no tiene horas extras a favor en el período seleccionado');
+            return;
+        }
+
+        const saldoDisponible = resumenCobro.saldoDisponibleValor;
+
+        if (minutosSolicitados > saldoDisponible) {
+            alert(
+                `❌ Saldo insuficiente.\nDisponible: ${minutosAHorasFormato(saldoDisponible)}`
+            );
+            return;
+        }
+
+        setRegistrando(true);
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/horas-extras/cobrar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    empId: parseInt(nuevoCobro.empId),
+                    fechaCobro: nuevoCobro.fechaCobro,
+                    minutosCobrados: minutosSolicitados,
+                    tipoCobro: nuevoCobro.tipoCobro,
+                    observaciones: nuevoCobro.observaciones,
+                    diferenciaBrutaMinutos: resumenCobro.diferenciaBrutaValor
+                })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                alert(
+                    `✅ ${data.message}\n` +
+                    `📊 Horas cobradas: ${data.data.horasCobradas}\n` +
+                    `💰 Nuevo saldo: ${data.data.nuevoSaldo}`
+                );
+                setMostrarModalCobro(false);
+                setNuevoCobro({
+                    empId: '',
+                    fechaCobro: getLocalDate(),
+                    horasCobradas: '',
+                    tipoCobro: 'PAGO',
+                    observaciones: ''
+                });
+                resetResumenCobro();
+                cargarReporte();
+            } else {
+                alert(`❌ ${data.message}`);
+            }
+        } catch (error) {
+            alert('❌ Error al conectar con el servidor');
+        } finally {
+            setRegistrando(false);
+        }
+    };
+
+    const anularCobro = async (cobroId) => {
+        if (!window.confirm('¿Está seguro de anular este cobro? El saldo se restaurará.'))
+            return;
+
+        try {
+            const res = await fetch(
+                `${BACKEND_URL}/api/horas-extras/cobro/${cobroId}/anular`,
+                { method: 'PUT' }
+            );
+            const data = await res.json();
+            if (res.ok) {
+                alert('✅ ' + data.message);
+                if (nuevoCobro.empId) {
+                    cargarHistorialCobros(nuevoCobro.empId);
+                    cargarResumenCobro(nuevoCobro.empId);
+                }
+                cargarReporte();
+            } else {
+                alert(`❌ ${data.message}`);
+            }
+        } catch (error) {
+            alert('Error al anular');
+        }
+    };
+
+    // ============================================================
+    // EXPORTAR
+    // ============================================================
     const exportarExcel = () => {
-        const headers = ['Fecha', 'Empleado', 'Documento', 'Entrada', 'Salida Alm.', 'Regreso Alm.', 'Salida', 'Horas Trab.', 'Horas Extras', 'Estado', 'Tardanza'];
+        const headers = [
+            'Fecha', 'Empleado', 'Documento', 'Entrada', 'Salida Alm.',
+            'Regreso Alm.', 'Salida', 'Horas Trab.', 'Horas Extras',
+            'Estado', 'Tardanza'
+        ];
         const rows = registros.map(r => [
-            formatDisplayDate(r.Fecha), `${r.Nombres} ${r.Apellidos}`, r.DocID,
-            r.HoraEntrada?.substring(0,5) || '—', r.HoraSalidaAlmuerzo?.substring(0,5) || '—',
-            r.HoraRegresoAlmuerzo?.substring(0,5) || '—', r.HoraSalida?.substring(0,5) || '—',
-            formatearHorasTrabajadas(r.HorasTrabajadas), formatearHorasExtrasIndividual(r.HorasExtras),
-            r.Estado || '—', formatearTardanza(r.MinutosTardanza, r.EsTardanza)
+            formatDisplayDate(r.Fecha),
+            `${r.Nombres} ${r.Apellidos}`,
+            r.DocID,
+            r.HoraEntrada?.substring(0, 5) || '—',
+            r.HoraSalidaAlmuerzo?.substring(0, 5) || '—',
+            r.HoraRegresoAlmuerzo?.substring(0, 5) || '—',
+            r.HoraSalida?.substring(0, 5) || '—',
+            formatearHorasTrabajadas(r.HorasTrabajadas),
+            formatearHorasExtrasIndividual(r.HorasExtras),
+            r.Estado || '—',
+            formatearTardanza(r.MinutosTardanza, r.EsTardanza)
         ]);
-        const csv = [headers, ...rows].map(row => row.map(c => `"${c}"`).join(',')).join('\n');
-        const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+        const csv = [headers, ...rows]
+            .map(row => row.map(c => `"${c}"`).join(','))
+            .join('\n');
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -350,6 +654,9 @@ const PanelAsistencia = () => {
         URL.revokeObjectURL(url);
     };
 
+    // ============================================================
+    // HELPERS UI
+    // ============================================================
     const getEstadoColor = (estado, esTardanza) => {
         if (esTardanza) return 'bg-orange-100 text-orange-800';
         if (estado === 'Completo') return 'bg-green-100 text-green-800';
@@ -373,34 +680,84 @@ const PanelAsistencia = () => {
         <div className="bg-white rounded-lg shadow-md p-4 mb-3 hover:shadow-lg transition-shadow">
             <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
-                    <h3 className="font-bold text-gray-800">{registro.Nombres} {registro.Apellidos}</h3>
+                    <h3 className="font-bold text-gray-800">
+                        {registro.Nombres} {registro.Apellidos}
+                    </h3>
                     <p className="text-xs text-gray-500">{registro.DocID}</p>
-                    <p className="text-xs text-gray-500 mt-1">{formatDisplayDate(registro.Fecha)}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                        {formatDisplayDate(registro.Fecha)}
+                    </p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
-                    <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${getEstadoColor(registro.Estado, registro.EsTardanza)}`}>
+                    <span
+                        className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${getEstadoColor(
+                            registro.Estado,
+                            registro.EsTardanza
+                        )}`}
+                    >
                         {getEstadoIcono(registro.Estado, registro.EsTardanza)}
                         {registro.EsTardanza ? 'Tardanza' : registro.Estado || '—'}
                     </span>
-                    <button onClick={() => abrirModalEdicion(registro)} className="text-blue-600 hover:bg-blue-50 p-1 rounded">
+                    <button
+                        onClick={() => abrirModalEdicion(registro)}
+                        className="text-blue-600 hover:bg-blue-50 p-1 rounded"
+                    >
                         <Edit className="w-4 h-4" />
                     </button>
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="bg-gray-50 p-2 rounded"><p className="text-xs text-gray-500">Entrada</p><p className="font-mono font-medium">{registro.HoraEntrada?.substring(0,5) || '—'}</p></div>
-                <div className="bg-gray-50 p-2 rounded"><p className="text-xs text-gray-500">Salida Alm.</p><p className="font-mono font-medium">{registro.HoraSalidaAlmuerzo?.substring(0,5) || '—'}</p></div>
-                <div className="bg-gray-50 p-2 rounded"><p className="text-xs text-gray-500">Regreso Alm.</p><p className="font-mono font-medium">{registro.HoraRegresoAlmuerzo?.substring(0,5) || '—'}</p></div>
-                <div className="bg-gray-50 p-2 rounded"><p className="text-xs text-gray-500">Salida</p><p className="font-mono font-medium">{registro.HoraSalida?.substring(0,5) || '—'}</p></div>
+                <div className="bg-gray-50 p-2 rounded">
+                    <p className="text-xs text-gray-500">Entrada</p>
+                    <p className="font-mono font-medium">
+                        {registro.HoraEntrada?.substring(0, 5) || '—'}
+                    </p>
+                </div>
+                <div className="bg-gray-50 p-2 rounded">
+                    <p className="text-xs text-gray-500">Salida Alm.</p>
+                    <p className="font-mono font-medium">
+                        {registro.HoraSalidaAlmuerzo?.substring(0, 5) || '—'}
+                    </p>
+                </div>
+                <div className="bg-gray-50 p-2 rounded">
+                    <p className="text-xs text-gray-500">Regreso Alm.</p>
+                    <p className="font-mono font-medium">
+                        {registro.HoraRegresoAlmuerzo?.substring(0, 5) || '—'}
+                    </p>
+                </div>
+                <div className="bg-gray-50 p-2 rounded">
+                    <p className="text-xs text-gray-500">Salida</p>
+                    <p className="font-mono font-medium">
+                        {registro.HoraSalida?.substring(0, 5) || '—'}
+                    </p>
+                </div>
             </div>
             <div className="flex justify-between mt-3 pt-2 border-t">
-                <div><p className="text-xs text-gray-500">Horas Trab.</p><p className="text-sm font-medium">{formatearHorasTrabajadas(registro.HorasTrabajadas)}</p></div>
-                <div><p className="text-xs text-gray-500">Horas Extras</p><p className="text-sm font-medium text-purple-600">{formatearHorasExtrasIndividual(registro.HorasExtras)}</p></div>
-                <div><p className="text-xs text-gray-500">Tardanza</p><p className="text-sm font-medium">{formatearTardanza(registro.MinutosTardanza, registro.EsTardanza)}</p></div>
+                <div>
+                    <p className="text-xs text-gray-500">Horas Trab.</p>
+                    <p className="text-sm font-medium">
+                        {formatearHorasTrabajadas(registro.HorasTrabajadas)}
+                    </p>
+                </div>
+                <div>
+                    <p className="text-xs text-gray-500">Horas Extras</p>
+                    <p className="text-sm font-medium text-purple-600">
+                        {formatearHorasExtrasIndividual(registro.HorasExtras)}
+                    </p>
+                </div>
+                <div>
+                    <p className="text-xs text-gray-500">Tardanza</p>
+                    <p className="text-sm font-medium">
+                        {formatearTardanza(registro.MinutosTardanza, registro.EsTardanza)}
+                    </p>
+                </div>
             </div>
         </div>
     );
 
+    // ============================================================
+    // RENDER
+    // ============================================================
     return (
         <div className="min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6">
@@ -408,103 +765,246 @@ const PanelAsistencia = () => {
                 <div className="text-center sm:text-left sm:flex sm:justify-between sm:items-center mb-6">
                     <div className="mb-3 sm:mb-0">
                         <h1 className="text-xl sm:text-2xl font-bold">Panel de Asistencia</h1>
-                        <p className="text-gray-500 text-xs sm:text-sm">Control de horas extras y cumplimiento laboral</p>
+                        <p className="text-gray-500 text-xs sm:text-sm">
+                            Control de horas extras y cumplimiento laboral
+                        </p>
                     </div>
                     <div className="flex justify-center gap-2">
-                        <button onClick={() => setModoVista(modoVista === 'tabla' ? 'tarjetas' : 'tabla')} className="bg-gray-600 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1">
+                        <button
+                            onClick={() => setModoVista(modoVista === 'tabla' ? 'tarjetas' : 'tabla')}
+                            className="bg-gray-600 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"
+                        >
                             {modoVista === 'tabla' ? '📱 Vista Móvil' : '📊 Vista Tabla'}
                         </button>
                     </div>
                 </div>
 
                 {/* Botones de acción */}
-                <div className="flex justify-center gap-3 mb-6">
-                    <button onClick={() => setMostrarFormulario(true)} className="bg-blue-600 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all">
-                        <Plus className="w-4 h-4" /> <span className="text-sm font-medium">Registrar</span>
+                <div className="flex flex-wrap justify-center gap-3 mb-6">
+                    <button
+                        onClick={() => setMostrarFormulario(true)}
+                        className="bg-blue-600 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
+                    >
+                        <Plus className="w-4 h-4" />{' '}
+                        <span className="text-sm font-medium">Registrar</span>
                     </button>
-                    <button onClick={exportarExcel} disabled={!registros.length} className="bg-green-600 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all disabled:opacity-50">
-                        <Download className="w-4 h-4" /> <span className="text-sm font-medium">Exportar</span>
+                    <button
+                        onClick={() => setMostrarModalCobro(true)}
+                        className="bg-purple-600 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all"
+                    >
+                        <Award className="w-4 h-4" />{' '}
+                        <span className="text-sm font-medium">Cobrar HE</span>
+                    </button>
+                    <button
+                        onClick={exportarExcel}
+                        disabled={!registros.length}
+                        className="bg-green-600 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                    >
+                        <Download className="w-4 h-4" />{' '}
+                        <span className="text-sm font-medium">Exportar</span>
                     </button>
                 </div>
 
-                {/* Botón filtros móvil */}
+                {/* Filtros móvil */}
                 {isMobile && (
                     <div className="flex justify-center mb-4">
-                        <button onClick={() => setMostrarFiltrosMovil(!mostrarFiltrosMovil)} className="bg-gray-100 px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm">
+                        <button
+                            onClick={() => setMostrarFiltrosMovil(!mostrarFiltrosMovil)}
+                            className="bg-gray-100 px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm"
+                        >
                             <Filter className="w-4 h-4" />
-                            <span className="text-sm">{mostrarFiltrosMovil ? 'Ocultar Filtros' : 'Mostrar Filtros'}</span>
+                            <span className="text-sm">
+                                {mostrarFiltrosMovil ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+                            </span>
                         </button>
                     </div>
                 )}
 
                 {/* Filtros */}
-                <div className={`bg-white rounded-lg shadow p-4 mb-6 ${isMobile && !mostrarFiltrosMovil ? 'hidden' : ''}`}>
+                <div
+                    className={`bg-white rounded-lg shadow p-4 mb-6 ${
+                        isMobile && !mostrarFiltrosMovil ? 'hidden' : ''
+                    }`}
+                >
                     <div className="space-y-3 sm:space-y-0 sm:grid sm:grid-cols-2 lg:grid-cols-5 sm:gap-3">
-                        <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} className="w-full p-2 border rounded text-sm" />
-                        <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="w-full p-2 border rounded text-sm" />
-                        <select value={empleadoFiltro} onChange={e => setEmpleadoFiltro(e.target.value)} className="w-full p-2 border rounded text-sm">
+                        <input
+                            type="date"
+                            value={fechaInicio}
+                            onChange={e => setFechaInicio(e.target.value)}
+                            className="w-full p-2 border rounded text-sm"
+                        />
+                        <input
+                            type="date"
+                            value={fechaFin}
+                            onChange={e => setFechaFin(e.target.value)}
+                            className="w-full p-2 border rounded text-sm"
+                        />
+                        <select
+                            value={empleadoFiltro}
+                            onChange={e => setEmpleadoFiltro(e.target.value)}
+                            className="w-full p-2 border rounded text-sm"
+                        >
                             <option value="">Todos los empleados</option>
-                            {empleados.map(e => <option key={e.EmpId} value={e.EmpId}>{e.Nombres} {e.Apellidos}</option>)}
+                            {empleados.map(e => (
+                                <option key={e.EmpId} value={e.EmpId}>
+                                    {e.Nombres} {e.Apellidos}
+                                </option>
+                            ))}
                         </select>
-                        <select value={horarioFiltro} onChange={e => setHorarioFiltro(e.target.value)} className="w-full p-2 border rounded text-sm">
+                        <select
+                            value={horarioFiltro}
+                            onChange={e => setHorarioFiltro(e.target.value)}
+                            className="w-full p-2 border rounded text-sm"
+                        >
                             <option value="">Todos los horarios</option>
-                            {horarios.map(h => <option key={h.HorarioId} value={h.HorarioId}>{h.Nombre}</option>)}
+                            {horarios.map(h => (
+                                <option key={h.HorarioId} value={h.HorarioId}>
+                                    {h.Nombre}
+                                </option>
+                            ))}
                         </select>
-                        <button onClick={cargarReporte} className="w-full bg-blue-600 text-white py-2 rounded text-sm hover:bg-blue-700 transition">Buscar</button>
+                        <button
+                            onClick={cargarReporte}
+                            className="w-full bg-blue-600 text-white py-2 rounded text-sm hover:bg-blue-700 transition"
+                        >
+                            Buscar
+                        </button>
                     </div>
                 </div>
 
-                {/* Estadísticas - 5 tarjetas con formato HH:MM */}
+                {/* Estadísticas */}
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
                     <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-4 text-white shadow-sm">
-                        <div className="flex items-center justify-between mb-2"><p className="text-xs sm:text-sm opacity-90">Total Horas Trabajadas</p><Clock className="w-5 h-5 opacity-80" /></div>
-                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.totalHorasTrabajadas}</p>
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs sm:text-sm opacity-90">Total Horas Trabajadas</p>
+                            <Clock className="w-5 h-5 opacity-80" />
+                        </div>
+                        <p className="text-xl sm:text-2xl font-bold">
+                            {estadisticas.totalHorasTrabajadas}
+                        </p>
                         <p className="text-xs opacity-80 mt-1">Horas registradas</p>
                     </div>
+
                     <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white shadow-sm">
-                        <div className="flex items-center justify-between mb-2"><p className="text-xs sm:text-sm opacity-90">Horas Extras</p><Zap className="w-5 h-5 opacity-80" /></div>
-                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.totalHorasExtras}</p>
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs sm:text-sm opacity-90">Horas Extras</p>
+                            <Zap className="w-5 h-5 opacity-80" />
+                        </div>
+                        <p className="text-xl sm:text-2xl font-bold">
+                            {estadisticas.totalHorasExtras}
+                        </p>
                         <p className="text-xs opacity-80 mt-1">Horas adicionales</p>
                     </div>
+
                     <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-4 text-white shadow-sm">
-                        <div className="flex items-center justify-between mb-2"><p className="text-xs sm:text-sm opacity-90">Cumplimiento de Horas</p><Target className="w-5 h-5 opacity-80" /></div>
-                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.porcentajeCumplimiento}%</p>
-                        <p className="text-xs opacity-80 mt-1">Faltan: {estadisticas.horasFaltantes}</p>
-                    </div>
-                    <div className={`bg-gradient-to-br rounded-lg p-4 text-white shadow-sm ${estadisticas.diferenciaHorasValor < 0 ? 'from-red-500 to-red-600' : estadisticas.diferenciaHorasValor > 0 ? 'from-emerald-500 to-emerald-600' : 'from-gray-500 to-gray-600'}`}>
-                        <div className="flex items-center justify-between mb-2"><p className="text-xs sm:text-sm opacity-90">Diferencia (Debe/Haber)</p>
-                            {estadisticas.diferenciaHorasValor < 0 ? <TrendingDown className="w-5 h-5 opacity-80" /> : estadisticas.diferenciaHorasValor > 0 ? <TrendingUp className="w-5 h-5 opacity-80" /> : <Target className="w-5 h-5 opacity-80" />}
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs sm:text-sm opacity-90">Cumplimiento</p>
+                            <Target className="w-5 h-5 opacity-80" />
                         </div>
-                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.diferenciaHoras}</p>
-                        <p className="text-xs opacity-80 mt-1">{estadisticas.diferenciaHorasValor < 0 ? 'Debe horas a la empresa' : estadisticas.diferenciaHorasValor > 0 ? 'A favor del empleado' : 'Horas exactas'}</p>
+                        <p className="text-xl sm:text-2xl font-bold">
+                            {estadisticas.porcentajeCumplimiento}%
+                        </p>
+                        <p className="text-xs opacity-80 mt-1">
+                            Faltan: {estadisticas.horasFaltantes}
+                        </p>
                     </div>
+
+                    <div
+                        className={`bg-gradient-to-br rounded-lg p-4 text-white shadow-sm ${
+                            estadisticas.diferenciaHorasValor < 0
+                                ? 'from-red-500 to-red-600'
+                                : estadisticas.diferenciaHorasValor > 0
+                                ? 'from-emerald-500 to-emerald-600'
+                                : 'from-gray-500 to-gray-600'
+                        }`}
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs sm:text-sm opacity-90">
+                                Diferencia (Debe/Haber)
+                            </p>
+                            {estadisticas.diferenciaHorasValor < 0 ? (
+                                <TrendingDown className="w-5 h-5 opacity-80" />
+                            ) : estadisticas.diferenciaHorasValor > 0 ? (
+                                <TrendingUp className="w-5 h-5 opacity-80" />
+                            ) : (
+                                <Target className="w-5 h-5 opacity-80" />
+                            )}
+                        </div>
+                        <p className="text-xl sm:text-2xl font-bold">
+                            {estadisticas.diferenciaHoras}
+                        </p>
+                        {estadisticas.minutosCobrados > 0 && (
+                            <div className="mt-1 space-y-0.5">
+                                <p className="text-[10px] opacity-90">
+                                    Bruto: {estadisticas.diferenciaBruta}
+                                </p>
+                                <p className="text-[10px] opacity-90">
+                                    Cobrado: -{estadisticas.horasCobradas}
+                                </p>
+                            </div>
+                        )}
+                        <p className="text-xs opacity-80 mt-1">
+                            {estadisticas.diferenciaHorasValor < 0
+                                ? 'Debe horas a la empresa'
+                                : estadisticas.diferenciaHorasValor > 0
+                                ? 'A favor del empleado'
+                                : 'Horas exactas'}
+                        </p>
+                    </div>
+
                     <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg p-4 text-white shadow-sm">
-                        <div className="flex items-center justify-between mb-2"><p className="text-xs sm:text-sm opacity-90">Tardanzas</p><Timer className="w-5 h-5 opacity-80" /></div>
-                        <p className="text-xl sm:text-2xl font-bold">{estadisticas.tardanzas}</p>
-                        <p className="text-xs opacity-80 mt-1">{estadisticas.porcentajeTardanzas}% del total</p>
+                        <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs sm:text-sm opacity-90">Tardanzas</p>
+                            <Timer className="w-5 h-5 opacity-80" />
+                        </div>
+                        <p className="text-xl sm:text-2xl font-bold">
+                            {estadisticas.tardanzas}
+                        </p>
+                        <p className="text-xs opacity-80 mt-1">
+                            {estadisticas.porcentajeTardanzas}% del total
+                        </p>
                     </div>
                 </div>
 
                 {/* Segunda fila */}
                 <div className="grid grid-cols-2 gap-3 mb-6">
                     <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                        <div className="flex items-center gap-2 mb-2"><Calendar className="w-5 h-5 text-gray-500" /><p className="text-sm font-medium text-gray-700">Total Registros</p></div>
-                        <p className="text-2xl font-bold text-gray-800">{estadisticas.total}</p>
-                        <p className="text-xs text-gray-500 mt-1">Ausentes: {estadisticas.ausentes}</p>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Calendar className="w-5 h-5 text-gray-500" />
+                            <p className="text-sm font-medium text-gray-700">Total Registros</p>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-800">
+                            {estadisticas.total}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                            Ausentes: {estadisticas.ausentes}
+                        </p>
                     </div>
                     <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                        <div className="flex items-center gap-2 mb-2"><Clock className="w-5 h-5 text-gray-500" /><p className="text-sm font-medium text-gray-700">Horas Esperadas</p></div>
-                        <p className="text-2xl font-bold text-gray-800">{estadisticas.horasEsperadas}</p>
-                        <p className="text-xs text-gray-500 mt-1">Según horario de cada empleado</p>
+                        <div className="flex items-center gap-2 mb-2">
+                            <Clock className="w-5 h-5 text-gray-500" />
+                            <p className="text-sm font-medium text-gray-700">Horas Esperadas</p>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-800">
+                            {estadisticas.horasEsperadas}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                            Según horario de cada empleado
+                        </p>
                     </div>
                 </div>
 
-                {/* Tabla de registros */}
+                {/* Tabla */}
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                     {cargando ? (
-                        <div className="text-center py-10"><div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div><p className="mt-2 text-gray-500">Cargando...</p></div>
+                        <div className="text-center py-10">
+                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            <p className="mt-2 text-gray-500">Cargando...</p>
+                        </div>
                     ) : registros.length === 0 ? (
-                        <div className="text-center py-10 text-gray-500"><p>No hay registros</p></div>
+                        <div className="text-center py-10 text-gray-500">
+                            <p>No hay registros</p>
+                        </div>
                     ) : modoVista === 'tabla' && !isMobile ? (
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
@@ -512,100 +1012,747 @@ const PanelAsistencia = () => {
                                     <tr>
                                         <th className="p-3 text-left text-xs sm:text-sm">Fecha</th>
                                         <th className="p-3 text-left text-xs sm:text-sm">Empleado</th>
-                                        <th className="p-3 text-left text-xs sm:text-sm hidden md:table-cell">Entrada</th>
-                                        <th className="p-3 text-left text-xs sm:text-sm hidden lg:table-cell">Salida Alm.</th>
-                                        <th className="p-3 text-left text-xs sm:text-sm hidden lg:table-cell">Regreso Alm.</th>
+                                        <th className="p-3 text-left text-xs sm:text-sm hidden md:table-cell">
+                                            Entrada
+                                        </th>
+                                        <th className="p-3 text-left text-xs sm:text-sm hidden lg:table-cell">
+                                            Salida Alm.
+                                        </th>
+                                        <th className="p-3 text-left text-xs sm:text-sm hidden lg:table-cell">
+                                            Regreso Alm.
+                                        </th>
                                         <th className="p-3 text-left text-xs sm:text-sm">Salida</th>
-                                        <th className="p-3 text-left text-xs sm:text-sm">Horas Trab.</th>
+                                        <th className="p-3 text-left text-xs sm:text-sm">
+                                            Horas Trab.
+                                        </th>
                                         <th className="p-3 text-left text-xs sm:text-sm">HE</th>
                                         <th className="p-3 text-left text-xs sm:text-sm">Estado</th>
-                                        <th className="p-3 text-left text-xs sm:text-sm hidden md:table-cell">Tardanza</th>
-                                        <th className="p-3 text-center text-xs sm:text-sm">Acciones</th>
+                                        <th className="p-3 text-left text-xs sm:text-sm hidden md:table-cell">
+                                            Tardanza
+                                        </th>
+                                        <th className="p-3 text-center text-xs sm:text-sm">
+                                            Acciones
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
                                     {registrosPagina.map((r, i) => (
                                         <tr key={i} className="hover:bg-gray-50">
-                                            <td className="p-3 text-xs sm:text-sm">{formatDisplayDate(r.Fecha)}</td>
-                                            <td className="p-3"><div className="font-medium text-xs sm:text-sm">{r.Nombres} {r.Apellidos}</div><div className="text-xs text-gray-500">{r.DocID}</div></td>
-                                            <td className="p-3 font-mono text-xs sm:text-sm hidden md:table-cell">{r.HoraEntrada?.substring(0,5) || '—'}</td>
-                                            <td className="p-3 font-mono text-xs sm:text-sm hidden lg:table-cell">{r.HoraSalidaAlmuerzo?.substring(0,5) || '—'}</td>
-                                            <td className="p-3 font-mono text-xs sm:text-sm hidden lg:table-cell">{r.HoraRegresoAlmuerzo?.substring(0,5) || '—'}</td>
-                                            <td className="p-3 font-mono text-xs sm:text-sm">{r.HoraSalida?.substring(0,5) || '—'}</td>
-                                            <td className="p-3 font-mono text-xs sm:text-sm">{formatearHorasTrabajadas(r.HorasTrabajadas)}</td>
-                                            <td className="p-3 text-purple-600 font-medium text-xs sm:text-sm">{formatearHorasExtrasIndividual(r.HorasExtras)}</td>
-                                            <td className="p-3"><span className={`px-2 py-1 rounded-full text-xs ${getEstadoColor(r.Estado, r.EsTardanza)}`}>{r.EsTardanza ? 'Tardanza' : r.Estado || '—'}</span></td>
-                                            <td className="p-3 text-xs sm:text-sm hidden md:table-cell">{formatearTardanza(r.MinutosTardanza, r.EsTardanza)}</td>
-                                            <td className="p-3 text-center"><button onClick={() => abrirModalEdicion(r)} className="text-blue-600 hover:bg-blue-50 p-1 rounded"><Edit className="w-4 h-4" /></button></td>
+                                            <td className="p-3 text-xs sm:text-sm">
+                                                {formatDisplayDate(r.Fecha)}
+                                            </td>
+                                            <td className="p-3">
+                                                <div className="font-medium text-xs sm:text-sm">
+                                                    {r.Nombres} {r.Apellidos}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    {r.DocID}
+                                                </div>
+                                            </td>
+                                            <td className="p-3 font-mono text-xs sm:text-sm hidden md:table-cell">
+                                                {r.HoraEntrada?.substring(0, 5) || '—'}
+                                            </td>
+                                            <td className="p-3 font-mono text-xs sm:text-sm hidden lg:table-cell">
+                                                {r.HoraSalidaAlmuerzo?.substring(0, 5) || '—'}
+                                            </td>
+                                            <td className="p-3 font-mono text-xs sm:text-sm hidden lg:table-cell">
+                                                {r.HoraRegresoAlmuerzo?.substring(0, 5) || '—'}
+                                            </td>
+                                            <td className="p-3 font-mono text-xs sm:text-sm">
+                                                {r.HoraSalida?.substring(0, 5) || '—'}
+                                            </td>
+                                            <td className="p-3 font-mono text-xs sm:text-sm">
+                                                {formatearHorasTrabajadas(r.HorasTrabajadas)}
+                                            </td>
+                                            <td className="p-3 text-purple-600 font-medium text-xs sm:text-sm">
+                                                {formatearHorasExtrasIndividual(r.HorasExtras)}
+                                            </td>
+                                            <td className="p-3">
+                                                <span
+                                                    className={`px-2 py-1 rounded-full text-xs ${getEstadoColor(
+                                                        r.Estado,
+                                                        r.EsTardanza
+                                                    )}`}
+                                                >
+                                                    {r.EsTardanza ? 'Tardanza' : r.Estado || '—'}
+                                                </span>
+                                            </td>
+                                            <td className="p-3 text-xs sm:text-sm hidden md:table-cell">
+                                                {formatearTardanza(
+                                                    r.MinutosTardanza,
+                                                    r.EsTardanza
+                                                )}
+                                            </td>
+                                            <td className="p-3 text-center">
+                                                <button
+                                                    onClick={() => abrirModalEdicion(r)}
+                                                    className="text-blue-600 hover:bg-blue-50 p-1 rounded"
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
-                             </table>
+                            </table>
                         </div>
                     ) : (
-                        <div className="p-4">{registrosPagina.map((r, i) => <TarjetaRegistro key={i} registro={r} />)}</div>
+                        <div className="p-4">
+                            {registrosPagina.map((r, i) => (
+                                <TarjetaRegistro key={i} registro={r} />
+                            ))}
+                        </div>
                     )}
+
                     {totalPaginas > 1 && (
                         <div className="flex justify-center items-center gap-2 p-4 border-t">
-                            <button onClick={() => setPaginaActual(p => Math.max(1, p-1))} disabled={paginaActual === 1} className="px-3 py-1 bg-gray-100 rounded disabled:opacity-50 hover:bg-gray-200 transition"><ChevronLeft className="w-4 h-4" /></button>
-                            <span className="px-3 py-1 text-sm">Pág {paginaActual} de {totalPaginas}</span>
-                            <button onClick={() => setPaginaActual(p => Math.min(totalPaginas, p+1))} disabled={paginaActual === totalPaginas} className="px-3 py-1 bg-gray-100 rounded disabled:opacity-50 hover:bg-gray-200 transition"><ChevronRight className="w-4 h-4" /></button>
+                            <button
+                                onClick={() => setPaginaActual(p => Math.max(1, p - 1))}
+                                disabled={paginaActual === 1}
+                                className="px-3 py-1 bg-gray-100 rounded disabled:opacity-50 hover:bg-gray-200 transition"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <span className="px-3 py-1 text-sm">
+                                Pág {paginaActual} de {totalPaginas}
+                            </span>
+                            <button
+                                onClick={() =>
+                                    setPaginaActual(p => Math.min(totalPaginas, p + 1))
+                                }
+                                disabled={paginaActual === totalPaginas}
+                                className="px-3 py-1 bg-gray-100 rounded disabled:opacity-50 hover:bg-gray-200 transition"
+                            >
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
                         </div>
                     )}
                 </div>
 
-                {/* Modal Registrar */}
+                {/* ============================================== */}
+                {/* MODAL REGISTRAR ASISTENCIA */}
+                {/* ============================================== */}
                 {mostrarFormulario && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
                             <div className="sticky top-0 bg-white border-b px-5 py-4 flex justify-between items-center">
                                 <h2 className="text-lg font-bold">Registrar Asistencia</h2>
-                                <button onClick={() => setMostrarFormulario(false)} className="p-1 hover:bg-gray-100 rounded"><X className="w-5 h-5" /></button>
+                                <button
+                                    onClick={() => setMostrarFormulario(false)}
+                                    className="p-1 hover:bg-gray-100 rounded"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
                             </div>
                             <div className="p-5 space-y-3">
-                                <select value={nuevoRegistro.empId} onChange={e => setNuevoRegistro({...nuevoRegistro, empId: e.target.value})} className="w-full p-2.5 border rounded-lg text-sm">
+                                <select
+                                    value={nuevoRegistro.empId}
+                                    onChange={e =>
+                                        setNuevoRegistro({ ...nuevoRegistro, empId: e.target.value })
+                                    }
+                                    className="w-full p-2.5 border rounded-lg text-sm"
+                                >
                                     <option value="">Seleccionar empleado</option>
-                                    {empleados.map(e => <option key={e.EmpId} value={e.EmpId}>{e.Nombres} {e.Apellidos}</option>)}
+                                    {empleados.map(e => (
+                                        <option key={e.EmpId} value={e.EmpId}>
+                                            {e.Nombres} {e.Apellidos}
+                                        </option>
+                                    ))}
                                 </select>
-                                <input type="date" value={nuevoRegistro.fecha} onChange={e => setNuevoRegistro({...nuevoRegistro, fecha: e.target.value})} className="w-full p-2.5 border rounded-lg text-sm" />
-                                <input type="time" value={nuevoRegistro.horaEntrada} onChange={e => setNuevoRegistro({...nuevoRegistro, horaEntrada: e.target.value})} className="w-full p-2.5 border rounded-lg text-sm" placeholder="Hora Entrada" />
-                                <input type="time" value={nuevoRegistro.horaSalidaAlmuerzo} onChange={e => setNuevoRegistro({...nuevoRegistro, horaSalidaAlmuerzo: e.target.value})} className="w-full p-2.5 border rounded-lg text-sm" placeholder="Salida Almuerzo" />
-                                <input type="time" value={nuevoRegistro.horaRegresoAlmuerzo} onChange={e => setNuevoRegistro({...nuevoRegistro, horaRegresoAlmuerzo: e.target.value})} className="w-full p-2.5 border rounded-lg text-sm" placeholder="Regreso Almuerzo" />
-                                <input type="time" value={nuevoRegistro.horaSalida} onChange={e => setNuevoRegistro({...nuevoRegistro, horaSalida: e.target.value})} className="w-full p-2.5 border rounded-lg text-sm" placeholder="Hora Salida" />
-                                <textarea value={nuevoRegistro.observaciones} onChange={e => setNuevoRegistro({...nuevoRegistro, observaciones: e.target.value})} className="w-full p-2.5 border rounded-lg text-sm" rows="3" placeholder="Observaciones" />
+                                <input
+                                    type="date"
+                                    value={nuevoRegistro.fecha}
+                                    onChange={e =>
+                                        setNuevoRegistro({ ...nuevoRegistro, fecha: e.target.value })
+                                    }
+                                    className="w-full p-2.5 border rounded-lg text-sm"
+                                />
+                                <input
+                                    type="time"
+                                    value={nuevoRegistro.horaEntrada}
+                                    onChange={e =>
+                                        setNuevoRegistro({
+                                            ...nuevoRegistro,
+                                            horaEntrada: e.target.value
+                                        })
+                                    }
+                                    className="w-full p-2.5 border rounded-lg text-sm"
+                                    placeholder="Hora Entrada"
+                                />
+                                <input
+                                    type="time"
+                                    value={nuevoRegistro.horaSalidaAlmuerzo}
+                                    onChange={e =>
+                                        setNuevoRegistro({
+                                            ...nuevoRegistro,
+                                            horaSalidaAlmuerzo: e.target.value
+                                        })
+                                    }
+                                    className="w-full p-2.5 border rounded-lg text-sm"
+                                    placeholder="Salida Almuerzo"
+                                />
+                                <input
+                                    type="time"
+                                    value={nuevoRegistro.horaRegresoAlmuerzo}
+                                    onChange={e =>
+                                        setNuevoRegistro({
+                                            ...nuevoRegistro,
+                                            horaRegresoAlmuerzo: e.target.value
+                                        })
+                                    }
+                                    className="w-full p-2.5 border rounded-lg text-sm"
+                                    placeholder="Regreso Almuerzo"
+                                />
+                                <input
+                                    type="time"
+                                    value={nuevoRegistro.horaSalida}
+                                    onChange={e =>
+                                        setNuevoRegistro({
+                                            ...nuevoRegistro,
+                                            horaSalida: e.target.value
+                                        })
+                                    }
+                                    className="w-full p-2.5 border rounded-lg text-sm"
+                                    placeholder="Hora Salida"
+                                />
+                                <textarea
+                                    value={nuevoRegistro.observaciones}
+                                    onChange={e =>
+                                        setNuevoRegistro({
+                                            ...nuevoRegistro,
+                                            observaciones: e.target.value
+                                        })
+                                    }
+                                    className="w-full p-2.5 border rounded-lg text-sm"
+                                    rows="3"
+                                    placeholder="Observaciones"
+                                />
                             </div>
                             <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
-                                <button onClick={registrarAsistencia} disabled={registrando} className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50">Guardar</button>
-                                <button onClick={() => setMostrarFormulario(false)} className="flex-1 bg-gray-200 py-2.5 rounded-lg text-sm font-medium">Cancelar</button>
+                                <button
+                                    onClick={registrarAsistencia}
+                                    disabled={registrando}
+                                    className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50"
+                                >
+                                    Guardar
+                                </button>
+                                <button
+                                    onClick={() => setMostrarFormulario(false)}
+                                    className="flex-1 bg-gray-200 py-2.5 rounded-lg text-sm font-medium"
+                                >
+                                    Cancelar
+                                </button>
                             </div>
                         </div>
                     </div>
                 )}
 
-                {/* Modal Edición */}
+                {/* ============================================== */}
+                {/* MODAL EDITAR ASISTENCIA */}
+                {/* ============================================== */}
                 {mostrarModalEdicion && editandoRegistro && (
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                         <div className="bg-white rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
                             <div className="sticky top-0 bg-white border-b px-5 py-4 flex justify-between items-center">
                                 <h2 className="text-lg font-bold">Editar Asistencia</h2>
-                                <button onClick={() => setMostrarModalEdicion(false)} className="p-1 hover:bg-gray-100 rounded"><X className="w-5 h-5" /></button>
+                                <button
+                                    onClick={() => setMostrarModalEdicion(false)}
+                                    className="p-1 hover:bg-gray-100 rounded"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
                             </div>
                             <div className="p-5 space-y-3">
                                 <div className="bg-gray-50 p-3 rounded-lg">
-                                    <p className="font-medium text-sm">{editandoRegistro.Nombres} {editandoRegistro.Apellidos}</p>
-                                    <p className="text-xs text-gray-500">{formatDisplayDate(editandoRegistro.Fecha)}</p>
+                                    <p className="font-medium text-sm">
+                                        {editandoRegistro.Nombres} {editandoRegistro.Apellidos}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                        {formatDisplayDate(editandoRegistro.Fecha)}
+                                    </p>
                                 </div>
-                                <input type="time" value={editandoRegistro.HoraEntrada?.substring(0,5) || ''} onChange={e => setEditandoRegistro({...editandoRegistro, HoraEntrada: e.target.value})} className="w-full p-2.5 border rounded-lg text-sm" />
-                                <input type="time" value={editandoRegistro.HoraSalidaAlmuerzo?.substring(0,5) || ''} onChange={e => setEditandoRegistro({...editandoRegistro, HoraSalidaAlmuerzo: e.target.value})} className="w-full p-2.5 border rounded-lg text-sm" />
-                                <input type="time" value={editandoRegistro.HoraRegresoAlmuerzo?.substring(0,5) || ''} onChange={e => setEditandoRegistro({...editandoRegistro, HoraRegresoAlmuerzo: e.target.value})} className="w-full p-2.5 border rounded-lg text-sm" />
-                                <input type="time" value={editandoRegistro.HoraSalida?.substring(0,5) || ''} onChange={e => setEditandoRegistro({...editandoRegistro, HoraSalida: e.target.value})} className="w-full p-2.5 border rounded-lg text-sm" />
-                                <textarea value={editandoRegistro.Observaciones || ''} onChange={e => setEditandoRegistro({...editandoRegistro, Observaciones: e.target.value})} className="w-full p-2.5 border rounded-lg text-sm" rows="3" placeholder="Observaciones" />
-                                {editandoRegistro.HorasExtras > 0 && <div className="bg-purple-50 p-3 rounded-lg text-sm text-purple-600">⏱️ Horas extras: {formatearHorasExtrasIndividual(editandoRegistro.HorasExtras)}</div>}
-                                {editandoRegistro.EsTardanza === 1 && <div className="bg-orange-50 p-3 rounded-lg text-sm text-orange-600">⚠️ Tardanza: {formatearTardanza(editandoRegistro.MinutosTardanza, true)}</div>}
+                                <input
+                                    type="time"
+                                    value={editandoRegistro.HoraEntrada?.substring(0, 5) || ''}
+                                    onChange={e =>
+                                        setEditandoRegistro({
+                                            ...editandoRegistro,
+                                            HoraEntrada: e.target.value
+                                        })
+                                    }
+                                    className="w-full p-2.5 border rounded-lg text-sm"
+                                />
+                                <input
+                                    type="time"
+                                    value={
+                                        editandoRegistro.HoraSalidaAlmuerzo?.substring(0, 5) || ''
+                                    }
+                                    onChange={e =>
+                                        setEditandoRegistro({
+                                            ...editandoRegistro,
+                                            HoraSalidaAlmuerzo: e.target.value
+                                        })
+                                    }
+                                    className="w-full p-2.5 border rounded-lg text-sm"
+                                />
+                                <input
+                                    type="time"
+                                    value={
+                                        editandoRegistro.HoraRegresoAlmuerzo?.substring(0, 5) || ''
+                                    }
+                                    onChange={e =>
+                                        setEditandoRegistro({
+                                            ...editandoRegistro,
+                                            HoraRegresoAlmuerzo: e.target.value
+                                        })
+                                    }
+                                    className="w-full p-2.5 border rounded-lg text-sm"
+                                />
+                                <input
+                                    type="time"
+                                    value={editandoRegistro.HoraSalida?.substring(0, 5) || ''}
+                                    onChange={e =>
+                                        setEditandoRegistro({
+                                            ...editandoRegistro,
+                                            HoraSalida: e.target.value
+                                        })
+                                    }
+                                    className="w-full p-2.5 border rounded-lg text-sm"
+                                />
+                                <textarea
+                                    value={editandoRegistro.Observaciones || ''}
+                                    onChange={e =>
+                                        setEditandoRegistro({
+                                            ...editandoRegistro,
+                                            Observaciones: e.target.value
+                                        })
+                                    }
+                                    className="w-full p-2.5 border rounded-lg text-sm"
+                                    rows="3"
+                                    placeholder="Observaciones"
+                                />
+                                {editandoRegistro.HorasExtras > 0 && (
+                                    <div className="bg-purple-50 p-3 rounded-lg text-sm text-purple-600">
+                                        ⏱️ Horas extras:{' '}
+                                        {formatearHorasExtrasIndividual(
+                                            editandoRegistro.HorasExtras
+                                        )}
+                                    </div>
+                                )}
+                                {editandoRegistro.EsTardanza === 1 && (
+                                    <div className="bg-orange-50 p-3 rounded-lg text-sm text-orange-600">
+                                        ⚠️ Tardanza:{' '}
+                                        {formatearTardanza(
+                                            editandoRegistro.MinutosTardanza,
+                                            true
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
-                                <button onClick={guardarEdicion} disabled={registrando} className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50">Guardar</button>
-                                <button onClick={() => setMostrarModalEdicion(false)} className="flex-1 bg-gray-200 py-2.5 rounded-lg text-sm font-medium">Cancelar</button>
+                                <button
+                                    onClick={guardarEdicion}
+                                    disabled={registrando}
+                                    className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50"
+                                >
+                                    Guardar
+                                </button>
+                                <button
+                                    onClick={() => setMostrarModalEdicion(false)}
+                                    className="flex-1 bg-gray-200 py-2.5 rounded-lg text-sm font-medium"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ============================================== */}
+                {/* MODAL COBRAR HORAS EXTRAS */}
+                {/* ============================================== */}
+                {mostrarModalCobro && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                        <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+                            <div className="sticky top-0 bg-white border-b px-5 py-4 flex justify-between items-center">
+                                <h2 className="text-lg font-bold flex items-center gap-2">
+                                    <Award className="w-5 h-5 text-purple-600" />
+                                    Cobrar Horas Extras
+                                </h2>
+                                <button
+                                    onClick={() => {
+                                        setMostrarModalCobro(false);
+                                        setNuevoCobro({
+                                            empId: '',
+                                            fechaCobro: getLocalDate(),
+                                            horasCobradas: '',
+                                            tipoCobro: 'PAGO',
+                                            observaciones: ''
+                                        });
+                                        resetResumenCobro();
+                                    }}
+                                    className="p-1 hover:bg-gray-100 rounded"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="p-5 space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Empleado *
+                                    </label>
+                                    <select
+                                        value={nuevoCobro.empId}
+                                        onChange={e =>
+                                            setNuevoCobro({ ...nuevoCobro, empId: e.target.value })
+                                        }
+                                        className="w-full p-2.5 border rounded-lg text-sm"
+                                    >
+                                        <option value="">Seleccionar empleado</option>
+                                        {empleados.map(e => (
+                                            <option key={e.EmpId} value={e.EmpId}>
+                                                {e.Nombres} {e.Apellidos}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {nuevoCobro.empId && (
+                                    <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-4 border border-purple-200">
+                                        <p className="text-xs font-semibold text-purple-800 mb-3">
+                                            📊 SALDO DE HORAS EXTRAS (período actual)
+                                        </p>
+
+                                        {resumenCobro.cargando ? (
+                                            <div className="text-center py-4">
+                                                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                                                <p className="text-xs text-gray-500 mt-2">
+                                                    Cargando datos del empleado...
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="grid grid-cols-3 gap-3 text-center">
+                                                    <div>
+                                                        <p className="text-xs text-gray-600">
+                                                            Diferencia bruta
+                                                        </p>
+                                                        <p className="text-lg font-bold text-gray-700">
+                                                            {resumenCobro.diferenciaBruta}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-gray-600">
+                                                            Ya cobrado
+                                                        </p>
+                                                        <p className="text-lg font-bold text-orange-600">
+                                                            {resumenCobro.horasCobradas}
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-gray-600">
+                                                            Saldo pendiente
+                                                        </p>
+                                                        <p
+                                                            className={`text-lg font-bold ${
+                                                                resumenCobro.saldoDisponibleValor >
+                                                                0
+                                                                    ? 'text-emerald-600'
+                                                                    : 'text-gray-400'
+                                                            }`}
+                                                        >
+                                                            {resumenCobro.saldoDisponibleValor > 0
+                                                                ? resumenCobro.saldoDisponible
+                                                                : '0:00'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {resumenCobro.diferenciaBrutaValor <= 0 && (
+                                                    <div className="mt-3 bg-red-50 border border-red-200 rounded p-2 text-xs text-red-700 flex items-center gap-2">
+                                                        <AlertCircle className="w-4 h-4" />
+                                                        Este empleado no tiene horas extras a favor
+                                                        en el período
+                                                    </div>
+                                                )}
+
+                                                {resumenCobro.diferenciaBrutaValor > 0 &&
+                                                    resumenCobro.saldoDisponibleValor <= 0 && (
+                                                        <div className="mt-3 bg-yellow-50 border border-yellow-200 rounded p-2 text-xs text-yellow-700 flex items-center gap-2">
+                                                            <AlertCircle className="w-4 h-4" />
+                                                            Las horas extras de este empleado ya
+                                                            fueron cobradas en su totalidad
+                                                        </div>
+                                                    )}
+
+                                                <button
+                                                    onClick={() => {
+                                                        cargarHistorialCobros(nuevoCobro.empId);
+                                                        setMostrarHistorialCobros(true);
+                                                    }}
+                                                    className="mt-3 w-full text-xs text-purple-700 hover:text-purple-900 underline flex items-center justify-center gap-1"
+                                                >
+                                                    <Clock className="w-3 h-3" />
+                                                    Ver historial de cobros
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Fecha de Cobro *
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={nuevoCobro.fechaCobro}
+                                        onChange={e =>
+                                            setNuevoCobro({
+                                                ...nuevoCobro,
+                                                fechaCobro: e.target.value
+                                            })
+                                        }
+                                        className="w-full p-2.5 border rounded-lg text-sm"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Horas a Cobrar *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.25"
+                                        min="0.25"
+                                        value={nuevoCobro.horasCobradas}
+                                        onChange={e =>
+                                            setNuevoCobro({
+                                                ...nuevoCobro,
+                                                horasCobradas: e.target.value
+                                            })
+                                        }
+                                        className="w-full p-2.5 border rounded-lg text-sm"
+                                        placeholder="Ej: 5.5"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Formato: 0.25 = 15 min, 0.5 = 30 min, 0.75 = 45 min
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Tipo de Cobro *
+                                    </label>
+                                    <select
+                                        value={nuevoCobro.tipoCobro}
+                                        onChange={e =>
+                                            setNuevoCobro({
+                                                ...nuevoCobro,
+                                                tipoCobro: e.target.value
+                                            })
+                                        }
+                                        className="w-full p-2.5 border rounded-lg text-sm"
+                                    >
+                                        <option value="PAGO">
+                                            💰 Pago en efectivo/depósito
+                                        </option>
+                                        <option value="DESCANSO">
+                                            🏖️ Descanso compensatorio
+                                        </option>
+                                        <option value="ADELANTO">📅 Adelanto</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Observaciones
+                                    </label>
+                                    <textarea
+                                        value={nuevoCobro.observaciones}
+                                        onChange={e =>
+                                            setNuevoCobro({
+                                                ...nuevoCobro,
+                                                observaciones: e.target.value
+                                            })
+                                        }
+                                        className="w-full p-2.5 border rounded-lg text-sm"
+                                        rows="2"
+                                        placeholder="Ej: Pago correspondiente a horas extras de enero"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
+                                <button
+                                    onClick={registrarCobroHorasExtras}
+                                    disabled={
+                                        registrando ||
+                                        !nuevoCobro.empId ||
+                                        !nuevoCobro.horasCobradas
+                                    }
+                                    className="flex-1 bg-purple-600 text-white py-2.5 rounded-lg text-sm font-medium disabled:opacity-50 hover:bg-purple-700 transition"
+                                >
+                                    {registrando ? 'Registrando...' : 'Registrar Cobro'}
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setMostrarModalCobro(false);
+                                        setNuevoCobro({
+                                            empId: '',
+                                            fechaCobro: getLocalDate(),
+                                            horasCobradas: '',
+                                            tipoCobro: 'PAGO',
+                                            observaciones: ''
+                                        });
+                                        resetResumenCobro();
+                                    }}
+                                    className="flex-1 bg-gray-200 py-2.5 rounded-lg text-sm font-medium"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ============================================== */}
+                {/* MODAL HISTORIAL DE COBROS */}
+                {/* ============================================== */}
+                {mostrarHistorialCobros && (
+                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+                        <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                            <div className="sticky top-0 bg-white border-b px-5 py-4 flex justify-between items-center">
+                                <h2 className="text-lg font-bold flex items-center gap-2">
+                                    <Clock className="w-5 h-5 text-purple-600" />
+                                    Historial de Cobros
+                                </h2>
+                                <button
+                                    onClick={() => setMostrarHistorialCobros(false)}
+                                    className="p-1 hover:bg-gray-100 rounded"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="p-5">
+                                {cargandoHistorial ? (
+                                    <div className="text-center py-8">
+                                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                                        <p className="mt-2 text-gray-500">
+                                            Cargando historial...
+                                        </p>
+                                    </div>
+                                ) : historialCobros.length === 0 ? (
+                                    <div className="text-center py-8 text-gray-500">
+                                        <Award className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                                        <p>No hay cobros registrados</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {historialCobros.map(cobro => (
+                                            <div
+                                                key={cobro.CobroId}
+                                                className={`border rounded-lg p-4 ${
+                                                    cobro.Estado === 'ANULADO'
+                                                        ? 'bg-gray-50 border-gray-200 opacity-60'
+                                                        : 'bg-white border-gray-200'
+                                                }`}
+                                            >
+                                                <div className="flex justify-between items-start">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                            <span className="font-bold text-purple-700">
+                                                                {minutosAHorasFormato(
+                                                                    cobro.MinutosCobrados
+                                                                )}
+                                                            </span>
+                                                            <span
+                                                                className={`px-2 py-0.5 rounded-full text-xs ${
+                                                                    cobro.TipoCobro === 'PAGO'
+                                                                        ? 'bg-green-100 text-green-800'
+                                                                        : cobro.TipoCobro ===
+                                                                          'DESCANSO'
+                                                                        ? 'bg-blue-100 text-blue-800'
+                                                                        : 'bg-yellow-100 text-yellow-800'
+                                                                }`}
+                                                            >
+                                                                {cobro.TipoCobro === 'PAGO'
+                                                                    ? '💰 Pago'
+                                                                    : cobro.TipoCobro ===
+                                                                      'DESCANSO'
+                                                                    ? '🏖️ Descanso'
+                                                                    : '📅 Adelanto'}
+                                                            </span>
+                                                            {cobro.Estado === 'ANULADO' && (
+                                                                <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-800">
+                                                                    ANULADO
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-gray-600">
+                                                            📅{' '}
+                                                            {formatDisplayDate(
+                                                                cobro.FechaCobro
+                                                            )}
+                                                        </p>
+                                                        {cobro.Observaciones && (
+                                                            <p className="text-xs text-gray-500 mt-1">
+                                                                💬 {cobro.Observaciones}
+                                                            </p>
+                                                        )}
+                                                        <p className="text-xs text-gray-400 mt-1">
+                                                            Registrado:{' '}
+                                                            {new Date(
+                                                                cobro.FechaRegistro
+                                                            ).toLocaleString()}
+                                                        </p>
+                                                    </div>
+
+                                                    {cobro.Estado !== 'ANULADO' && (
+                                                        <button
+                                                            onClick={() =>
+                                                                anularCobro(cobro.CobroId)
+                                                            }
+                                                            className="text-red-500 hover:bg-red-50 p-2 rounded"
+                                                            title="Anular cobro"
+                                                        >
+                                                            <XCircle className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                                            <p className="text-sm font-semibold text-purple-800 mb-2">
+                                                Resumen
+                                            </p>
+                                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                                <div>
+                                                    <span className="text-gray-600">
+                                                        Total cobrado:
+                                                    </span>
+                                                    <span className="font-bold text-purple-700 ml-2">
+                                                        {minutosAHorasFormato(
+                                                            historialCobros
+                                                                .filter(
+                                                                    c => c.Estado === 'ACTIVO'
+                                                                )
+                                                                .reduce(
+                                                                    (sum, c) =>
+                                                                        sum +
+                                                                        c.MinutosCobrados,
+                                                                    0
+                                                                )
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
