@@ -327,3 +327,39 @@ combobox {
 .contenedor-padre {
     overflow: visible !important;
 }
+
+
+
+
+
+
+/* Contenedor relativo para posicionar el handle */
+.fc .fc-col-header-cell {
+  position: relative;
+  overflow: visible;
+}
+
+/* Handle de redimensionado en el borde derecho de cada columna */
+.col-resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 10;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.col-resizer:hover,
+.col-resizer.resizing {
+  background: rgba(59, 130, 246, 0.6); /* azul tipo Excel */
+}
+
+/* Mientras se arrastra, evitamos selección de texto */
+body.col-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}

@@ -107,6 +107,106 @@ export default function AgendaCitas() {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
+
+useEffect(() => {
+  let isResizing = false;
+  let startX = 0;
+  let startWidth = 0;
+  let currentCol = null;
+  let resizerEl = null;
+
+  const onMouseDown = (e) => {
+    const resizer = e.target.closest(".col-resizer");
+    if (!resizer) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    isResizing = true;
+    resizerEl = resizer;
+    currentCol = resizer.closest(".fc-col-header-cell");
+    startX = e.clientX;
+    startWidth = currentCol.getBoundingClientRect().width;
+
+    resizer.classList.add("resizing");
+    document.body.classList.add("col-resizing");
+    document.addEventListener("mousemove", onMouseMove);
+    document.addEventListener("mouseup", onMouseUp);
+  };
+
+  const onMouseMove = (e) => {
+    if (!isResizing || !currentCol) return;
+    const delta = e.clientX - startX;
+    const newWidth = Math.max(80, startWidth + delta); // mínimo 80px
+    currentCol.style.width = `${newWidth}px`;
+    currentCol.style.minWidth = `${newWidth}px`;
+    currentCol.style.maxWidth = `${newWidth}px`;
+
+    // Forzar también el ancho del body de la columna (donde van los eventos)
+    const colIndex = Array.from(
+      currentCol.parentElement.children
+    ).indexOf(currentCol);
+
+    const bodyCols = document.querySelectorAll(
+      ".fc-timegrid-col, .fc-daygrid-day"
+    );
+    // En timeGrid, las columnas del body están agrupadas
+    const bodyCol = bodyCols[colIndex];
+    if (bodyCol) {
+      bodyCol.style.width = `${newWidth}px`;
+      bodyCol.style.minWidth = `${newWidth}px`;
+      bodyCol.style.maxWidth = `${newWidth}px`;
+    }
+  };
+
+  const onMouseUp = () => {
+    if (resizerEl) resizerEl.classList.remove("resizing");
+    document.body.classList.remove("col-resizing");
+    isResizing = false;
+    currentCol = null;
+    resizerEl = null;
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+  };
+
+  // Inyectar los handles en cada encabezado de día
+  const injectResizers = () => {
+    document
+      .querySelectorAll(".fc-col-header-cell")
+      .forEach((header) => {
+        if (header.querySelector(".col-resizer")) return; // ya existe
+        const resizer = document.createElement("div");
+        resizer.className = "col-resizer";
+        header.appendChild(resizer);
+      });
+  };
+
+  // Esperar render
+  const timer = setTimeout(injectResizers, 400);
+  document.addEventListener("mousedown", onMouseDown);
+
+  // Reinyectar cuando cambia la vista
+  const calendarApi = calendarRef.current?.getApi();
+  if (calendarApi) calendarApi.on("datesSet", injectResizers);
+
+  return () => {
+    clearTimeout(timer);
+    document.removeEventListener("mousedown", onMouseDown);
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+    if (calendarApi) calendarApi.off("datesSet", injectResizers);
+  };
+}, []);
+
+
+
+
+
+
+
+
+
+
   // Función para calcular fechas de la semana de lunes a domingo
   const calcularFechasSemana = (fecha) => {
     const fechaObj = new Date(fecha);
@@ -207,9 +307,9 @@ export default function AgendaCitas() {
 
 
     const hoy = obtenerHoyPeru();
-    console.log('Inicializar ', hoy);
+    //console.log('Inicializar ', hoy);
     const semana = calcularFechasSemana(hoy);
-    console.log('semana ', semana);
+    //console.log('semana ', semana);
     setFechasConsulta({
       diaSeleccionado: hoy,
       semanaInicio: semana.semanaInicio,
@@ -241,8 +341,8 @@ export default function AgendaCitas() {
         finSemana: formatearFechas(finSemana)
       });
 
-      console.log('log inicio', formatearFechas(inicioSemana));
-      console.log('log fin', formatearFechas(finSemana));
+      //console.log('log inicio', formatearFechas(inicioSemana));
+      //console.log('log fin', formatearFechas(finSemana));
 
       const res = await fetch(`${BACKEND_URL}/api/estadisticas-ventas?${params}`);
       if (!res.ok) {
@@ -327,7 +427,7 @@ export default function AgendaCitas() {
 
   // Manejar cambio de vista del calendario
   const handleDatesSet = (dateInfo) => {
-    console.log("📅 Vista del calendario cambiada:", dateInfo);
+    //console.log("📅 Vista del calendario cambiada:", dateInfo);
 
     // Obtener el primer día visible en la vista actual
     const calendarApi = calendarRef.current?.getApi();
@@ -431,13 +531,13 @@ export default function AgendaCitas() {
           // Agregar nuevo listener
           header.addEventListener('click', function (e) {
             const dateStr = this.getAttribute('data-date');
-            console.log('Fecha original:', dateStr);
+            //console.log('Fecha original:', dateStr);
 
             if (dateStr) {
               const [year, month, day] = dateStr.split('-');
               const date = new Date(year, month - 1, day); // fecha local correcta
 
-              console.log('Fecha corregida:', date);
+              //console.log('Fecha corregida:', date);
 
               handleDayHeaderClick({ date }, this);
               e.stopPropagation();
@@ -545,22 +645,6 @@ export default function AgendaCitas() {
       console.log("🧾 Datos crudos desde API:", data);
 
       const eventosConvertidos = data.map((cita) => {
-        /*         let startDate, endDate;
-                startDate = new Date(cita.start.replace(' ', 'T'));
-                endDate = new Date(cita.end.replace(' ', 'T'));
-        
-                console.log(`Fecha start original: ${cita.start}, convertida: ${startDate}`);
-                console.log(`Fecha end original: ${cita.end}, convertida: ${endDate}`);
-        
-                if (isNaN(startDate.getTime())) {
-                  console.error("Fecha start inválida:", cita.start);
-                  startDate = new Date();
-                }
-        
-                if (isNaN(endDate.getTime())) {
-                  console.error("Fecha end inválida:", cita.end);
-                  endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
-                } */
 
         const startStr = cita.start ? cita.start.replace(' ', 'T') : null;
         const endStr = cita.end ? cita.end.replace(' ', 'T') : null;
@@ -585,7 +669,7 @@ export default function AgendaCitas() {
         else if (cita.extendedProps.estado === "Completada") backgroundColor = "#16a34a";
         else if (cita.extendedProps.estado === "Cancelada") backgroundColor = "#dc2626";
         else if (cita.extendedProps.estado === "Pendiente de retoque") backgroundColor = "#ff5722";
-        console.log('Veamos ', cita.extendedProps.Monto);
+        //console.log('Veamos ', cita.extendedProps.Monto);
         return {
           id: cita.id,
           title: cita.title,
@@ -696,65 +780,6 @@ export default function AgendaCitas() {
     setModalKey(prev => prev + 1);
     setModalCita(true);
   };
-
-  /* const guardarCita = async (e) => {
-    e.preventDefault();
-    console.log("💾 Guardando cita:", form);
-
-    try {
-      if (!form.Titulo || !form.FechaInicio || !form.ClienteID) {
-        alert("⚠️ Completa el título, la fecha y el cliente.");
-        return;
-      }
-
-      if (form.Estado === "Completada") {
-        setIsVentaModalOpen(true);
-        return;
-      }
-
-      const metodo = form.CitaID ? "PUT" : "POST";
-      const url = form.CitaID
-        ? `${BACKEND_URL}/api/citas/${form.CitaID}`
-        : `${BACKEND_URL}/api/citas`;
-
-      const cuerpoCita = {
-        ...form,
-        title: form.Titulo,
-        descripcion: form.Descripcion,
-        start: form.FechaInicio,
-        end: form.FechaFin,
-        extendedProps: {
-          clienteID: form.ClienteID,
-          EmpId: form.EmpId,
-          estado: form.Estado
-        }
-      };
-
-      console.log("📤 Enviando datos:", cuerpoCita);
-
-      const respuesta = await fetch(url, {
-        method: metodo,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cuerpoCita),
-      });
-
-      if (!respuesta.ok) throw new Error("Error al guardar cita");
-
-      const resultado = await respuesta.json();
-      console.log("✅ Respuesta del servidor:", resultado);
-
-      alert(form.CitaID ? "✅ Cita actualizada." : "✅ Cita registrada.");
-      setModalCita(false);
-      cargarCitas();
-      cargarEstadisticasVentas();
-    } catch (error) {
-      console.error("❌ Error al guardar cita:", error);
-      alert("❌ No se pudo registrar la cita.");
-    }
-  }; */
-
-
-  // En AgendaCitas.js - Reemplaza la función guardarCita existente
 
 // En AgendaCitas.js
 const guardarCita = async (formData, e) => {
@@ -1116,7 +1141,7 @@ const guardarCita = async (formData, e) => {
 
       {/* Calendar Container */}
       <div className="bg-white rounded-xl shadow-lg border border-blue-100 overflow-auto">
-        <div className="min-w-[2400px]">
+        <div className="min-w-[1600px]">  {/* <div className="min-w-[2400px]"> */}
           <FullCalendar
             height="1400px"
             slotMinHeight={100}
@@ -1131,6 +1156,7 @@ const guardarCita = async (formData, e) => {
             eventClick={manejarClickEvento}
             timeZone='America/Lima'
             timeZoneParam='UTC'
+            //slotMinWidth={1200}
             nowIndicator={true}
             //height="auto"
             slotMinTime="09:00:00"
