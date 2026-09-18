@@ -5,7 +5,6 @@ import {
   DollarSign,
   Calendar,
   RefreshCw,
-  Printer,
   Search,
   Eye,
   XCircle,
@@ -15,7 +14,10 @@ import {
   User,
   FileText,
   Wallet,
-  AlertCircle
+  AlertCircle,
+  Clock,
+  TrendingUp,
+  ShoppingCart
 } from "lucide-react";
 
 import { BACKEND_URL } from "../config";
@@ -32,6 +34,13 @@ const DashboardPagosPersonal = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [resumenTipos, setResumenTipos] = useState([]);
 
+  // 🔥 NUEVO: datos de "por pagar"
+  const [porPagar, setPorPagar] = useState([]);
+  const [resumenPorPagar, setResumenPorPagar] = useState(null);
+  const [loadingPorPagar, setLoadingPorPagar] = useState(false);
+  const [detallePorPagar, setDetallePorPagar] = useState(null);
+  const [tabActiva, setTabActiva] = useState("pagados"); // 'pagados' | 'porPagar'
+
   useEffect(() => {
     fetchPeriodos();
   }, []);
@@ -40,6 +49,7 @@ const DashboardPagosPersonal = () => {
     if (periodoSelected) {
       fetchPagosPersonal();
       fetchResumenTipos();
+      fetchPorPagar();
     }
   }, [periodoSelected]);
 
@@ -65,7 +75,6 @@ const DashboardPagosPersonal = () => {
       const response = await axios.get(`${BACKEND_URL}/api/pagos-personal`, {
         params: { periodo_id: periodoSelected }
       });
-      console.log("Respuesta del backend:", response.data); 
       if (response.data.success) {
         setEmpleados(response.data.data.empleados || []);
         setResumen(response.data.data.resumen);
@@ -93,14 +102,52 @@ const DashboardPagosPersonal = () => {
     }
   };
 
-  const fetchDetalleEmpleado = async (empleado) => {
-    setSelectedEmpleado(empleado);
+  // 🔥 NUEVO: cargar pendientes por pagar
+  const fetchPorPagar = async () => {
+    setLoadingPorPagar(true);
     try {
-      const response = await axios.get(`${BACKEND_URL}/api/pagos-personal/detalle/${empleado.EmpId}`, {
+      const response = await axios.get(`${BACKEND_URL}/api/pagos-personal/por-pagar`, {
         params: { periodo_id: periodoSelected }
       });
       if (response.data.success) {
+        setPorPagar(response.data.data.detalle || []);
+        setResumenPorPagar(response.data.data.resumen);
+      }
+    } catch (err) {
+      console.error("Error por-pagar:", err);
+      setPorPagar([]);
+      setResumenPorPagar(null);
+    } finally {
+      setLoadingPorPagar(false);
+    }
+  };
+
+  const fetchDetalleEmpleado = async (empleado) => {
+    setSelectedEmpleado(empleado);
+    try {
+      const response = await axios.get(
+        `${BACKEND_URL}/api/pagos-personal/detalle/${empleado.EmpId}`,
+        { params: { periodo_id: periodoSelected } }
+      );
+      if (response.data.success) {
         setDetallePagos(response.data.data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // 🔥 NUEVO: detalle extendido (asistencia + ventas + pagos)
+  const fetchDetallePorPagar = async (empleado) => {
+    setSelectedEmpleado(empleado);
+    try {
+      const response = await axios.get(
+        `${BACKEND_URL}/api/pagos-personal/por-pagar/detalle/${empleado.EmpId}`,
+        { params: { periodo_id: periodoSelected } }
+      );
+      if (response.data.success) {
+        setDetallePorPagar(response.data.data);
+        setDetallePagos([]);
       }
     } catch (err) {
       console.error(err);
@@ -118,7 +165,7 @@ const DashboardPagosPersonal = () => {
   };
 
   const getCategoriaIcon = (categoriaId) => {
-    switch(Number(categoriaId)) {
+    switch (Number(categoriaId)) {
       case 2:
         return <Briefcase className="w-4 h-4" />;
       case 11:
@@ -131,7 +178,7 @@ const DashboardPagosPersonal = () => {
   };
 
   const getCategoriaColor = (categoriaId) => {
-    switch(Number(categoriaId)) {
+    switch (Number(categoriaId)) {
       case 2:
         return "bg-blue-100 text-blue-700";
       case 11:
@@ -143,11 +190,18 @@ const DashboardPagosPersonal = () => {
     }
   };
 
-  // Filtrar empleados por búsqueda
-  const empleadosFiltrados = empleados.filter(emp => 
-    (emp.Nombres || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (emp.Apellidos || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (emp.DocID || '').includes(searchTerm)
+  const empleadosFiltrados = empleados.filter(
+    emp =>
+      (emp.Nombres || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.Apellidos || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.DocID || "").includes(searchTerm)
+  );
+
+  const porPagarFiltrados = porPagar.filter(
+    emp =>
+      (emp.Nombres || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.Apellidos || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.DocID || "").includes(searchTerm)
   );
 
   return (
@@ -164,10 +218,10 @@ const DashboardPagosPersonal = () => {
                 </h1>
               </div>
               <p className="text-slate-500 mt-2 ml-11">
-                Gestión de sueldos, bonos y comisiones por empleado
+                Gestión de sueldos, bonos, comisiones y pendientes por pagar
               </p>
             </div>
-            
+
             <div className="flex flex-wrap gap-3">
               <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200">
                 <Calendar className="w-4 h-4 text-blue-600" />
@@ -183,74 +237,136 @@ const DashboardPagosPersonal = () => {
                   ))}
                 </select>
               </div>
-              
+
               <button
-                onClick={() => fetchPagosPersonal()}
+                onClick={() => {
+                  fetchPagosPersonal();
+                  fetchPorPagar();
+                  fetchResumenTipos();
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-white text-slate-600 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all"
               >
                 <RefreshCw className="w-4 h-4" />
                 Actualizar
               </button>
-              
-{/*               <button
-                onClick={() => window.print()}
-                className="flex items-center gap-2 px-4 py-2 bg-white text-slate-600 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all"
-              >
-                <Printer className="w-4 h-4" />
-                Imprimir
-              </button> */}
             </div>
           </div>
         </div>
 
-        {/* Tarjetas de Resumen */}
+        {/* 🔥 Tarjetas resumen "por pagar" */}
+        {resumenPorPagar && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 text-white shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-indigo-100 text-xs">Sueldos Ganados</p>
+                  <p className="text-xl font-bold mt-1">
+                    {formatMoney(resumenPorPagar.total_sueldos_ganados)}
+                  </p>
+                </div>
+                <Briefcase className="w-8 h-8 text-indigo-200" />
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 rounded-xl p-4 text-white shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-fuchsia-100 text-xs">Comisiones Ganadas</p>
+                  <p className="text-xl font-bold mt-1">
+                    {formatMoney(resumenPorPagar.total_comisiones_ganadas)}
+                  </p>
+                </div>
+                <Award className="w-8 h-8 text-fuchsia-200" />
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-4 text-white shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-teal-100 text-xs">Total Pagado</p>
+                  <p className="text-xl font-bold mt-1">
+                    {formatMoney(resumenPorPagar.total_pagado)}
+                  </p>
+                </div>
+                <Wallet className="w-8 h-8 text-teal-200" />
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl p-4 text-white shadow-lg">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-rose-100 text-xs">Por Pagar</p>
+                  <p className="text-xl font-bold mt-1">
+                    {formatMoney(resumenPorPagar.total_por_pagar)}
+                  </p>
+                </div>
+                <AlertCircle className="w-8 h-8 text-rose-200" />
+              </div>
+              <p className="text-xs text-rose-100 mt-1">
+                {resumenPorPagar.empleados_con_deuda} empleados con saldo
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Tarjetas resumen de pagos ya realizados */}
         {resumen && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
             <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-blue-100 text-xs">Total Sueldos</p>
-                  <p className="text-xl font-bold mt-1">{formatMoney(resumen.total_sueldos)}</p>
+                  <p className="text-xl font-bold mt-1">
+                    {formatMoney(resumen.total_sueldos)}
+                  </p>
                 </div>
                 <Briefcase className="w-8 h-8 text-blue-200" />
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-green-100 text-xs">Total Bonos</p>
-                  <p className="text-xl font-bold mt-1">{formatMoney(resumen.total_bonos)}</p>
+                  <p className="text-xl font-bold mt-1">
+                    {formatMoney(resumen.total_bonos)}
+                  </p>
                 </div>
                 <Gift className="w-8 h-8 text-green-200" />
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-purple-100 text-xs">Total Comisiones</p>
-                  <p className="text-xl font-bold mt-1">{formatMoney(resumen.total_comisiones)}</p>
+                  <p className="text-xl font-bold mt-1">
+                    {formatMoney(resumen.total_comisiones)}
+                  </p>
                 </div>
                 <Award className="w-8 h-8 text-purple-200" />
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 text-white shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-emerald-100 text-xs">Total General</p>
-                  <p className="text-xl font-bold mt-1">{formatMoney(resumen.total_general)}</p>
+                  <p className="text-xl font-bold mt-1">
+                    {formatMoney(resumen.total_general)}
+                  </p>
                 </div>
                 <Wallet className="w-8 h-8 text-emerald-200" />
               </div>
             </div>
-            
+
             <div className="bg-gradient-to-br from-slate-500 to-slate-600 rounded-xl p-4 text-white shadow-lg">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-slate-100 text-xs">Empleados</p>
-                  <p className="text-xl font-bold mt-1">{resumen.total_empleados}</p>
+                  <p className="text-xl font-bold mt-1">
+                    {resumen.total_empleados}
+                  </p>
                 </div>
                 <Users className="w-8 h-8 text-slate-200" />
               </div>
@@ -261,19 +377,28 @@ const DashboardPagosPersonal = () => {
           </div>
         )}
 
-        {/* Resumen por Tipo de Pago */}
+        {/* Resumen por Tipo de Pago (ya realizados) */}
         {resumenTipos.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             {resumenTipos.map(tipo => (
-              <div key={tipo.categoria_id} className={`rounded-xl p-4 shadow-sm border ${getCategoriaColor(tipo.categoria_id)}`}>
+              <div
+                key={tipo.categoria_id}
+                className={`rounded-xl p-4 shadow-sm border ${getCategoriaColor(
+                  tipo.categoria_id
+                )}`}
+              >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     {getCategoriaIcon(tipo.categoria_id)}
                     <span className="font-semibold">{tipo.tipo_pago}</span>
                   </div>
-                  <span className="text-xs">{tipo.empleados_afectados} empleados</span>
+                  <span className="text-xs">
+                    {tipo.empleados_afectados} empleados
+                  </span>
                 </div>
-                <p className="text-2xl font-bold">{formatMoney(tipo.total_monto)}</p>
+                <p className="text-2xl font-bold">
+                  {formatMoney(tipo.total_monto)}
+                </p>
                 <div className="flex justify-between mt-2 text-xs opacity-75">
                   <span>{tipo.total_transacciones} transacciones</span>
                   <span>Prom: {formatMoney(tipo.promedio_monto)}</span>
@@ -282,6 +407,35 @@ const DashboardPagosPersonal = () => {
             ))}
           </div>
         )}
+
+        {/* 🔥 Tabs */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setTabActiva("pagados")}
+            className={`px-4 py-2 rounded-xl font-medium transition-all ${
+              tabActiva === "pagados"
+                ? "bg-blue-600 text-white shadow-md"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            💰 Pagos Realizados
+          </button>
+          <button
+            onClick={() => setTabActiva("porPagar")}
+            className={`px-4 py-2 rounded-xl font-medium transition-all flex items-center gap-2 ${
+              tabActiva === "porPagar"
+                ? "bg-rose-600 text-white shadow-md"
+                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            ⏳ Pendientes por Pagar
+            {resumenPorPagar?.empleados_con_deuda > 0 && (
+              <span className="bg-white text-rose-600 rounded-full px-2 text-xs font-bold">
+                {resumenPorPagar.empleados_con_deuda}
+              </span>
+            )}
+          </button>
+        </div>
 
         {/* Buscador */}
         <div className="mb-6">
@@ -297,126 +451,344 @@ const DashboardPagosPersonal = () => {
           </div>
         </div>
 
-        {/* Tabla de Empleados */}
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
-            <p className="text-red-700">{error}</p>
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">Empleado</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Sueldo Base</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Sueldo Pagado</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Bonos</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Comisiones</th>
-                    <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">Total Recibido</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase">Estado</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {empleadosFiltrados.length === 0 ? (
-                    <tr>
-                      <td colSpan="8" className="px-4 py-8 text-center text-slate-500">
-                        No se encontraron empleados
-                      </td>
-                    </tr>
-                  ) : (
-                    empleadosFiltrados.map((emp) => {
-                      const totalRecibido = Number(emp.total_recibido) || 0;
-                      const sueldoBase = Number(emp.sueldo_base) || 0;
-                      const porcentaje = sueldoBase > 0 ? (totalRecibido / sueldoBase) * 100 : 0;
-                      const estado = totalRecibido >= sueldoBase ? "Completado" : "Pendiente";
-                      const estadoColor = totalRecibido >= sueldoBase ? "text-green-600 bg-green-50" : "text-yellow-600 bg-yellow-50";
-                      
-                      return (
-                        <tr key={emp.EmpId} className="hover:bg-slate-50 cursor-pointer" onClick={() => fetchDetalleEmpleado(emp)}>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <User className="w-4 h-4 text-blue-600" />
-                              </div>
-                              <div>
-                                <div className="font-medium text-slate-800">
-                                  {emp.Nombres} {emp.Apellidos}
-                                </div>
-                                <div className="text-xs text-slate-400">DNI: {emp.DocID}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-right font-medium">
-                            {formatMoney(sueldoBase)}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <span className="text-blue-600 font-medium">
-                              {formatMoney(emp.total_sueldo)}
-                            </span>
-                            {emp.sueldo_pendiente > 0 && (
-                              <div className="text-xs text-orange-500">
-                                Pendiente: {formatMoney(emp.sueldo_pendiente)}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right text-green-600">
-                            {formatMoney(emp.total_bonos)}
-                          </td>
-                          <td className="px-4 py-3 text-right text-purple-600">
-                            {formatMoney(emp.total_comisiones)}
-                          </td>
-                          <td className="px-4 py-3 text-right font-bold text-slate-800">
-                            {formatMoney(totalRecibido)}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${estadoColor}`}>
-                              {estado} ({porcentaje.toFixed(1)}%)
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <button 
-                              className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                fetchDetalleEmpleado(emp);
-                              }}
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
+        {/* ============================================================ */}
+        {/* TABLA PAGADOS */}
+        {/* ============================================================ */}
+        {tabActiva === "pagados" && (
+          <>
+            {loading ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : error ? (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-8 text-center">
+                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+                <p className="text-red-700">{error}</p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">
+                          Empleado
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
+                          Sueldo Base
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
+                          Sueldo Pagado
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
+                          Bonos
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
+                          Comisiones
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
+                          Total Recibido
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase">
+                          Estado
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase">
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {empleadosFiltrados.length === 0 ? (
+                        <tr>
+                          <td colSpan="8" className="px-4 py-8 text-center text-slate-500">
+                            No se encontraron empleados
                           </td>
                         </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-                <tfoot className="bg-slate-50 border-t border-slate-200">
-                  <tr>
-                    <td colSpan="5" className="px-4 py-3 text-right font-bold text-slate-700">
-                      Total General:
-                    </td>
-                    <td className="px-4 py-3 text-right font-bold text-slate-800">
-                      {formatMoney(empleadosFiltrados.reduce((sum, e) => sum + (Number(e.total_recibido) || 0), 0))}
-                    </td>
-                    <td colSpan="2"></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
+                      ) : (
+                        empleadosFiltrados.map((emp) => {
+                          const totalRecibido = Number(emp.total_recibido) || 0;
+                          const sueldoBase = Number(emp.sueldo_base) || 0;
+                          const porcentaje =
+                            sueldoBase > 0 ? (totalRecibido / sueldoBase) * 100 : 0;
+                          const estado =
+                            totalRecibido >= sueldoBase ? "Completado" : "Pendiente";
+                          const estadoColor =
+                            totalRecibido >= sueldoBase
+                              ? "text-green-600 bg-green-50"
+                              : "text-yellow-600 bg-yellow-50";
+
+                          return (
+                            <tr
+                              key={emp.EmpId}
+                              className="hover:bg-slate-50 cursor-pointer"
+                              onClick={() => fetchDetalleEmpleado(emp)}
+                            >
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <User className="w-4 h-4 text-blue-600" />
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-slate-800">
+                                      {emp.Nombres} {emp.Apellidos}
+                                    </div>
+                                    <div className="text-xs text-slate-400">
+                                      DNI: {emp.DocID}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-right font-medium">
+                                {formatMoney(sueldoBase)}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <span className="text-blue-600 font-medium">
+                                  {formatMoney(emp.total_sueldo)}
+                                </span>
+                                {emp.sueldo_pendiente > 0 && (
+                                  <div className="text-xs text-orange-500">
+                                    Pendiente: {formatMoney(emp.sueldo_pendiente)}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-right text-green-600">
+                                {formatMoney(emp.total_bonos)}
+                              </td>
+                              <td className="px-4 py-3 text-right text-purple-600">
+                                {formatMoney(emp.total_comisiones)}
+                              </td>
+                              <td className="px-4 py-3 text-right font-bold text-slate-800">
+                                {formatMoney(totalRecibido)}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <span
+                                  className={`px-2 py-1 rounded-full text-xs font-medium ${estadoColor}`}
+                                >
+                                  {estado} ({porcentaje.toFixed(1)}%)
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <button
+                                  className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    fetchDetalleEmpleado(emp);
+                                  }}
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                    <tfoot className="bg-slate-50 border-t border-slate-200">
+                      <tr>
+                        <td
+                          colSpan="5"
+                          className="px-4 py-3 text-right font-bold text-slate-700"
+                        >
+                          Total General:
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-slate-800">
+                          {formatMoney(
+                            empleadosFiltrados.reduce(
+                              (sum, e) => sum + (Number(e.total_recibido) || 0),
+                              0
+                            )
+                          )}
+                        </td>
+                        <td colSpan="2"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
-        {/* Modal de Detalle de Pagos */}
+        {/* ============================================================ */}
+        {/* TABLA POR PAGAR */}
+        {/* ============================================================ */}
+        {tabActiva === "porPagar" && (
+          <>
+            {loadingPorPagar ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600"></div>
+              </div>
+            ) : porPagarFiltrados.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-md border border-slate-200 p-12 text-center">
+                <AlertCircle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <p className="text-slate-500">
+                  No hay pagos pendientes en este período
+                </p>
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase">
+                          Empleado
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase">
+                          Días Trab.
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
+                          Sueldo Ganado
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
+                          Ventas
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
+                          Comisión Ganada
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
+                          Total Pagado
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase">
+                          Por Pagar
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase">
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {porPagarFiltrados.map((emp) => {
+                        const porPagarVal = Number(emp.por_pagar) || 0;
+                        const colorPorPagar =
+                          porPagarVal > 0
+                            ? "text-rose-600 bg-rose-50"
+                            : porPagarVal < 0
+                            ? "text-orange-600 bg-orange-50"
+                            : "text-slate-500 bg-slate-50";
+
+                        return (
+                          <tr
+                            key={emp.EmpId}
+                            className="hover:bg-slate-50 cursor-pointer"
+                            onClick={() => fetchDetallePorPagar(emp)}
+                          >
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-rose-100 rounded-full flex items-center justify-center">
+                                  <User className="w-4 h-4 text-rose-600" />
+                                </div>
+                                <div>
+                                  <div className="font-medium text-slate-800">
+                                    {emp.Nombres} {emp.Apellidos}
+                                  </div>
+                                  <div className="text-xs text-slate-400">
+                                    DNI: {emp.DocID}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className="inline-flex items-center gap-1 text-slate-700">
+                                <Clock className="w-3 h-3" />
+                                {emp.dias_trabajados}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className="text-blue-600 font-medium">
+                                {formatMoney(emp.sueldo_ganado)}
+                              </span>
+                              <div className="text-xs text-slate-400">
+                                Pagado: {formatMoney(emp.sueldo_pagado)}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className="inline-flex items-center gap-1 text-slate-700">
+                                <ShoppingCart className="w-3 h-3" />
+                                {emp.total_ventas}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span className="text-fuchsia-600 font-medium">
+                                {formatMoney(emp.comision_ganada)}
+                              </span>
+                              <div className="text-xs text-slate-400">
+                                Pagado: {formatMoney(emp.comisiones_pagadas)}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-right text-teal-600">
+                              {formatMoney(emp.total_pagado)}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <span
+                                className={`px-2 py-1 rounded-full text-xs font-bold ${colorPorPagar}`}
+                              >
+                                {formatMoney(porPagarVal)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                className="p-1 text-rose-600 hover:bg-rose-50 rounded"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  fetchDetallePorPagar(emp);
+                                }}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot className="bg-rose-50 border-t border-rose-200">
+                      <tr>
+                        <td
+                          colSpan="6"
+                          className="px-4 py-3 text-right font-bold text-rose-700"
+                        >
+                          Total Por Pagar:
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-rose-700">
+                          {formatMoney(
+                            porPagarFiltrados.reduce(
+                              (sum, e) => sum + (Number(e.por_pagar) || 0),
+                              0
+                            )
+                          )}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ============================================================ */}
+        {/* MODAL DETALLE (empleado seleccionado) */}
+        {/* ============================================================ */}
         {selectedEmpleado && (
-          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setSelectedEmpleado(null)}>
-            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+          <div
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+            onClick={() => {
+              setSelectedEmpleado(null);
+              setDetallePorPagar(null);
+            }}
+          >
+            <div
+              className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className={`p-6 text-white ${
+                  detallePorPagar
+                    ? "bg-gradient-to-r from-rose-600 to-rose-700"
+                    : "bg-gradient-to-r from-blue-600 to-blue-700"
+                }`}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="bg-white/20 rounded-xl p-2">
@@ -426,77 +798,296 @@ const DashboardPagosPersonal = () => {
                       <h2 className="text-xl font-bold">
                         {selectedEmpleado.Nombres} {selectedEmpleado.Apellidos}
                       </h2>
-                      <p className="text-blue-100 text-sm">DNI: {selectedEmpleado.DocID}</p>
+                      <p className="text-white/80 text-sm">
+                        DNI: {selectedEmpleado.DocID}
+                      </p>
                     </div>
                   </div>
-                  <button onClick={() => setSelectedEmpleado(null)} className="text-white/80 hover:text-white">
+                  <button
+                    onClick={() => {
+                      setSelectedEmpleado(null);
+                      setDetallePorPagar(null);
+                    }}
+                    className="text-white/80 hover:text-white"
+                  >
                     <XCircle className="w-6 h-6" />
                   </button>
                 </div>
               </div>
-              
-              <div className="p-6 overflow-y-auto max-h-[60vh]">
-                {/* Resumen de pagos */}
-                <div className="grid grid-cols-4 gap-3 mb-6">
-                  <div className="text-center p-3 bg-blue-50 rounded-xl">
-                    <p className="text-xs text-blue-600">Sueldo</p>
-                    <p className="text-lg font-bold text-blue-700">{formatMoney(selectedEmpleado.total_sueldo)}</p>
-                  </div>
-                  <div className="text-center p-3 bg-green-50 rounded-xl">
-                    <p className="text-xs text-green-600">Bonos</p>
-                    <p className="text-lg font-bold text-green-700">{formatMoney(selectedEmpleado.total_bonos)}</p>
-                  </div>
-                  <div className="text-center p-3 bg-purple-50 rounded-xl">
-                    <p className="text-xs text-purple-600">Comisiones</p>
-                    <p className="text-lg font-bold text-purple-700">{formatMoney(selectedEmpleado.total_comisiones)}</p>
-                  </div>
-                  <div className="text-center p-3 bg-slate-100 rounded-xl">
-                    <p className="text-xs text-slate-600">Total</p>
-                    <p className="text-lg font-bold text-slate-800">{formatMoney(selectedEmpleado.total_recibido)}</p>
-                  </div>
-                </div>
-                
-                {/* Tabla de pagos */}
-                <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Detalle de Pagos
-                </h4>
-                
-                {detallePagos.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500">
-                    No hay pagos registrados para este empleado en el periodo seleccionado
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {detallePagos.map(pago => (
-                      <div key={pago.gasto_id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-1 rounded ${getCategoriaColor(pago.categoria_id)}`}>
-                            {getCategoriaIcon(pago.categoria_id)}
-                          </div>
-                          <div>
-                            <p className="font-medium text-slate-800">{pago.descripcion}</p>
-                            <p className="text-xs text-slate-400">
-                              {pago.fecha_gasto ? new Date(pago.fecha_gasto).toLocaleDateString('es-PE') : 'Sin fecha'} • {pago.periodo_nombre}
-                            </p>
-                            {pago.observaciones && (
-                              <p className="text-xs text-slate-500 mt-1">{pago.observaciones}</p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-slate-800">{formatMoney(pago.monto)}</p>
-                          <p className="text-xs text-slate-400">{pago.categoria}</p>
-                        </div>
+
+              <div className="p-6 overflow-y-auto max-h-[70vh]">
+                {/* ============================================== */}
+                {/* VISTA DETALLE POR PAGAR */}
+                {/* ============================================== */}
+                {detallePorPagar ? (
+                  <>
+                    {/* Resumen */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                      <div className="text-center p-3 bg-blue-50 rounded-xl">
+                        <p className="text-xs text-blue-600">Sueldo Ganado</p>
+                        <p className="text-lg font-bold text-blue-700">
+                          {formatMoney(detallePorPagar.sueldo.ganado)}
+                        </p>
+                        <p className="text-[10px] text-blue-500">
+                          {detallePorPagar.sueldo.dias_trabajados} días ×{" "}
+                          {formatMoney(detallePorPagar.sueldo.diario)}
+                        </p>
                       </div>
-                    ))}
-                  </div>
+                      <div className="text-center p-3 bg-fuchsia-50 rounded-xl">
+                        <p className="text-xs text-fuchsia-600">Comisiones</p>
+                        <p className="text-lg font-bold text-fuchsia-700">
+                          {formatMoney(detallePorPagar.comisiones.ganado)}
+                        </p>
+                        <p className="text-[10px] text-fuchsia-500">
+                          {detallePorPagar.comisiones.total_ventas} ventas
+                        </p>
+                      </div>
+                      <div className="text-center p-3 bg-teal-50 rounded-xl">
+                        <p className="text-xs text-teal-600">Total Pagado</p>
+                        <p className="text-lg font-bold text-teal-700">
+                          {formatMoney(detallePorPagar.totales.total_pagado)}
+                        </p>
+                      </div>
+                      <div
+                        className={`text-center p-3 rounded-xl ${
+                          detallePorPagar.totales.por_pagar > 0
+                            ? "bg-rose-50"
+                            : "bg-slate-100"
+                        }`}
+                      >
+                        <p
+                          className={`text-xs ${
+                            detallePorPagar.totales.por_pagar > 0
+                              ? "text-rose-600"
+                              : "text-slate-600"
+                          }`}
+                        >
+                          Por Pagar
+                        </p>
+                        <p
+                          className={`text-lg font-bold ${
+                            detallePorPagar.totales.por_pagar > 0
+                              ? "text-rose-700"
+                              : "text-slate-800"
+                          }`}
+                        >
+                          {formatMoney(detallePorPagar.totales.por_pagar)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Asistencias */}
+                    <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Asistencias del período ({detallePorPagar.asistencias.length})
+                    </h4>
+                    <div className="space-y-1 mb-6 max-h-40 overflow-y-auto">
+                      {detallePorPagar.asistencias.length === 0 ? (
+                        <p className="text-sm text-slate-400 text-center py-3">
+                          Sin asistencias en el período
+                        </p>
+                      ) : (
+                        detallePorPagar.asistencias.map((a) => (
+                          <div
+                            key={a.AsistenciaID}
+                            className="flex items-center justify-between p-2 bg-slate-50 rounded text-sm"
+                          >
+                            <span className="text-slate-700">
+                              {new Date(a.Fecha).toLocaleDateString("es-PE")}
+                            </span>
+                            <span className="text-xs text-slate-500">
+                              {a.HoraEntrada?.substring(0, 5) || "—"} →{" "}
+                              {a.HoraSalida?.substring(0, 5) || "—"}
+                            </span>
+                            <span className="text-xs">
+                              {a.HorasTrabajadas
+                                ? `${Number(a.HorasTrabajadas).toFixed(2)} h`
+                                : "—"}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-xs ${
+                                a.Estado === "Completo"
+                                  ? "bg-green-100 text-green-700"
+                                  : a.Estado === "Incompleto"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {a.Estado}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Ventas / Comisiones */}
+                    <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                      <ShoppingCart className="w-4 h-4" />
+                      Ventas y comisiones ({detallePorPagar.ventas.length})
+                    </h4>
+                    <div className="space-y-1 mb-6 max-h-56 overflow-y-auto">
+                      {detallePorPagar.ventas.length === 0 ? (
+                        <p className="text-sm text-slate-400 text-center py-3">
+                          Sin ventas en el período
+                        </p>
+                      ) : (
+                        detallePorPagar.ventas.map((v, i) => (
+                          <div
+                            key={`${v.VentaId}-${v.VentaDetalleId || i}`}
+                            className="flex items-center justify-between p-2 bg-fuchsia-50 rounded text-sm"
+                          >
+                            <div className="flex-1">
+                              <p className="text-slate-700 font-medium">
+                                {v.Producto || "Producto"}
+                              </p>
+                              <p className="text-xs text-slate-400">
+                                {new Date(v.Fecha).toLocaleDateString("es-PE")} • Cant:{" "}
+                                {v.Cantidad} × {formatMoney(v.Precio)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-xs text-slate-500">
+                                {v.PorcentajeComision}% de {formatMoney(v.Subtotal)}
+                              </p>
+                              <p className="text-fuchsia-700 font-bold text-sm">
+                                {formatMoney(v.ComisionCalculada)}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Pagos */}
+                    <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Pagos realizados ({detallePorPagar.pagos.length})
+                    </h4>
+                    <div className="space-y-1">
+                      {detallePorPagar.pagos.length === 0 ? (
+                        <p className="text-sm text-slate-400 text-center py-3">
+                          Sin pagos en el período
+                        </p>
+                      ) : (
+                        detallePorPagar.pagos.map((p) => (
+                          <div
+                            key={p.gasto_id}
+                            className="flex items-center justify-between p-2 bg-teal-50 rounded text-sm"
+                          >
+                            <div>
+                              <p className="text-slate-700">{p.descripcion}</p>
+                              <p className="text-xs text-slate-400">
+                                {p.fecha_gasto
+                                  ? new Date(p.fecha_gasto).toLocaleDateString("es-PE")
+                                  : "—"}
+                              </p>
+                            </div>
+                            <span className="font-bold text-teal-700">
+                              {formatMoney(p.monto)}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  /* ============================================== */
+                  /* VISTA DETALLE PAGADOS (la que ya tenías) */
+                  /* ============================================== */
+                  <>
+                    <div className="grid grid-cols-4 gap-3 mb-6">
+                      <div className="text-center p-3 bg-blue-50 rounded-xl">
+                        <p className="text-xs text-blue-600">Sueldo</p>
+                        <p className="text-lg font-bold text-blue-700">
+                          {formatMoney(selectedEmpleado.total_sueldo)}
+                        </p>
+                      </div>
+                      <div className="text-center p-3 bg-green-50 rounded-xl">
+                        <p className="text-xs text-green-600">Bonos</p>
+                        <p className="text-lg font-bold text-green-700">
+                          {formatMoney(selectedEmpleado.total_bonos)}
+                        </p>
+                      </div>
+                      <div className="text-center p-3 bg-purple-50 rounded-xl">
+                        <p className="text-xs text-purple-600">Comisiones</p>
+                        <p className="text-lg font-bold text-purple-700">
+                          {formatMoney(selectedEmpleado.total_comisiones)}
+                        </p>
+                      </div>
+                      <div className="text-center p-3 bg-slate-100 rounded-xl">
+                        <p className="text-xs text-slate-600">Total</p>
+                        <p className="text-lg font-bold text-slate-800">
+                          {formatMoney(selectedEmpleado.total_recibido)}
+                        </p>
+                      </div>
+                    </div>
+
+                    <h4 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Detalle de Pagos
+                    </h4>
+
+                    {detallePagos.length === 0 ? (
+                      <div className="text-center py-8 text-slate-500">
+                        No hay pagos registrados para este empleado en el periodo
+                        seleccionado
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {detallePagos.map((pago) => (
+                          <div
+                            key={pago.gasto_id}
+                            className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`p-1 rounded ${getCategoriaColor(
+                                  pago.categoria_id
+                                )}`}
+                              >
+                                {getCategoriaIcon(pago.categoria_id)}
+                              </div>
+                              <div>
+                                <p className="font-medium text-slate-800">
+                                  {pago.descripcion}
+                                </p>
+                                <p className="text-xs text-slate-400">
+                                  {pago.fecha_gasto
+                                    ? new Date(pago.fecha_gasto).toLocaleDateString(
+                                        "es-PE"
+                                      )
+                                    : "Sin fecha"}{" "}
+                                  • {pago.periodo_nombre}
+                                </p>
+                                {pago.observaciones && (
+                                  <p className="text-xs text-slate-500 mt-1">
+                                    {pago.observaciones}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-slate-800">
+                                {formatMoney(pago.monto)}
+                              </p>
+                              <p className="text-xs text-slate-400">
+                                {pago.categoria}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
-              
+
               <div className="border-t border-slate-100 p-4 bg-slate-50 flex justify-end">
                 <button
-                  onClick={() => setSelectedEmpleado(null)}
+                  onClick={() => {
+                    setSelectedEmpleado(null);
+                    setDetallePorPagar(null);
+                  }}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
                 >
                   Cerrar
@@ -506,7 +1097,6 @@ const DashboardPagosPersonal = () => {
           </div>
         )}
 
-        {/* Footer */}
         <div className="mt-8 text-center text-xs text-slate-400">
           <p>Reporte de pagos de personal - Sueldos</p>
         </div>
