@@ -1141,7 +1141,7 @@ const guardarCita = async (formData, e) => {
 
       {/* Calendar Container */}
       <div className="bg-white rounded-xl shadow-lg border border-blue-100 overflow-auto">
-        <div className="min-w-[1600px]">  {/* <div className="min-w-[2400px]"> */}
+        <div className="min-w-[2400px]">  {/* <div className="min-w-[2400px]"> */}
           <FullCalendar
             height="1400px"
             slotMinHeight={100}
