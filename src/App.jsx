@@ -34,6 +34,7 @@ import EscanearQRMarcacion from "./Pages/EscanearQRMarcacion";
 import GenerarQREmpleado from "./Pages/GenerarQREmpleado";
 import PreNominaPlanilla from "./Pages/PreNominaPlanilla";
 import DashboardVentas from "./Pages/DashboardVentas";
+import DashboardCitasGerencial from "./Pages/DashboardCitasGerencial";
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -157,7 +158,7 @@ function App() {
         {/* Rutas del menú secundario */}
         <Route path="/dashboard/ventas" element={<ProtectedRoute><DashboardVentas /></ProtectedRoute>} />
         <Route path="/dashboard/comisiones" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard Comisiones</h1><p>Estadísticas de comisiones</p></div></ProtectedRoute>} />
-        <Route path="/dashboard/citas" element={<ProtectedRoute><div className="p-6"><h1 className="text-2xl font-bold text-gray-800 mb-4">Dashboard Citas</h1><p>Estadísticas de citas</p></div></ProtectedRoute>} />
+        <Route path="/dashboard/citas" element={<ProtectedRoute><DashboardCitasGerencial /></ProtectedRoute>} />
         <Route path="/maestro/productos" element={<ProtectedRoute><GestionProductos /></ProtectedRoute>} />
         <Route path="/maestro/servicios" element={<ProtectedRoute><GestionServicios /></ProtectedRoute>} />
         <Route path="/maestro/clientes" element={<ProtectedRoute><GestionClientes /></ProtectedRoute>} />
