@@ -100,8 +100,8 @@ function FormEmpleado() {
       nombres: nombres.trim(),
       apellidos: apellidos.trim(),
       docId: docId.trim(),
-      tipo_EmpId: parseInt(tipoSeleccionado),
-      cargo_EmpId: parseInt(cargoSeleccionado),
+      tipo_EmpId: tipoSeleccionado.trim(),
+      cargo_EmpId: cargoSeleccionado.trim(),
       fechaNacimiento,
       fechaIngreso,
       direccion: direccion.trim(),
@@ -110,6 +110,7 @@ function FormEmpleado() {
       telefono: telefono.trim() || null,
       estado: 1 // Activo por defecto
     };
+    console.log("Enviando empleado:", empleado);
 
     try {
       const response = await fetch(`${BACKEND_URL}/api/empleado`, {
