@@ -31,7 +31,12 @@ import {
   Heart,
   MessageCircle,
   TrendingUp,
-  PieChart
+  PieChart,
+  Timer,
+  Activity,
+  List,
+  PlayCircle,
+  PauseCircle
 } from "lucide-react";
 
 import { BACKEND_URL } from "../config";
@@ -40,39 +45,91 @@ const DashboardCitasGerencial = () => {
   // ============ ESTADOS ============
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [periodo, setPeriodo] = useState("mes"); // dia, semana, mes
+  const [periodo, setPeriodo] = useState("mes"); // dia, semana, mes, rango
   const [yearSelected, setYearSelected] = useState(new Date().getFullYear());
   const [mesSelected, setMesSelected] = useState(new Date().getMonth() + 1);
   const [semanaSelected, setSemanaSelected] = useState(1);
+  const [fechaInicioRango, setFechaInicioRango] = useState("");
+  const [fechaFinRango, setFechaFinRango] = useState("");
   const [datosCitas, setDatosCitas] = useState([]);
   const [estadisticas, setEstadisticas] = useState({
     totalCitas: 0,
     citasCompletadas: 0,
+    citasProgramadas: 0,
     citasPendientes: 0,
     citasCanceladas: 0,
+    citasEnProgreso: 0,
     citasHoy: 0,
     tasaCompletado: 0,
-    crecimiento: 0,
-    tiempoPromedio: 0
+    crecimiento: 0
   });
   const [topClientes, setTopClientes] = useState([]);
   const [citasPorServicio, setCitasPorServicio] = useState([]);
   const [citasPorEmpleado, setCitasPorEmpleado] = useState([]);
   const [detalleCitas, setDetalleCitas] = useState([]);
-  const [selectedCita, setSelectedCita] = useState(null);
+  const [selectedFecha, setSelectedFecha] = useState(null);
+  const [citasDelDiaSeleccionado, setCitasDelDiaSeleccionado] = useState([]);
   const [showDetalleModal, setShowDetalleModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todas");
   const [paginaActual, setPaginaActual] = useState(1);
   const [itemsPorPagina] = useState(8);
 
+  // ============ ESTADOS DE CITAS ============
+  const ESTADOS_CITA = {
+    COMPLETADA: "Completada",
+    PROGRAMADA: "Programada",
+    CANCELADA: "Cancelada",
+    PENDIENTE_RETOQUE: "Pendiente de retoque",
+    EN_PROGRESO: "En progreso"
+  };
+
+  // ============ FUNCIÓN PARA OBTENER FECHA LOCAL (Perú) ============
+  // Soluciona el problema de zona horaria con Railway (UTC)
+  const getFechaLocal = (date = new Date()) => {
+    // Ajustar a zona horaria de Perú (UTC-5)
+    const opciones = { timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit' };
+    const fechaStr = date.toLocaleDateString('en-CA', opciones); // en-CA da formato YYYY-MM-DD
+    return fechaStr;
+  };
+
+  const getFechaHoraLocal = (date = new Date()) => {
+    const opciones = { 
+      timeZone: 'America/Lima', 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    };
+    return date.toLocaleString('en-CA', opciones).replace(',', '');
+  };
+
   // ============ EFECTOS ============
   useEffect(() => {
+    // Inicializar rango con la semana actual
+    const hoy = new Date();
+    const lunes = new Date(hoy);
+    lunes.setDate(hoy.getDate() - (hoy.getDay() === 0 ? 6 : hoy.getDay() - 1));
+    const domingo = new Date(lunes);
+    domingo.setDate(lunes.getDate() + 6);
+    
+    setFechaInicioRango(getFechaLocal(lunes));
+    setFechaFinRango(getFechaLocal(domingo));
+  }, []);
+
+  useEffect(() => {
     fetchDatos();
-  }, [periodo, yearSelected, mesSelected, semanaSelected]);
+  }, [periodo, yearSelected, mesSelected, semanaSelected, fechaInicioRango, fechaFinRango]);
 
   // ============ FUNCIONES ============
   const fetchDatos = async () => {
+    // No cargar si estamos en modo rango y las fechas no están listas
+    if (periodo === 'rango' && (!fechaInicioRango || !fechaFinRango)) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -80,8 +137,12 @@ const DashboardCitasGerencial = () => {
         periodo, 
         year: yearSelected, 
         mes: mesSelected,
-        semana: semanaSelected
+        semana: semanaSelected,
+        fecha_inicio: fechaInicioRango,
+        fecha_fin: fechaFinRango,
+        timezone: 'America/Lima' // Enviar zona horaria al backend
       };
+      
       const response = await axios.get(`${BACKEND_URL}/api/dashboard-citas`, { params });
 
       if (response.data.success) {
@@ -102,27 +163,49 @@ const DashboardCitasGerencial = () => {
     }
   };
 
-  const verDetalleCita = (cita) => {
-    setSelectedCita(cita);
+  // Ver detalle de TODAS las citas del día
+  const verCitasDelDia = (fecha) => {
+    setSelectedFecha(fecha);
+    // Filtrar todas las citas de ese día
+    const citasDelDia = detalleCitas.filter(c => {
+      const fechaCita = c.fecha ? c.fecha.split('T')[0] : '';
+      return fechaCita === fecha;
+    });
+    setCitasDelDiaSeleccionado(citasDelDia);
     setShowDetalleModal(true);
   };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "—";
-    return new Date(dateStr).toLocaleDateString("es-PE", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric"
-    });
+    try {
+      // Extraer solo la fecha sin zona horaria
+      const fechaLimpia = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+      const [year, month, day] = fechaLimpia.split('-');
+      const date = new Date(year, month - 1, day);
+      return date.toLocaleDateString("es-PE", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric"
+      });
+    } catch (e) {
+      return dateStr;
+    }
   };
 
   const formatDateShort = (dateStr) => {
     if (!dateStr) return "—";
-    return new Date(dateStr).toLocaleDateString("es-PE", {
-      day: "2-digit",
-      month: "short"
-    });
+    try {
+      const fechaLimpia = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+      const [year, month, day] = fechaLimpia.split('-');
+      const date = new Date(year, month - 1, day);
+      return date.toLocaleDateString("es-PE", {
+        day: "2-digit",
+        month: "short"
+      });
+    } catch (e) {
+      return dateStr;
+    }
   };
 
   const formatTime = (timeStr) => {
@@ -135,10 +218,9 @@ const DashboardCitasGerencial = () => {
     return meses[mes - 1] || mes;
   };
 
-  // Obtener semanas del mes
+  // ============ GET SEMANAS DEL MES ============
   const getSemanasMes = () => {
     const semanas = [];
-    const primerDia = new Date(yearSelected, mesSelected - 1, 1);
     const ultimoDia = new Date(yearSelected, mesSelected, 0);
     let diaInicio = 1;
     let semanaNum = 1;
@@ -161,6 +243,66 @@ const DashboardCitasGerencial = () => {
   };
 
   const semanasDisponibles = getSemanasMes();
+
+  // ============ CONFIGURACIÓN DE ESTADOS ============
+  const getEstadoConfig = (estado) => {
+    switch (estado) {
+      case ESTADOS_CITA.COMPLETADA:
+        return {
+          bg: 'bg-green-100',
+          text: 'text-green-700',
+          border: 'border-green-200',
+          bgLight: 'bg-green-50',
+          icon: CheckCircle,
+          color: '#10b981'
+        };
+      case ESTADOS_CITA.PROGRAMADA:
+        return {
+          bg: 'bg-blue-100',
+          text: 'text-blue-700',
+          border: 'border-blue-200',
+          bgLight: 'bg-blue-50',
+          icon: Calendar,
+          color: '#3b82f6'
+        };
+      case ESTADOS_CITA.EN_PROGRESO:
+        return {
+          bg: 'bg-purple-100',
+          text: 'text-purple-700',
+          border: 'border-purple-200',
+          bgLight: 'bg-purple-50',
+          icon: PlayCircle,
+          color: '#8b5cf6'
+        };
+      case ESTADOS_CITA.PENDIENTE_RETOQUE:
+        return {
+          bg: 'bg-amber-100',
+          text: 'text-amber-700',
+          border: 'border-amber-200',
+          bgLight: 'bg-amber-50',
+          icon: Clock,
+          color: '#f59e0b'
+        };
+      case ESTADOS_CITA.CANCELADA:
+        return {
+          bg: 'bg-red-100',
+          text: 'text-red-700',
+          border: 'border-red-200',
+          bgLight: 'bg-red-50',
+          icon: XCircle,
+          color: '#ef4444'
+        };
+      default:
+        return {
+          bg: 'bg-slate-100',
+          text: 'text-slate-700',
+          border: 'border-slate-200',
+          bgLight: 'bg-slate-50',
+          icon: AlertCircle,
+          color: '#64748b'
+        };
+    }
+  };
 
   // ============ COMPONENTES INTERNOS ============
 
@@ -237,7 +379,7 @@ const DashboardCitasGerencial = () => {
     );
   };
 
-  // ============ GRÁFICO DE BARRAS CORREGIDO ============
+  // ============ GRÁFICO DE BARRAS CORREGIDO CON FECHAS ============
   const GraficoBarrasCitas = () => {
     if (!datosCitas || datosCitas.length === 0) {
       return (
@@ -251,10 +393,10 @@ const DashboardCitasGerencial = () => {
     }
 
     const maxValor = Math.max(...datosCitas.map(d => d.total), 1);
+    const hoyLocal = getFechaLocal();
 
     return (
       <div className="w-full">
-        {/* Contenedor con scroll horizontal si hay muchos días */}
         <div className="overflow-x-auto pb-2">
           <div 
             className="flex items-end gap-2 min-h-[280px] px-1"
@@ -262,8 +404,7 @@ const DashboardCitasGerencial = () => {
           >
             {datosCitas.map((dia, idx) => {
               const altura = (dia.total / maxValor) * 200;
-              const fecha = new Date(dia.fecha);
-              const esHoy = new Date().toDateString() === fecha.toDateString();
+              const esHoy = dia.fecha === hoyLocal;
               const porcentajeCompletadas = dia.total > 0 ? (dia.completadas / dia.total) * 100 : 0;
               
               return (
@@ -275,6 +416,7 @@ const DashboardCitasGerencial = () => {
                   <div className="absolute -top-14 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap z-20 pointer-events-none shadow-lg">
                     <div className="font-bold">{dia.total} citas</div>
                     <div className="text-green-300 text-[10px]">✓ {dia.completadas || 0} completadas</div>
+                    <div className="text-blue-300 text-[10px]">📅 {dia.fecha}</div>
                   </div>
                   
                   {/* Número arriba de la barra */}
@@ -298,13 +440,11 @@ const DashboardCitasGerencial = () => {
                       }`}
                       style={{ height: `${Math.max(altura, 8)}px` }}
                       onClick={() => {
-                        const citasDelDia = detalleCitas.filter(c => c.fecha && c.fecha.includes(dia.fecha));
-                        if (citasDelDia.length > 0) {
-                          verDetalleCita(citasDelDia[0]);
+                        if (dia.total > 0) {
+                          verCitasDelDia(dia.fecha);
                         }
                       }}
                     >
-                      {/* Indicador de completadas dentro de la barra */}
                       {porcentajeCompletadas > 0 && (
                         <div 
                           className="absolute bottom-0 left-0 right-0 bg-white/30"
@@ -314,7 +454,7 @@ const DashboardCitasGerencial = () => {
                     </div>
                   </div>
                   
-                  {/* Fecha debajo */}
+                  {/* Fecha debajo - CORREGIDA sin problemas de zona horaria */}
                   <span className={`text-[10px] mt-2 whitespace-nowrap ${
                     esHoy ? 'text-blue-600 font-bold bg-blue-50 px-1.5 py-0.5 rounded' : 'text-slate-500'
                   }`}>
@@ -326,7 +466,6 @@ const DashboardCitasGerencial = () => {
           </div>
         </div>
 
-        {/* Línea base */}
         <div className="h-px bg-slate-200 mt-1"></div>
       </div>
     );
@@ -394,7 +533,7 @@ const DashboardCitasGerencial = () => {
           </div>
         </div>
 
-        {/* ============ FILTROS DE PERIODO MEJORADOS ============ */}
+        {/* ============ FILTROS DE PERIODO CON RANGO ============ */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
@@ -402,11 +541,12 @@ const DashboardCitasGerencial = () => {
               <span className="text-sm font-medium text-slate-600">Periodo:</span>
             </div>
 
-            <div className="flex bg-slate-100 rounded-lg p-1">
+            <div className="flex bg-slate-100 rounded-lg p-1 flex-wrap">
               {[
                 { id: 'dia', label: 'Hoy', icon: Clock },
                 { id: 'semana', label: 'Semana', icon: Calendar },
-                { id: 'mes', label: 'Mes', icon: CalendarDays }
+                { id: 'mes', label: 'Mes', icon: CalendarDays },
+                { id: 'rango', label: 'Rango', icon: Timer }
               ].map(op => (
                 <button
                   key={op.id}
@@ -425,22 +565,24 @@ const DashboardCitasGerencial = () => {
 
             <div className="h-6 w-px bg-slate-200"></div>
 
-            {/* Selector de Año */}
-            <select
-              value={yearSelected}
-              onChange={(e) => {
-                setYearSelected(parseInt(e.target.value));
-                setSemanaSelected(1);
-              }}
-              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-            >
-              {[2023, 2024, 2025, 2026].map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
+            {/* Selector de Año (para dia, semana, mes) */}
+            {periodo !== 'rango' && (
+              <select
+                value={yearSelected}
+                onChange={(e) => {
+                  setYearSelected(parseInt(e.target.value));
+                  setSemanaSelected(1);
+                }}
+                className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                {[2023, 2024, 2025, 2026].map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            )}
 
-            {/* Selector de Mes (para semana y mes) */}
-            {periodo !== 'dia' && (
+            {/* Selector de Mes */}
+            {(periodo === 'semana' || periodo === 'mes') && (
               <select
                 value={mesSelected}
                 onChange={(e) => {
@@ -455,7 +597,7 @@ const DashboardCitasGerencial = () => {
               </select>
             )}
 
-            {/* Selector de Semana (solo para periodo semana) */}
+            {/* Selector de Semana */}
             {periodo === 'semana' && (
               <select
                 value={semanaSelected}
@@ -468,19 +610,45 @@ const DashboardCitasGerencial = () => {
               </select>
             )}
 
+            {/* Selector de Rango de Fechas */}
+            {periodo === 'rango' && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
+                  <Calendar className="w-4 h-4 text-purple-600" />
+                  <input
+                    type="date"
+                    value={fechaInicioRango}
+                    onChange={(e) => setFechaInicioRango(e.target.value)}
+                    className="bg-transparent text-sm focus:outline-none"
+                  />
+                </div>
+                <span className="text-slate-400 text-sm">hasta</span>
+                <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
+                  <Calendar className="w-4 h-4 text-purple-600" />
+                  <input
+                    type="date"
+                    value={fechaFinRango}
+                    onChange={(e) => setFechaFinRango(e.target.value)}
+                    className="bg-transparent text-sm focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="ml-auto flex items-center gap-2 text-sm">
               <CalendarCheck className="w-4 h-4 text-purple-500" />
               <span className="font-medium text-slate-600">
                 {periodo === 'dia' && 'Hoy'}
-                {periodo === 'semana' && `Semana ${semanaSelected} de ${getNombreMes(mesSelected)} ${yearSelected}`}
+                {periodo === 'semana' && `Semana ${semanaSelected} de ${getNombreMes(mesSelected)}`}
                 {periodo === 'mes' && `${getNombreMes(mesSelected)} ${yearSelected}`}
+                {periodo === 'rango' && `${formatDateShort(fechaInicioRango)} - ${formatDateShort(fechaFinRango)}`}
               </span>
             </div>
           </div>
         </div>
 
         {/* ============ KPIs PRINCIPALES ============ */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-6">
           <TarjetaKPI
             titulo="Total Citas"
             valor={estadisticas.totalCitas || 0}
@@ -496,24 +664,30 @@ const DashboardCitasGerencial = () => {
             color="green"
           />
           <TarjetaKPI
-            titulo="Pendientes"
-            valor={estadisticas.citasPendientes || 0}
+            titulo="Programadas"
+            valor={estadisticas.citasProgramadas || 0}
             subtitulo="Por atender"
-            icono={Clock}
-            color="amber"
+            icono={Calendar}
+            color="blue"
+          />
+          <TarjetaKPI
+            titulo="En Progreso"
+            valor={estadisticas.citasEnProgreso || 0}
+            subtitulo="En atención"
+            icono={PlayCircle}
+            color="pink"
           />
           <TarjetaKPI
             titulo="Citas Hoy"
             valor={estadisticas.citasHoy || 0}
             subtitulo="Agenda del día"
             icono={Zap}
-            color="pink"
+            color="amber"
           />
         </div>
 
         {/* ============ GRÁFICO DE CITAS + GAUGE ============ */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-          {/* Gráfico de barras */}
           <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <div className="flex flex-wrap justify-between items-center mb-5 gap-3">
               <div>
@@ -525,9 +699,10 @@ const DashboardCitasGerencial = () => {
                   {periodo === 'mes' && `Citas por día - ${getNombreMes(mesSelected)} ${yearSelected}`}
                   {periodo === 'semana' && `Citas - Semana ${semanaSelected} de ${getNombreMes(mesSelected)}`}
                   {periodo === 'dia' && 'Citas por hora'}
+                  {periodo === 'rango' && `${formatDateShort(fechaInicioRango)} - ${formatDateShort(fechaFinRango)}`}
                 </p>
               </div>
-              <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-3 text-xs flex-wrap">
                 <span className="flex items-center gap-1.5">
                   <div className="w-3 h-3 bg-gradient-to-br from-blue-600 to-blue-400 rounded"></div>
                   <span className="text-slate-600">Hoy</span>
@@ -562,7 +737,6 @@ const DashboardCitasGerencial = () => {
             )}
           </div>
 
-          {/* Gauge */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center">
             <div className="flex items-center gap-2 mb-3">
               <Target className="w-5 h-5 text-purple-600" />
@@ -584,8 +758,22 @@ const DashboardCitasGerencial = () => {
               </div>
               <div className="flex justify-between text-xs">
                 <span className="flex items-center gap-1 text-slate-600">
+                  <Calendar className="w-3 h-3 text-blue-500" />
+                  Programadas
+                </span>
+                <span className="font-bold text-slate-800">{estadisticas.citasProgramadas || 0}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="flex items-center gap-1 text-slate-600">
+                  <PlayCircle className="w-3 h-3 text-purple-500" />
+                  En Progreso
+                </span>
+                <span className="font-bold text-slate-800">{estadisticas.citasEnProgreso || 0}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="flex items-center gap-1 text-slate-600">
                   <Clock className="w-3 h-3 text-amber-500" />
-                  Pendientes
+                  Pendiente retoque
                 </span>
                 <span className="font-bold text-slate-800">{estadisticas.citasPendientes || 0}</span>
               </div>
@@ -602,7 +790,6 @@ const DashboardCitasGerencial = () => {
 
         {/* ============ TOP CLIENTES Y SERVICIOS ============ */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          {/* Top Clientes */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-center gap-2 mb-5">
               <div className="bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl p-2">
@@ -645,7 +832,6 @@ const DashboardCitasGerencial = () => {
             )}
           </div>
 
-          {/* Servicios */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-center gap-2 mb-5">
               <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl p-2">
@@ -685,7 +871,6 @@ const DashboardCitasGerencial = () => {
             )}
           </div>
 
-          {/* Empleados */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
             <div className="flex items-center gap-2 mb-5">
               <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl p-2">
@@ -755,9 +940,11 @@ const DashboardCitasGerencial = () => {
                 className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
               >
                 <option value="todas">Todos los estados</option>
-                <option value="Completada">Completadas</option>
+                <option value="Completada">Completada</option>
+                <option value="Programada">Programada</option>
+                <option value="En progreso">En progreso</option>
                 <option value="Pendiente de retoque">Pendiente de retoque</option>
-                <option value="Cancelada">Canceladas</option>
+                <option value="Cancelada">Cancelada</option>
               </select>
             </div>
           </div>
@@ -772,80 +959,68 @@ const DashboardCitasGerencial = () => {
                   <th className="px-5 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider">Hora</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-purple-700 uppercase tracking-wider">Empleado</th>
                   <th className="px-5 py-3 text-center text-xs font-semibold text-purple-700 uppercase tracking-wider">Estado</th>
-                  <th className="px-5 py-3 text-center text-xs font-semibold text-purple-700 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {citasPaginadas.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-5 py-16 text-center">
+                    <td colSpan="6" className="px-5 py-16 text-center">
                       <CalendarX className="w-16 h-16 mx-auto mb-3 text-slate-300" />
                       <p className="text-slate-400">No se encontraron citas</p>
                     </td>
                   </tr>
                 ) : (
-                  citasPaginadas.map((cita, idx) => (
-                    <tr key={idx} className="hover:bg-purple-50/30 transition-colors group">
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                            {(cita.cliente || 'C').charAt(0).toUpperCase()}
+                  citasPaginadas.map((cita, idx) => {
+                    const estadoConfig = getEstadoConfig(cita.estado);
+                    const IconoEstado = estadoConfig.icon;
+                    
+                    return (
+                      <tr key={idx} className="hover:bg-purple-50/30 transition-colors group">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                              {(cita.cliente || 'C').charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-slate-800">{cita.cliente}</p>
+                              {cita.telefono && (
+                                <p className="text-xs text-slate-500 flex items-center gap-1">
+                                  <Phone className="w-3 h-3" />
+                                  {cita.telefono}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-semibold text-slate-800">{cita.cliente}</p>
-                            {cita.telefono && (
-                              <p className="text-xs text-slate-500 flex items-center gap-1">
-                                <Phone className="w-3 h-3" />
-                                {cita.telefono}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="inline-flex items-center gap-1 text-sm text-slate-700">
-                          <Briefcase className="w-3.5 h-3.5 text-purple-500" />
-                          {cita.servicio || '—'}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="text-sm text-slate-700">
-                          {new Date(cita.fecha).toLocaleDateString('es-PE', { day: '2-digit', month: 'short' })}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="inline-flex items-center gap-1 text-sm bg-purple-50 text-purple-700 rounded-full px-2 py-0.5 font-medium">
-                          <Clock className="w-3 h-3" />
-                          {formatTime(cita.hora)}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="text-sm text-slate-600">{cita.empleado || '—'}</span>
-                      </td>
-                      <td className="px-5 py-4 text-center">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                          cita.estado === 'Completada' ? 'bg-green-100 text-green-700' :
-                          cita.estado === 'Pendiente de retoque' ? 'bg-amber-100 text-amber-700' :
-                          cita.estado === 'Cancelada' ? 'bg-red-100 text-red-700' :
-                          'bg-slate-100 text-slate-700'
-                        }`}>
-                          {cita.estado === 'Completada' && <CheckCircle className="w-3 h-3" />}
-                          {cita.estado === 'Pendiente de retoque' && <Clock className="w-3 h-3" />}
-                          {cita.estado === 'Cancelada' && <XCircle className="w-3 h-3" />}
-                          {cita.estado}
-                        </span>
-                      </td>
-                      <td className="px-5 py-4 text-center">
-                        <button
-                          onClick={() => verDetalleCita(cita)}
-                          className="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition opacity-60 group-hover:opacity-100"
-                          title="Ver detalle"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="inline-flex items-center gap-1 text-sm text-slate-700">
+                            <Briefcase className="w-3.5 h-3.5 text-purple-500" />
+                            {cita.servicio || '—'}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="text-sm text-slate-700">
+                            {formatDateShort(cita.fecha)}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="inline-flex items-center gap-1 text-sm bg-purple-50 text-purple-700 rounded-full px-2 py-0.5 font-medium">
+                            <Clock className="w-3 h-3" />
+                            {formatTime(cita.hora)}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4">
+                          <span className="text-sm text-slate-600">{cita.empleado || '—'}</span>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${estadoConfig.bg} ${estadoConfig.text}`}>
+                            <IconoEstado className="w-3 h-3" />
+                            {cita.estado}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -897,10 +1072,11 @@ const DashboardCitasGerencial = () => {
           )}
         </div>
 
-        {/* ============ MODAL DETALLE ============ */}
-        {showDetalleModal && selectedCita && (
+        {/* ============ MODAL DETALLE - MUESTRA TODAS LAS CITAS DEL DÍA ============ */}
+        {showDetalleModal && selectedFecha && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowDetalleModal(false)}>
-            <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
+              {/* Header */}
               <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
@@ -908,8 +1084,8 @@ const DashboardCitasGerencial = () => {
                       <CalendarCheck className="w-6 h-6" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold">Detalle de Cita</h2>
-                      <p className="text-purple-100 text-sm">Información completa</p>
+                      <h2 className="text-xl font-bold">Citas del Día</h2>
+                      <p className="text-purple-100 text-sm">{formatDate(selectedFecha)}</p>
                     </div>
                   </div>
                   <button
@@ -921,95 +1097,121 @@ const DashboardCitasGerencial = () => {
                 </div>
               </div>
 
-              <div className="p-6 space-y-5">
-                <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
-                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
-                    {(selectedCita.cliente || 'C').charAt(0).toUpperCase()}
+              {/* Contenido */}
+              <div className="p-6 overflow-y-auto max-h-[65vh]">
+                {/* Resumen del día */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+                  <div className="text-center p-3 bg-purple-50 rounded-xl">
+                    <p className="text-xs text-purple-600 font-medium">Total</p>
+                    <p className="text-2xl font-bold text-purple-700">{citasDelDiaSeleccionado.length}</p>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-slate-500">Cliente</p>
-                    <p className="font-bold text-slate-800">{selectedCita.cliente}</p>
-                    {selectedCita.telefono && (
-                      <p className="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
-                        <Phone className="w-3 h-3" />
-                        {selectedCita.telefono}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-3 bg-slate-50 rounded-xl">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Calendar className="w-4 h-4 text-purple-600" />
-                      <p className="text-xs text-slate-500 font-medium">Fecha</p>
-                    </div>
-                    <p className="text-sm font-semibold text-slate-800">
-                      {formatDate(selectedCita.fecha)}
+                  <div className="text-center p-3 bg-green-50 rounded-xl">
+                    <p className="text-xs text-green-600 font-medium">Completadas</p>
+                    <p className="text-2xl font-bold text-green-700">
+                      {citasDelDiaSeleccionado.filter(c => c.estado === 'Completada').length}
                     </p>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-xl">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Clock className="w-4 h-4 text-purple-600" />
-                      <p className="text-xs text-slate-500 font-medium">Hora</p>
-                    </div>
-                    <p className="text-sm font-semibold text-slate-800">
-                      {formatTime(selectedCita.hora)}
+                  <div className="text-center p-3 bg-blue-50 rounded-xl">
+                    <p className="text-xs text-blue-600 font-medium">Programadas</p>
+                    <p className="text-2xl font-bold text-blue-700">
+                      {citasDelDiaSeleccionado.filter(c => c.estado === 'Programada').length}
                     </p>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-xl">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Briefcase className="w-4 h-4 text-purple-600" />
-                      <p className="text-xs text-slate-500 font-medium">Servicio</p>
-                    </div>
-                    <p className="text-sm font-semibold text-slate-800">
-                      {selectedCita.servicio || '—'}
+                  <div className="text-center p-3 bg-amber-50 rounded-xl">
+                    <p className="text-xs text-amber-600 font-medium">P. Retoque</p>
+                    <p className="text-2xl font-bold text-amber-700">
+                      {citasDelDiaSeleccionado.filter(c => c.estado === 'Pendiente de retoque').length}
                     </p>
                   </div>
-                  <div className="p-3 bg-slate-50 rounded-xl">
-                    <div className="flex items-center gap-2 mb-1">
-                      <User className="w-4 h-4 text-purple-600" />
-                      <p className="text-xs text-slate-500 font-medium">Empleado</p>
-                    </div>
-                    <p className="text-sm font-semibold text-slate-800">
-                      {selectedCita.empleado || '—'}
+                  <div className="text-center p-3 bg-red-50 rounded-xl">
+                    <p className="text-xs text-red-600 font-medium">Canceladas</p>
+                    <p className="text-2xl font-bold text-red-700">
+                      {citasDelDiaSeleccionado.filter(c => c.estado === 'Cancelada').length}
                     </p>
                   </div>
                 </div>
 
-                <div className={`p-4 rounded-xl ${
-                  selectedCita.estado === 'Completada' ? 'bg-green-50 border border-green-200' :
-                  selectedCita.estado === 'Pendiente de retoque' ? 'bg-amber-50 border border-amber-200' :
-                  'bg-red-50 border border-red-200'
-                }`}>
-                  <div className="flex items-center gap-2">
-                    {selectedCita.estado === 'Completada' && <CheckCircle className="w-5 h-5 text-green-600" />}
-                    {selectedCita.estado === 'Pendiente de retoque' && <Clock className="w-5 h-5 text-amber-600" />}
-                    {selectedCita.estado === 'Cancelada' && <XCircle className="w-5 h-5 text-red-600" />}
-                    <div>
-                      <p className="text-xs text-slate-500 font-medium">Estado</p>
-                      <p className={`text-sm font-bold ${
-                        selectedCita.estado === 'Completada' ? 'text-green-700' :
-                        selectedCita.estado === 'Pendiente de retoque' ? 'text-amber-700' :
-                        'text-red-700'
-                      }`}>
-                        {selectedCita.estado}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                {/* Lista de citas del día */}
+                <h3 className="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                  <List className="w-4 h-4" />
+                  Listado de Citas
+                </h3>
 
-                {selectedCita.observaciones && (
-                  <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                    <div className="flex items-center gap-2 mb-1">
-                      <MessageCircle className="w-4 h-4 text-blue-600" />
-                      <p className="text-xs text-blue-600 font-medium">Observaciones</p>
-                    </div>
-                    <p className="text-sm text-slate-700">{selectedCita.observaciones}</p>
+                {citasDelDiaSeleccionado.length === 0 ? (
+                  <div className="text-center py-12">
+                    <CalendarX className="w-16 h-16 mx-auto mb-3 text-slate-300" />
+                    <p className="text-slate-400">No hay citas registradas para este día</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {citasDelDiaSeleccionado.map((cita, idx) => {
+                      const estadoConfig = getEstadoConfig(cita.estado);
+                      const IconoEstado = estadoConfig.icon;
+                      
+                      return (
+                        <div key={idx} className={`p-4 rounded-xl ${estadoConfig.bgLight} border ${estadoConfig.border}`}>
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                                {(cita.cliente || 'C').charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-800">{cita.cliente}</p>
+                                {cita.telefono && (
+                                  <p className="text-xs text-slate-600 flex items-center gap-1">
+                                    <Phone className="w-3 h-3" />
+                                    {cita.telefono}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${estadoConfig.bg} ${estadoConfig.text}`}>
+                              <IconoEstado className="w-3 h-3" />
+                              {cita.estado}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-3">
+                            <div className="flex items-center gap-2">
+                              <Clock className="w-4 h-4 text-purple-600" />
+                              <div>
+                                <p className="text-xs text-slate-500">Hora</p>
+                                <p className="text-sm font-semibold text-slate-800">{formatTime(cita.hora)}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Briefcase className="w-4 h-4 text-purple-600" />
+                              <div>
+                                <p className="text-xs text-slate-500">Servicio</p>
+                                <p className="text-sm font-semibold text-slate-800">{cita.servicio || '—'}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4 text-purple-600" />
+                              <div>
+                                <p className="text-xs text-slate-500">Empleado</p>
+                                <p className="text-sm font-semibold text-slate-800">{cita.empleado || '—'}</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {cita.observaciones && (
+                            <div className="mt-3 p-2 bg-white/50 rounded-lg">
+                              <div className="flex items-center gap-2 mb-1">
+                                <MessageCircle className="w-3 h-3 text-blue-600" />
+                                <p className="text-xs text-blue-600 font-medium">Observaciones</p>
+                              </div>
+                              <p className="text-xs text-slate-700">{cita.observaciones}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
 
+              {/* Footer */}
               <div className="border-t border-slate-200 p-4 bg-slate-50 flex justify-end">
                 <button
                   onClick={() => setShowDetalleModal(false)}
