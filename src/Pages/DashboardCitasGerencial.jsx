@@ -756,7 +756,7 @@ const DashboardCitasGerencial = () => {
               >
                 <option value="todas">Todos los estados</option>
                 <option value="Completada">Completadas</option>
-                <option value="Pendiente">Pendientes</option>
+                <option value="Pendiente de retoque">Pendiente de retoque</option>
                 <option value="Cancelada">Canceladas</option>
               </select>
             </div>
@@ -825,12 +825,12 @@ const DashboardCitasGerencial = () => {
                       <td className="px-5 py-4 text-center">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
                           cita.estado === 'Completada' ? 'bg-green-100 text-green-700' :
-                          cita.estado === 'Pendiente' ? 'bg-amber-100 text-amber-700' :
+                          cita.estado === 'Pendiente de retoque' ? 'bg-amber-100 text-amber-700' :
                           cita.estado === 'Cancelada' ? 'bg-red-100 text-red-700' :
                           'bg-slate-100 text-slate-700'
                         }`}>
                           {cita.estado === 'Completada' && <CheckCircle className="w-3 h-3" />}
-                          {cita.estado === 'Pendiente' && <Clock className="w-3 h-3" />}
+                          {cita.estado === 'Pendiente de retoque' && <Clock className="w-3 h-3" />}
                           {cita.estado === 'Cancelada' && <XCircle className="w-3 h-3" />}
                           {cita.estado}
                         </span>
@@ -979,18 +979,18 @@ const DashboardCitasGerencial = () => {
 
                 <div className={`p-4 rounded-xl ${
                   selectedCita.estado === 'Completada' ? 'bg-green-50 border border-green-200' :
-                  selectedCita.estado === 'Pendiente' ? 'bg-amber-50 border border-amber-200' :
+                  selectedCita.estado === 'Pendiente de retoque' ? 'bg-amber-50 border border-amber-200' :
                   'bg-red-50 border border-red-200'
                 }`}>
                   <div className="flex items-center gap-2">
                     {selectedCita.estado === 'Completada' && <CheckCircle className="w-5 h-5 text-green-600" />}
-                    {selectedCita.estado === 'Pendiente' && <Clock className="w-5 h-5 text-amber-600" />}
+                    {selectedCita.estado === 'Pendiente de retoque' && <Clock className="w-5 h-5 text-amber-600" />}
                     {selectedCita.estado === 'Cancelada' && <XCircle className="w-5 h-5 text-red-600" />}
                     <div>
                       <p className="text-xs text-slate-500 font-medium">Estado</p>
                       <p className={`text-sm font-bold ${
                         selectedCita.estado === 'Completada' ? 'text-green-700' :
-                        selectedCita.estado === 'Pendiente' ? 'text-amber-700' :
+                        selectedCita.estado === 'Pendiente de retoque' ? 'text-amber-700' :
                         'text-red-700'
                       }`}>
                         {selectedCita.estado}
